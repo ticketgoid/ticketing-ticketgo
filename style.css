@@ -730,10 +730,19 @@ input.input-error {
     vertical-align: middle;
 }
 
+.btn-buy.disabled {
+    background-color: #9ca3af; /* Warna abu-abu */
+    cursor: not-allowed;
+}
+.btn-buy.disabled:hover {
+    background-color: #6b7280; /* Warna abu-abu lebih gelap */
+}
+
 #closeFeedbackBtn:hover {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
