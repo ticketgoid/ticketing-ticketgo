@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
 
     // --- Variabel Global & Elemen DOM ---
-    let allEvents = []; // ## MODIFIKASI: Variabel global untuk menyimpan data event
+    let allEvents = [];
     const eventGrid = document.getElementById('eventGrid');
     
     // --- Logika Carousel Hero ---
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
             
             const data = await response.json();
-            allEvents = data.records; // ## MODIFIKASI: Simpan data ke variabel global
+            allEvents = data.records;
 
             eventGrid.innerHTML = ''; 
 
@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
-                    // ## MODIFIKASI: Menggunakan record.id unik, bukan nama event ##
                     eventCard.innerHTML = `
                         <div class="card-image">
                             <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
@@ -84,66 +83,64 @@ document.addEventListener('DOMContentLoaded', () => {
                     eventGrid.appendChild(eventCard);
                 });
             }
-            setupEventListeners(); // Panggil setup listeners setelah semua card dibuat
+            setupEventListeners();
         } catch (error) {
             console.error("Gagal mengambil event dari Airtable:", error);
             eventGrid.innerHTML = '<p>Gagal memuat event. Cek kembali konfigurasi API Key dan Base ID Anda.</p>';
         }
     }
 
-    // ## FUNGSI BARU (VERSI PERBAIKAN): MEMBANGUN FORMULIR SECARA DINAMIS ##
-async function generateFormFields(eventId) {
-    const formContainer = document.getElementById('registrationForm');
-    formContainer.innerHTML = '<p>Memuat formulir...</p>';
+    // ## FUNGSI UNTUK MEMBANGUN FORMULIR SECARA DINAMIS ##
+    async function generateFormFields(eventId) {
+        const formContainer = document.getElementById('registrationForm');
+        formContainer.innerHTML = '<p>Memuat formulir...</p>';
 
-    // URL sekarang mengambil SEMUA field, tanpa filter
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields`;
 
-    try {
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_KEY}` } });
-        if (!response.ok) throw new Error(`Error: ${response.status}`);
-        
-        const data = await response.json();
-        const allFormFields = data.records;
-
-        // Logika penyaringan (filter) sekarang dilakukan di sini oleh JavaScript
-        const fields = allFormFields.filter(record => {
-            // Memastikan field 'Event' ada dan berisi ID event yang kita cari
-            return record.fields.Event && record.fields.Event.includes(eventId);
-        });
-
-        if (fields.length === 0) {
-            formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
-            return;
-        }
-
-        let formHTML = '';
-        fields.forEach(record => {
-            const field = record.fields;
-            const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
+        try {
+            // ## PERBAIKAN: Menggunakan variabel AIRTABLE_API_KEY yang benar ##
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!response.ok) throw new Error(`Error: ${response.status}`);
             
-            formHTML += `
-                <div class="form-group floating-label">
-                    <input 
-                        type="${field['Field Type'].toLowerCase()}" 
-                        id="${fieldId}" 
-                        name="${field['Field Label']}" 
-                        ${field['Is Required'] ? 'required' : ''}
-                        placeholder=" ">
-                    <label for="${fieldId}">${field['Field Label']}</label>
-                </div>`;
-        });
-        formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
-        formContainer.innerHTML = formHTML;
+            const data = await response.json();
+            const allFormFields = data.records;
 
-    } catch (error) {
-        console.error("Gagal mengambil field formulir:", error);
-        formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+            const fields = allFormFields.filter(record => {
+                return record.fields.Event && record.fields.Event.includes(eventId);
+            });
+
+            if (fields.length === 0) {
+                formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
+                return;
+            }
+
+            let formHTML = '';
+            fields.forEach(record => {
+                const field = record.fields;
+                const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
+                
+                formHTML += `
+                    <div class="form-group floating-label">
+                        <input 
+                            type="${field['Field Type'].toLowerCase()}" 
+                            id="${fieldId}" 
+                            name="${field['Field Label']}" 
+                            ${field['Is Required'] ? 'required' : ''}
+                            placeholder=" ">
+                        <label for="${fieldId}">${field['Field Label']}</label>
+                    </div>`;
+            });
+            formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
+            formContainer.innerHTML = formHTML;
+
+        } catch (error) {
+            console.error("Gagal mengambil field formulir:", error);
+            formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+        }
     }
-}
+    
     // --- FUNGSI PENGATUR EVENT LISTENERS ---
     function setupEventListeners() {
-        // Search
         const searchInput = document.getElementById('searchInput');
         if(searchInput) {
             searchInput.addEventListener('input', () => {
@@ -155,10 +152,8 @@ async function generateFormFields(eventId) {
             });
         }
         
-        // Tombol Beli di setiap card
         document.querySelectorAll('.btn-buy').forEach(button => {
             button.addEventListener('click', () => {
-                // ## MODIFIKASI: Mengambil event dari variabel global 'allEvents' berdasarkan ID unik ##
                 const eventId = button.dataset.eventId;
                 const eventData = allEvents.find(event => event.id === eventId);
                 if (eventData) {
@@ -167,7 +162,6 @@ async function generateFormFields(eventId) {
             });
         });
         
-        // Tombol Scroll
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
         const scrollLeftBtn = document.getElementById('scrollLeftBtn');
         const scrollRightBtn = document.getElementById('scrollRightBtn');
@@ -234,7 +228,6 @@ async function generateFormFields(eventId) {
         closeFeedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('visible'));
     }
 
-    // ## MODIFIKASI: openModal sekarang menerima satu objek 'eventData' ##
     function openModal(eventData) {
         const fields = eventData.fields;
         modalEventTitle.textContent = `Detail: ${fields['Nama Event']}`;
@@ -242,22 +235,21 @@ async function generateFormFields(eventId) {
         modalEventImage.src = fields['Gambar Event'][0].url;
         modalEventDescription.textContent = fields['Deskripsi'] || '';
         
-        modal.dataset.currentEventId = eventData.id; // Simpan ID untuk nanti
+        modal.dataset.currentEventId = eventData.id;
 
         modal.style.display = 'block';
         detailView.style.display = 'block';
         formView.style.display = 'none';
-        registrationForm.innerHTML = ''; // Selalu kosongkan form saat modal dibuka
+        registrationForm.innerHTML = '';
     };
     
-    // ## MODIFIKASI: Listener untuk tombol "Daftar" memanggil fungsi 'generateFormFields' ##
     if (showFormButton) {
         showFormButton.addEventListener('click', () => {
             const eventId = modal.dataset.currentEventId;
             if (eventId) {
                 detailView.style.display = 'none';
                 formView.style.display = 'block';
-                generateFormFields(eventId); // Panggil fungsi pembuat form
+                generateFormFields(eventId);
             } else {
                 alert("Terjadi kesalahan, ID event tidak ditemukan.");
             }
@@ -273,13 +265,12 @@ async function generateFormFields(eventId) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
             
-            // Validasi sederhana bawaan HTML5 akan berjalan karena atribut 'required'
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Mengirim...';
             
             const formData = new FormData(registrationForm);
-            formData.append('Event Name', formEventTitle.textContent); // Kirim nama event bersama data form
+            formData.append('Event Name', formEventTitle.textContent);
             
             fetch(SCRIPT_URL, { method: 'POST', body: formData })
                 .then(response => response.json())
@@ -306,4 +297,3 @@ async function generateFormFields(eventId) {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
