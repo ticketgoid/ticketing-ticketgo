@@ -39,15 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
             allEvents = data.records;
             eventGrid.innerHTML = ''; 
 
+            // ## KEMBALIKAN KE LOGIKA SEMULA UNTUK TAMPILAN GRID ##
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
-            // ## PERBAIKAN: Hapus logika .visible dari sini ##
-            if (allEvents.length <= 4) {
-                if (scrollLeftBtn) scrollLeftBtn.style.display = 'none';
-                if (scrollRightBtn) scrollRightBtn.style.display = 'none';
+            const threshold = 4;
+            if (allEvents.length > threshold) {
+                eventGrid.classList.add('two-rows');
             } else {
-                if (scrollLeftBtn) scrollLeftBtn.style.display = 'flex';
-                if (scrollRightBtn) scrollRightBtn.style.display = 'flex';
+                eventGrid.classList.remove('two-rows');
             }
 
 
@@ -74,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (DENGAN URUTAN DAN STRUKTUR TELEPON) ##
+    // ## FUNGSI FORMULIR DINAMIS (VERSI STABIL) ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
@@ -97,72 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
                 
-                // ## PERUBAHAN: BUAT STRUKTUR KHUSUS UNTUK TELEPON ##
-                if (field['Field Type'].toLowerCase() === 'tel') {
-                    formHTML += `
-                    <div class="form-group floating-label">
-                        <div class="phone-input-group">
-                            <span class="phone-prefix">+62</span>
-                            <input type="tel" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
-                        </div>
-                        <label for="${fieldId}">${field['Field Label']}</label>
-                        <span class="error-message"></span>
-                    </div>`;
-                } else {
-                    formHTML += `
-                    <div class="form-group floating-label">
-                        <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
-                        <label for="${fieldId}">${field['Field Label']}</label>
-                        <span class="error-message"></span>
-                    </div>`;
-                }
+                // Kembali ke struktur input sederhana tanpa validasi khusus
+                formHTML += `
+                <div class="form-group floating-label">
+                    <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
+                    <label for="${fieldId}">${field['Field Label']}</label>
+                </div>`;
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
             formContainer.innerHTML = formHTML;
 
-            attachDynamicValidators(formContainer);
-
         } catch (error) {
             console.error("Gagal mengambil field formulir:", error);
             formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
-        }
-    }
-
-    // ## FUNGSI BARU: MENEMPELKAN VALIDATOR KE FORMULIR DINAMIS ##
-    function attachDynamicValidators(form) {
-        const emailInput = form.querySelector('input[type="email"]');
-        const phoneInput = form.querySelector('input[type="tel"]');
-
-        if (emailInput) {
-            const emailError = emailInput.parentElement.querySelector('.error-message');
-            emailInput.addEventListener('input', () => {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (emailInput.value === '' || emailRegex.test(emailInput.value)) {
-                    emailInput.classList.remove('input-error');
-                    emailError.classList.remove('visible');
-                    emailError.textContent = '';
-                } else {
-                    emailInput.classList.add('input-error');
-                    emailError.textContent = 'Format email tidak valid.';
-                    emailError.classList.add('visible');
-                }
-            });
-        }
-
-        if (phoneInput) {
-            const phoneError = phoneInput.closest('.form-group').querySelector('.error-message');
-            phoneInput.addEventListener('input', () => {
-                phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
-                if (phoneInput.value.startsWith('0')) {
-                    phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
-                    phoneError.classList.add('visible');
-                    phoneInput.closest('.phone-input-group').classList.add('input-error');
-                } else {
-                    phoneError.textContent = '';
-                    phoneError.classList.remove('visible');
-                    phoneInput.closest('.phone-input-group').classList.remove('input-error');
-                }
-            });
         }
     }
     
@@ -278,43 +224,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM (DENGAN VALIDASI LENGKAP) ---
+    // --- LOGIKA PENGIRIMAN FORM (VERSI STABIL) ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const form = event.target;
-            const emailInput = form.querySelector('input[type="email"]');
-            const phoneInput = form.querySelector('input[type="tel"]');
-            let isFormValid = true;
 
-            if (emailInput) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailInput.value)) {
-                    emailInput.classList.add('input-error');
-                    isFormValid = false;
-                }
-            }
-            if (phoneInput) {
-                if (phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
-                    phoneInput.closest('.phone-input-group').classList.add('input-error');
-                    isFormValid = false;
-                }
-            }
+            // Validasi sederhana bawaan browser
             if (!form.checkValidity()) {
-                isFormValid = false;
                 form.reportValidity();
+                return;
             }
-            if (!isFormValid) return;
 
             const submitBtn = form.querySelector('#submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Mengirim...';
             const formData = new FormData(form);
             
-            if (phoneInput) {
-                const phoneFieldName = phoneInput.getAttribute('name');
-                formData.set(phoneFieldName, '+62' + phoneInput.value);
-            }
+            // Format +62 akan kita tambahkan kembali di langkah selanjutnya
+            // Validasi email juga akan ditambahkan kembali
 
             formData.append('Event Name', formEventTitle.textContent);
             
@@ -342,4 +270,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
