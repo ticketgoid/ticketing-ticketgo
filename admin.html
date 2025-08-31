@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Kelola Event</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel - Kelola Event</h1>
+        
+        <form id="eventForm">
+            <h2 id="formTitle">Tambah Event Baru</h2>
+            <input type="hidden" id="eventIndex">
+
+            <label for="title">Nama Event</label>
+            <input type="text" id="title" required>
+
+            <label>Gambar Event</label>
+            <div id="dropZone" class="drop-zone">
+                <span class="drop-zone-prompt">Seret & lepas gambar di sini, atau klik untuk pilih file</span>
+                <input type="file" id="imageFile" class="drop-zone-input" accept="image/*">
+                <img src="" class="drop-zone-thumb" alt="Image Preview">
+            </div>
+
+            <label for="image">URL atau Path Gambar</label>
+            <input type="text" id="image" required placeholder="Contoh: assets/nama-gambar.jpg atau hasil drop">
+
+            <label for="location">Lokasi</label>
+            <input type="text" id="location" required>
+            
+            <label for="date">Tanggal (contoh: 10 Okt 2025)</label>
+            <input type="text" id="date" required>
+            
+            <label for="time">Waktu (contoh: 19:00)</label>
+            <input type="text" id="time" required>
+
+            <label for="price">Harga (angka saja)</label>
+            <input type="number" id="price" required>
+            
+            <label for="tag">Tag</label>
+            <input type="text" id="tag" required>
+
+            <label for="description">Deskripsi Singkat</label>
+            <textarea id="description" rows="4" required></textarea>
+
+            <div class="form-buttons">
+                <button type="submit" id="submitButton">Tambah Event</button>
+                <button type="button" id="cancelButton" class="cancel-btn" style="display: none;">Batal Edit</button>
+            </div>
+        </form>
+
+        <hr>
+
+        <h2>Event Terpublish</h2>
+        <div id="publishedEventsList"></div>
+
+        <a href="index.html" class="back-link">Kembali ke Halaman Utama</a>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html>
