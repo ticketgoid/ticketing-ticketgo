@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Waktu&sort%5B0%5D%5Bdirection%5D=asc`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Waktu&sort%5B1%5D%5Bdirection%5D=asc`;
 
         try {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="tag festival">${fields['Tag'] || ''}</span>
         </div>
         <div class="card-content">
-            <h3 class="event-title">${fields['Nama Event']}</h3>
+            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
             <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
             <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
             <p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p>
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldLabel = field['Field Label'];
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
+                const isPriority = fields['Prioritas'] === true;
 
                 if (fieldType === 'tel') {
                     formHTML += `
@@ -391,4 +392,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
 
