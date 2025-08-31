@@ -159,6 +159,7 @@ main {
     position: relative;
 }
 
+/* ## PERBAIKAN: Mengembalikan arrow-btn ke kondisi semula, media query akan mengaturnya ## */
 .arrow-btn {
     position: absolute;
     top: 50%;
@@ -170,13 +171,10 @@ main {
     height: 40px;
     cursor: pointer;
     z-index: 10;
-    display: none; /* Sembunyikan secara default, JS akan menampilkan */
+    display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.arrow-btn.visible {
-    display: flex;
 }
 .arrow-btn:hover {
     background-color: #f0f0f0;
