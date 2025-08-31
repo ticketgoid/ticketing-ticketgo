@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label for="${fieldId}" class="static-label">${fieldLabel}</label>
                         <div class="phone-input-group">
                             <span class="phone-prefix">+62</span>
-                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
+                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired}>
                         </div>
                         <span class="error-message"></span>
                     </div>`;
@@ -363,3 +363,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
