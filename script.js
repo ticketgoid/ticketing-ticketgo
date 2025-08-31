@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 allEvents.forEach(record => {
                     const fields = record.fields;
+                    // Perbaikan: Tambahkan pengecekan untuk gambar kosong
                     if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -74,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (VERSI FINAL) ##
+    // ## FUNGSI FORMULIR DINAMIS ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
@@ -100,19 +101,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
 
-                // INI ADALAH KODE BARU YANG BENAR UNTUK MENGGANTIKANNYA
-if (fieldType === 'tel') {
-    <div class="form-group">
-        <label for="${fieldId}" class="static-label">${fieldLabel}</label>
-        <div class="phone-input-group">
-            <span class="phone-prefix">+62</span>
-            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
-        </div>
-        <span class="error-message"></span>
-    </div>`;
-} 
-                
-                else if (fieldType === 'email') {
+                // ## PERBAIKAN FINAL UNTUK MASALAH KOTAK DOBEL ##
+                if (fieldType === 'tel') {
+                    formHTML += `
+                    <div class="form-group">
+                        <label for="${fieldId}" class="static-label">${fieldLabel}</label>
+                        <div class="phone-input-group">
+                            <span class="phone-prefix">+62</span>
+                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
+                        </div>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else if (fieldType === 'email') {
                     formHTML += `
                     <div class="form-group floating-label">
                         <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
@@ -368,5 +368,3 @@ if (fieldType === 'tel') {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
-
