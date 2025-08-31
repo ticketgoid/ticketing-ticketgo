@@ -203,7 +203,7 @@ function initializeApp() {
             });
             // ## PERUBAHAN UTAMA: Menambahkan reCAPTCHA dan Tombol Kirim ##
             formHTML += `
-                <div class="g-recaptcha" data-sitekey="6Lc5g7krAAAAAKqfaS8w8gA4ulr5r-9V59GVz83V"></div>
+                <div class="g-recaptcha" data-sitekey="6LcEiLkrAAAAAOEm3U6v2i8BpDg4IUbShQt0d_EI"></div>
                 <span id="recaptchaError" class="error-message"></span> 
                 <button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>
             `;
@@ -462,6 +462,7 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
 
 
