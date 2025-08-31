@@ -684,10 +684,11 @@ input.input-error {
     border-radius: 8px 0 0 8px;
 }
 
-#phone {
+.phone-input-group input[type="tel"] {
     border: none !important;
     box-shadow: none !important;
     flex-grow: 1;
+    padding: 0.8rem; 
 }
 
 .phone-input-group.input-error {
@@ -731,6 +732,7 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
