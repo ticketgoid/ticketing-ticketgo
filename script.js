@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (DENGAN URUTAN DAN STRUKTUR VALIDASI) ##
+    // ## FUNGSI FORMULIR DINAMIS (VERSI FINAL) ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
@@ -100,19 +100,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
 
-                // INI ADALAH KODE BARU YANG BENAR
-         if (fieldType === 'tel') {
-            formHTML += `
-                <div class="form-group"> 
-                    <label for="${fieldId}" class="static-label">${fieldLabel}</label>
-                    <div class="phone-input-group">
-                        <span class="phone-prefix">+62</span>
-                        <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
-                    </div>
-                    <span class="error-message"></span>
-                </div>`;
-             } 
-                else if (fieldType === 'email') {
+                if (fieldType === 'tel') {
+                    // Gunakan struktur label statis yang benar
+                    formHTML += `
+                    <div class="form-group">
+                        <label for="${fieldId}" class="static-label">${fieldLabel}</label>
+                        <div class="phone-input-group">
+                            <span class="phone-prefix">+62</span>
+                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
+                        </div>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else if (fieldType === 'email') {
                     formHTML += `
                     <div class="form-group floating-label">
                         <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
@@ -128,10 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
-            console.log(formHTML);
             formContainer.innerHTML = formHTML;
 
-            // ## PERUBAHAN 2: Panggil fungsi baru untuk menempelkan validasi ##
             attachDynamicValidators(formContainer);
 
         } catch (error) {
@@ -140,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI BARU: MENEMPELKAN VALIDATOR KE FORMULIR DINAMIS ##
+    // ## FUNGSI UNTUK MENEMPELKAN VALIDATOR ##
     function attachDynamicValidators(form) {
         const emailInput = form.querySelector('input[type="email"]');
         const phoneInput = form.querySelector('input[type="tel"]');
@@ -296,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // ## PERUBAHAN 3: Logika pengiriman form dengan validasi lengkap ##
+    // --- LOGIKA PENGIRIMAN FORM (DENGAN VALIDASI LENGKAP) ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -305,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const phoneInput = form.querySelector('input[type="tel"]');
             let isFormValid = true;
 
-            // Jalankan validasi akhir saat submit
             if (emailInput) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailInput.value || !emailRegex.test(emailInput.value)) {
@@ -371,5 +367,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
-
