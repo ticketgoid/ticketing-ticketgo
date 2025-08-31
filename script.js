@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cek status pendaftaran dari Airtable
     const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+    const isPriority = fields['Prioritas'] === true;
 
     // Siapkan HTML untuk tombol berdasarkan status
     const buttonHTML = isRegistrationOpen 
@@ -124,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldLabel = field['Field Label'];
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
-                const isPriority = fields['Prioritas'] === true;
 
                 if (fieldType === 'tel') {
                     formHTML += `
@@ -392,5 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
 
 
