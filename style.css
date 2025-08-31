@@ -159,7 +159,7 @@ main {
     position: relative;
 }
 
-/* ## PERBAIKAN: Mengembalikan arrow-btn ke kondisi semula, media query akan mengaturnya ## */
+/* ## KEMBALIKAN KE VERSI SEMULA ## */
 .arrow-btn {
     position: absolute;
     top: 50%;
@@ -415,14 +415,13 @@ footer {
     font-size: 0.8rem;
     margin-top: 0.2rem;
     display: none;
-    min-height: 1.2em; /* Beri sedikit ruang agar layout tidak lompat */
 }
 .error-message.visible {
     display: block;
 }
 input.input-error {
-    border-color: #e53e3e !important;
-    box-shadow: 0 0 0 1px #e53e3e !important;
+    border-color: #e53e3e;
+    box-shadow: 0 0 0 1px #e53e3e;
 }
 
 
@@ -467,16 +466,10 @@ input.input-error {
     border: 1px solid #ccc;
     border-radius: 8px;
     align-items: center;
-    transition: all 0.2s ease;
 }
 .phone-input-group:focus-within {
     border-color: var(--teal);
     box-shadow: 0 0 0 1px var(--teal);
-}
-.phone-input-group input:focus { /* Hapus outline dari input di dalam group */
-    outline: none;
-    box-shadow: none;
-    border-color: transparent;
 }
 
 .phone-prefix {
@@ -486,17 +479,7 @@ input.input-error {
     border-radius: 8px 0 0 8px;
 }
 
-/* Penyesuaian untuk input tel di dalam floating label */
-.form-group.floating-label .phone-input-group + label {
-    top: 0.8rem;
-}
-.form-group.floating-label .phone-input-group input:focus + label,
-.form-group.floating-label .phone-input-group input:not(:placeholder-shown) + label {
-    top: -0.6rem;
-}
-
-
-.phone-input-group input {
+#phone {
     border: none !important;
     box-shadow: none !important;
     flex-grow: 1;
@@ -504,7 +487,7 @@ input.input-error {
 
 .phone-input-group.input-error {
     border-color: #e53e3e !important;
-    box-shadow: 0 0 0 1px #e53e3e !important;
+    box-shadow: 0 0 0 1px #e53e3e;
 }
 
 @media (max-width: 992px) {
@@ -524,4 +507,3 @@ input.input-error {
     #events h2 { font-size: 1.5rem; }
     .modal-content { width: 90%; margin-top: 20%; padding: 20px; }
 }
-
