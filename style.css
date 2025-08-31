@@ -16,6 +16,50 @@
     box-sizing: border-box;
 }
 
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--white);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#preloader.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.preloader-logo {
+    height: 60px; /* Sesuaikan ukuran logo */
+    margin-bottom: 2rem;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3; /* Warna abu-abu terang */
+    border-top: 5px solid var(--orange); /* Warna oranye */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Kelas untuk menyembunyikan konten utama pada awalnya */
+.hidden {
+    display: none;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--white);
@@ -742,6 +786,7 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
