@@ -44,12 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const threshold = 4;
             if (allEvents.length > threshold) {
                 eventGrid.classList.add('two-rows');
-                if(scrollLeftBtn) scrollLeftBtn.classList.add('visible');
-                if(scrollRightBtn) scrollRightBtn.classList.add('visible');
+                if(scrollLeftBtn) scrollLeftBtn.style.display = 'block';
+                if(scrollRightBtn) scrollRightBtn.style.display = 'block';
             } else {
                 eventGrid.classList.remove('two-rows');
-                if(scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
-                if(scrollRightBtn) scrollRightBtn.classList.remove('visible');
+                if(scrollLeftBtn) scrollLeftBtn.style.display = 'none';
+                if(scrollRightBtn) scrollRightBtn.style.display = 'none';
             }
 
             if (allEvents.length === 0) {
@@ -100,9 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
 
-                // ## PERBAIKAN FINAL: Logika IF/ELSE untuk memisahkan gaya Telepon ##
                 if (fieldType === 'tel') {
-                    // Hanya gunakan class "form-group" untuk telepon (BUKAN floating-label)
                     formHTML += `
                     <div class="form-group">
                         <label for="${fieldId}" class="static-label">${fieldLabel}</label>
@@ -112,13 +110,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <span class="error-message"></span>
                     </div>`;
-                } else {
-                    // Gunakan "floating-label" untuk semua input lainnya
+                } else if (fieldType === 'email') {
                     formHTML += `
                     <div class="form-group floating-label">
-                        <input type="${fieldType === 'email' ? 'email' : 'text'}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
                         <label for="${fieldId}">${fieldLabel}</label>
-                        ${fieldType === 'email' ? '<span class="error-message"></span>' : ''}
+                        <span class="error-message"></span>
+                    </div>`;
+                } else {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="text" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <label for="${fieldId}">${fieldLabel}</label>
                     </div>`;
                 }
             });
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM (DENGAN VALIDASI LENGKAP) ---
+    // --- LOGIKA PENGIRIMAN FORM (HANYA UNTUK FORM DINAMIS) ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -355,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
                 })
                 .finally(() => {
-                    // Tombol akan dibuat ulang
+                    // Tombol akan dibuat ulang saat form digenerate lagi
                 });
         });
     }
@@ -363,4 +366,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
