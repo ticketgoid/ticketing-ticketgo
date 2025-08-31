@@ -148,7 +148,7 @@ nav {
 .slide img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .slider-arrow {
@@ -730,4 +730,5 @@ input.input-error {
 
 #closeFeedbackBtn:hover {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
+
 }
