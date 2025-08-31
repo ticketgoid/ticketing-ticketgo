@@ -288,3 +288,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderEvents();
 });
+
