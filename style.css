@@ -265,7 +265,7 @@ nav {
 .price span {
     font-weight: 700;
     font-size: 1.2rem;
-    color: var(--black);
+    color: var(--#e5742b);
 }
 
 .btn-buy {
@@ -732,3 +732,4 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
