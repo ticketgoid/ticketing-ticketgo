@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         let currentSlide = 0;
-        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); slides[index].classList.add('active-slide'); }
+        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); if(slides[index]) slides[index].classList.add('active-slide'); }
         function nextSlide() { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }
         function prevSlide() { currentSlide = (currentSlide - 1 + slides.length) % slides.length; showSlide(currentSlide); }
         if (nextBtn && prevBtn) {
@@ -41,14 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
-            if (allEvents.length > 4) {
+            const threshold = 4;
+            if (allEvents.length > threshold) {
                 eventGrid.classList.add('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.add('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.add('visible');
+                if(scrollLeftBtn) scrollLeftBtn.classList.add('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.add('visible');
             } else {
                 eventGrid.classList.remove('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.remove('visible');
+                if(scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.remove('visible');
             }
 
             if (allEvents.length === 0) {
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
+                    // ## PERUBAHAN: Gunakan record.id untuk referensi unik ##
                     eventCard.innerHTML = `<div class="card-image"><img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}"><span class="tag festival">${fields['Tag'] || ''}</span></div><div class="card-content"><h3 class="event-title">${fields['Nama Event']}</h3><p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p><p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p><p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p><div class="price-buy"><p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p><button class="btn-buy" data-event-id="${record.id}">Beli</button></div></div>`;
                     eventGrid.appendChild(eventCard);
                 });
@@ -73,12 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (DENGAN PERBAIKAN URUTAN) ##
+    // ## FUNGSI BARU: MEMBANGUN FORMULIR SECARA DINAMIS ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
-
-        // ## PERUBAHAN 1: Menambahkan parameter sort berdasarkan kolom "Urutan" ##
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
 
         try {
@@ -97,54 +97,18 @@ document.addEventListener('DOMContentLoaded', () => {
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
-                formHTML += `<div class="form-group floating-label"><input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" "><label for="${fieldId}">${field['Field Label']}</label></div>`;
+                formHTML += `
+                <div class="form-group floating-label">
+                    <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
+                    <label for="${fieldId}">${field['Field Label']}</label>
+                </div>`;
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
             formContainer.innerHTML = formHTML;
 
-            // ## PERUBAHAN 2: Panggil fungsi baru untuk menempelkan validasi ##
-            attachDynamicValidators(formContainer);
-
         } catch (error) {
             console.error("Gagal mengambil field formulir:", error);
             formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
-        }
-    }
-
-    // ## FUNGSI BARU: MENEMPELKAN VALIDATOR KE FORMULIR DINAMIS ##
-    function attachDynamicValidators(form) {
-        const emailInput = form.querySelector('input[type="email"]');
-        const phoneInput = form.querySelector('input[type="tel"]');
-
-        if (emailInput) {
-            emailInput.addEventListener('input', () => {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (emailInput.value === '' || emailRegex.test(emailInput.value)) {
-                    emailInput.classList.remove('input-error');
-                } else {
-                    emailInput.classList.add('input-error');
-                }
-            });
-        }
-
-        if (phoneInput) {
-            let phoneError = phoneInput.parentElement.querySelector('.phone-error-message');
-            if (!phoneError) {
-                phoneError = document.createElement('div');
-                phoneError.className = 'phone-error-message';
-                phoneInput.parentElement.appendChild(phoneError);
-            }
-            
-            phoneInput.addEventListener('input', () => {
-                phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
-                if (phoneInput.value.startsWith('0')) {
-                    phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
-                    phoneInput.classList.add('input-error');
-                } else {
-                    phoneError.textContent = '';
-                    phoneInput.classList.remove('input-error');
-                }
-            });
         }
     }
     
@@ -161,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
+        // ## PERUBAHAN: Listener tombol "Beli" menggunakan data-event-id ##
         document.querySelectorAll('.btn-buy').forEach(button => {
             button.addEventListener('click', () => {
                 const eventId = button.dataset.eventId;
@@ -230,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeFeedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('visible'));
     }
 
+    // ## PERUBAHAN: openModal menerima objek eventData ##
     function openModal(eventData) {
         const fields = eventData.fields;
         modalEventTitle.textContent = `Detail: ${fields['Nama Event']}`;
@@ -243,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         registrationForm.innerHTML = '';
     };
     
+    // ## PERUBAHAN: Listener tombol "Daftar" memanggil generateFormFields ##
     if (showFormButton) {
         showFormButton.addEventListener('click', () => {
             const eventId = modal.dataset.currentEventId;
@@ -260,33 +227,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM (DENGAN PERBAIKAN VALIDASI & FORMAT) ---
+    // ## PERUBAHAN: Logika pengiriman form dinamis ##
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const form = event.target;
-            const emailInput = form.querySelector('input[type="email"]');
             const phoneInput = form.querySelector('input[type="tel"]');
-            let isFormValid = true;
 
-            if (emailInput) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailInput.value)) {
-                    emailInput.classList.add('input-error');
-                    isFormValid = false;
-                }
-            }
-            if (phoneInput) {
-                if (phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
-                    phoneInput.classList.add('input-error');
-                    isFormValid = false;
-                }
-            }
             if (!form.checkValidity()) {
-                isFormValid = false;
                 form.reportValidity();
+                return;
             }
-            if (!isFormValid) return;
 
             const submitBtn = form.querySelector('#submitBtn');
             submitBtn.disabled = true;
@@ -295,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (phoneInput) {
                 const phoneFieldName = phoneInput.getAttribute('name');
-                formData.set(phoneFieldName, '+62' + phoneInput.value);
+                formData.set(phoneFieldName, phoneInput.value); // Kirim nomor apa adanya dulu
             }
 
             formData.append('Event Name', formEventTitle.textContent);
@@ -314,10 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error!', error.message);
                     closeModal();
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
+                })
+                .finally(() => {
+                    // Tombol akan dibuat ulang, tidak perlu reset
                 });
         });
     }
     
-    // --- Inisialisasi Aplikasi ---
+    // Inisialisasi Aplikasi
     renderEvents();
 });
