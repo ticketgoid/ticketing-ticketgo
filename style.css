@@ -159,7 +159,6 @@ main {
     position: relative;
 }
 
-/* ## KEMBALIKAN KE VERSI SEMULA ## */
 .arrow-btn {
     position: absolute;
     top: 50%;
@@ -171,10 +170,13 @@ main {
     height: 40px;
     cursor: pointer;
     z-index: 10;
-    display: flex;
+    display: none; /* Sembunyikan secara default, JS akan menampilkan */
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.arrow-btn.visible {
+    display: flex;
 }
 .arrow-btn:hover {
     background-color: #f0f0f0;
@@ -415,13 +417,14 @@ footer {
     font-size: 0.8rem;
     margin-top: 0.2rem;
     display: none;
+    min-height: 1.2em; /* Beri sedikit ruang agar layout tidak lompat */
 }
 .error-message.visible {
     display: block;
 }
 input.input-error {
-    border-color: #e53e3e;
-    box-shadow: 0 0 0 1px #e53e3e;
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 1px #e53e3e !important;
 }
 
 
@@ -466,6 +469,7 @@ input.input-error {
     border: 1px solid #ccc;
     border-radius: 8px;
     align-items: center;
+    transition: all 0.2s ease;
 }
 .phone-input-group:focus-within {
     border-color: var(--teal);
