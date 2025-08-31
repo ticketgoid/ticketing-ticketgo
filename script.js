@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 allEvents.forEach(record => {
                     const fields = record.fields;
-                    if (!fields['Nama Event'] || !fields['Gambar Event']) return;
+                    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                     const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
@@ -368,4 +368,5 @@ if (fieldType === 'tel') {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
 
