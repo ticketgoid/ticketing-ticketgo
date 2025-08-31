@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
-                    // ## PERUBAHAN: Gunakan record.id untuk referensi unik ##
                     eventCard.innerHTML = `<div class="card-image"><img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}"><span class="tag festival">${fields['Tag'] || ''}</span></div><div class="card-content"><h3 class="event-title">${fields['Nama Event']}</h3><p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p><p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p><p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p><div class="price-buy"><p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p><button class="btn-buy" data-event-id="${record.id}">Beli</button></div></div>`;
                     eventGrid.appendChild(eventCard);
                 });
@@ -75,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI BARU: MEMBANGUN FORMULIR SECARA DINAMIS ##
+    // ## FUNGSI FORMULIR DINAMIS (DENGAN URUTAN DAN STRUKTUR VALIDASI) ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
@@ -97,18 +96,81 @@ document.addEventListener('DOMContentLoaded', () => {
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
-                formHTML += `
-                <div class="form-group floating-label">
-                    <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
-                    <label for="${fieldId}">${field['Field Label']}</label>
-                </div>`;
+                const fieldLabel = field['Field Label'];
+                const fieldType = field['Field Type'].toLowerCase();
+                const isRequired = field['Is Required'] ? 'required' : '';
+
+                if (fieldType === 'tel') {
+                    formHTML += `
+                    <div class="form-group">
+                        <label for="${fieldId}" style="display: block; margin-bottom: 5px; font-weight: 600;">${fieldLabel}</label>
+                        <div class="phone-input-group">
+                            <span class="phone-prefix">+62</span>
+                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789">
+                        </div>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else if (fieldType === 'email') {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <label for="${fieldId}">${fieldLabel}</label>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="${fieldType}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <label for="${fieldId}">${fieldLabel}</label>
+                    </div>`;
+                }
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
             formContainer.innerHTML = formHTML;
 
+            attachDynamicValidators(formContainer);
+
         } catch (error) {
             console.error("Gagal mengambil field formulir:", error);
             formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+        }
+    }
+
+    // ## FUNGSI BARU: MENEMPELKAN VALIDATOR KE FORMULIR DINAMIS ##
+    function attachDynamicValidators(form) {
+        const emailInput = form.querySelector('input[type="email"]');
+        const phoneInput = form.querySelector('input[type="tel"]');
+        
+        if (emailInput) {
+            const emailError = emailInput.parentElement.querySelector('.error-message');
+            emailInput.addEventListener('input', () => {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (emailInput.value === '' || emailRegex.test(emailInput.value)) {
+                    emailInput.classList.remove('input-error');
+                    emailError.classList.remove('visible');
+                    emailError.textContent = '';
+                } else {
+                    emailInput.classList.add('input-error');
+                    emailError.classList.add('visible');
+                    emailError.textContent = 'Gunakan format email yang valid.';
+                }
+            });
+        }
+
+        if (phoneInput) {
+            const phoneError = phoneInput.parentElement.parentElement.querySelector('.error-message');
+            phoneInput.addEventListener('input', () => {
+                phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
+                if (phoneInput.value.startsWith('0')) {
+                    phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
+                    phoneError.classList.add('visible');
+                    phoneInput.closest('.phone-input-group').classList.add('input-error');
+                } else {
+                    phoneError.textContent = '';
+                    phoneError.classList.remove('visible');
+                    phoneInput.closest('.phone-input-group').classList.remove('input-error');
+                }
+            });
         }
     }
     
@@ -125,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // ## PERUBAHAN: Listener tombol "Beli" menggunakan data-event-id ##
         document.querySelectorAll('.btn-buy').forEach(button => {
             button.addEventListener('click', () => {
                 const eventId = button.dataset.eventId;
@@ -195,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeFeedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('visible'));
     }
 
-    // ## PERUBAHAN: openModal menerima objek eventData ##
     function openModal(eventData) {
         const fields = eventData.fields;
         modalEventTitle.textContent = `Detail: ${fields['Nama Event']}`;
@@ -209,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
         registrationForm.innerHTML = '';
     };
     
-    // ## PERUBAHAN: Listener tombol "Daftar" memanggil generateFormFields ##
     if (showFormButton) {
         showFormButton.addEventListener('click', () => {
             const eventId = modal.dataset.currentEventId;
@@ -227,17 +286,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // ## PERUBAHAN: Logika pengiriman form dinamis ##
+    // --- LOGIKA PENGIRIMAN FORM (DENGAN VALIDASI LENGKAP) ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const form = event.target;
+            const emailInput = form.querySelector('input[type="email"]');
             const phoneInput = form.querySelector('input[type="tel"]');
+            let isFormValid = true;
 
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
+            // Jalankan validasi akhir saat submit
+            if (emailInput) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailInput.value)) {
+                    isFormValid = false;
+                    const emailError = emailInput.parentElement.querySelector('.error-message');
+                    emailInput.classList.add('input-error');
+                    if(emailError) {
+                        emailError.textContent = 'Format email tidak valid.';
+                        emailError.classList.add('visible');
+                    }
+                }
             }
+            if (phoneInput) {
+                if (phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
+                    isFormValid = false;
+                    const phoneError = phoneInput.parentElement.parentElement.querySelector('.error-message');
+                    phoneInput.closest('.phone-input-group').classList.add('input-error');
+                    if(phoneError) {
+                        phoneError.textContent = 'Nomor tidak valid (minimal 9 angka, tanpa 0).';
+                        phoneError.classList.add('visible');
+                    }
+                }
+            }
+            if (!form.checkValidity()) {
+                isFormValid = false;
+                form.reportValidity();
+            }
+            if (!isFormValid) return;
 
             const submitBtn = form.querySelector('#submitBtn');
             submitBtn.disabled = true;
@@ -246,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (phoneInput) {
                 const phoneFieldName = phoneInput.getAttribute('name');
-                formData.set(phoneFieldName, phoneInput.value); // Kirim nomor apa adanya dulu
+                formData.set(phoneFieldName, '+62' + phoneInput.value);
             }
 
             formData.append('Event Name', formEventTitle.textContent);
@@ -267,11 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
                 })
                 .finally(() => {
-                    // Tombol akan dibuat ulang, tidak perlu reset
+                    // Tombol akan dibuat ulang
                 });
         });
     }
     
-    // Inisialisasi Aplikasi
+    // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
