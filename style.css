@@ -723,10 +723,18 @@ input.input-error {
     font-size: 1rem;
 }
 
+.priority-star {
+    color: var(--orange);
+    font-size: 0.9rem;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
 #closeFeedbackBtn:hover {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
