@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         let currentSlide = 0;
-        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); slides[index].classList.add('active-slide'); }
+        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); if(slides[index]) slides[index].classList.add('active-slide'); }
         function nextSlide() { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }
         function prevSlide() { currentSlide = (currentSlide - 1 + slides.length) % slides.length; showSlide(currentSlide); }
         if (nextBtn && prevBtn) {
@@ -73,12 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (DENGAN PERBAIKAN URUTAN) ##
+    // ## FUNGSI FORMULIR DINAMIS (DENGAN URUTAN DAN STRUKTUR TELEPON) ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
-
-        // ## PERUBAHAN 1: Menambahkan parameter sort berdasarkan kolom "Urutan" ##
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
 
         try {
@@ -97,12 +95,30 @@ document.addEventListener('DOMContentLoaded', () => {
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
-                formHTML += `<div class="form-group floating-label"><input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" "><label for="${fieldId}">${field['Field Label']}</label></div>`;
+                
+                // ## PERUBAHAN: BUAT STRUKTUR KHUSUS UNTUK TELEPON ##
+                if (field['Field Type'].toLowerCase() === 'tel') {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <div class="phone-input-group">
+                            <span class="phone-prefix">+62</span>
+                            <input type="tel" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
+                        </div>
+                        <label for="${fieldId}">${field['Field Label']}</label>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
+                        <label for="${fieldId}">${field['Field Label']}</label>
+                        <span class="error-message"></span>
+                    </div>`;
+                }
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
             formContainer.innerHTML = formHTML;
 
-            // ## PERUBAHAN 2: Panggil fungsi baru untuk menempelkan validasi ##
             attachDynamicValidators(formContainer);
 
         } catch (error) {
@@ -117,32 +133,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const phoneInput = form.querySelector('input[type="tel"]');
 
         if (emailInput) {
+            const emailError = emailInput.parentElement.querySelector('.error-message');
             emailInput.addEventListener('input', () => {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (emailInput.value === '' || emailRegex.test(emailInput.value)) {
                     emailInput.classList.remove('input-error');
+                    emailError.classList.remove('visible');
+                    emailError.textContent = '';
                 } else {
                     emailInput.classList.add('input-error');
+                    emailError.textContent = 'Format email tidak valid.';
+                    emailError.classList.add('visible');
                 }
             });
         }
 
         if (phoneInput) {
-            let phoneError = phoneInput.parentElement.querySelector('.phone-error-message');
-            if (!phoneError) {
-                phoneError = document.createElement('div');
-                phoneError.className = 'phone-error-message';
-                phoneInput.parentElement.appendChild(phoneError);
-            }
-            
+            const phoneError = phoneInput.closest('.form-group').querySelector('.error-message');
             phoneInput.addEventListener('input', () => {
                 phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
                 if (phoneInput.value.startsWith('0')) {
                     phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
-                    phoneInput.classList.add('input-error');
+                    phoneError.classList.add('visible');
+                    phoneInput.closest('.phone-input-group').classList.add('input-error');
                 } else {
                     phoneError.textContent = '';
-                    phoneInput.classList.remove('input-error');
+                    phoneError.classList.remove('visible');
+                    phoneInput.closest('.phone-input-group').classList.remove('input-error');
                 }
             });
         }
@@ -260,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM (DENGAN PERBAIKAN VALIDASI & FORMAT) ---
+    // --- LOGIKA PENGIRIMAN FORM (DENGAN VALIDASI LENGKAP) ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -278,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (phoneInput) {
                 if (phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
-                    phoneInput.classList.add('input-error');
+                    phoneInput.closest('.phone-input-group').classList.add('input-error');
                     isFormValid = false;
                 }
             }
@@ -314,6 +331,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error!', error.message);
                     closeModal();
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
+                })
+                .finally(() => {
+                    // Tombol akan dibuat ulang, jadi tidak perlu reset
                 });
         });
     }
@@ -321,3 +341,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
