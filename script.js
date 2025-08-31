@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 allEvents.forEach(record => {
                     const fields = record.fields;
-                    // Perbaikan: Tambahkan pengecekan untuk gambar kosong
                     if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -101,8 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
 
-                // ## PERBAIKAN FINAL UNTUK MASALAH KOTAK DOBEL ##
+                // ## PERBAIKAN FINAL: Logika IF/ELSE untuk memisahkan gaya Telepon ##
                 if (fieldType === 'tel') {
+                    // Hanya gunakan class "form-group" untuk telepon (BUKAN floating-label)
                     formHTML += `
                     <div class="form-group">
                         <label for="${fieldId}" class="static-label">${fieldLabel}</label>
@@ -112,18 +112,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <span class="error-message"></span>
                     </div>`;
-                } else if (fieldType === 'email') {
-                    formHTML += `
-                    <div class="form-group floating-label">
-                        <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
-                        <label for="${fieldId}">${fieldLabel}</label>
-                        <span class="error-message"></span>
-                    </div>`;
                 } else {
+                    // Gunakan "floating-label" untuk semua input lainnya
                     formHTML += `
                     <div class="form-group floating-label">
-                        <input type="${fieldType}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <input type="${fieldType === 'email' ? 'email' : 'text'}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
                         <label for="${fieldId}">${fieldLabel}</label>
+                        ${fieldType === 'email' ? '<span class="error-message"></span>' : ''}
                     </div>`;
                 }
             });
