@@ -11,7 +11,7 @@ window.addEventListener('load', () => {
         if(mainContent) {
             mainContent.classList.remove('hidden');
         }
-    }, 500); // Jeda 0.5 detik
+    }, 1000); // 
 
     // Setelah preloader disembunyikan, baru jalankan semua fungsi utama website.
     initializeApp();
@@ -446,3 +446,4 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
