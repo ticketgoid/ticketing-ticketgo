@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
+            console.log(formHTML);
             formContainer.innerHTML = formHTML;
 
             // ## PERUBAHAN 2: Panggil fungsi baru untuk menempelkan validasi ##
@@ -370,4 +371,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
 
