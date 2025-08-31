@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Waktu&sort%5B1%5D%5Bdirection%5D=asc`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
 
         try {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -429,4 +429,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
 
