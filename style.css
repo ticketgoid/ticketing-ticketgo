@@ -488,11 +488,6 @@ footer hr {
     border-radius: 8px 0 0 8px;
     color: #495057;
 }
-
-    border: none !important;
-    box-shadow: none !important;
-    flex-grow: 1;
-}
 .error-message {
     color: #e53e3e !important;
     font-size: 0.875rem;
@@ -732,6 +727,7 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
