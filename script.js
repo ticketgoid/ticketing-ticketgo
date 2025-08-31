@@ -1,5 +1,25 @@
-document.addEventListener('DOMContentLoaded', () => {
+// Event listener ini akan menunggu seluruh konten halaman (termasuk gambar) selesai dimuat.
+window.addEventListener('load', () => {
+    const preloader = document.getElementById('preloader');
+    const mainContent = document.getElementById('main-content');
+    
+    // Beri sedikit jeda agar transisi fade-out terlihat mulus.
+    setTimeout(() => {
+        if(preloader) {
+            preloader.classList.add('fade-out');
+        }
+        if(mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+    }, 500); // Jeda 0.5 detik
 
+    // Setelah preloader disembunyikan, baru jalankan semua fungsi utama website.
+    initializeApp();
+});
+
+
+// Semua kode Anda yang sudah ada sekarang dibungkus di dalam fungsi ini.
+function initializeApp() {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
@@ -72,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     eventGrid.appendChild(eventCard);
                 });
             }
-            // Panggil fungsi pengecekan kuota setelah semua kartu dirender
             checkAllEventQuotas();
             setupEventListeners();
         } catch (error) {
@@ -81,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI BARU: CEK KUOTA EVENT ##
+    // ## FUNGSI CEK KUOTA EVENT ##
     async function checkAllEventQuotas() {
         const scrollLeftBtn = document.getElementById('scrollLeftBtn');
         const scrollRightBtn = document.getElementById('scrollRightBtn');
@@ -111,9 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isRegistrationOpen) {
                 buyButton.textContent = 'Ditutup';
                 buyButton.disabled = true;
-                buyButton.style.backgroundColor = '#999';
-                buyButton.style.cursor = 'not-allowed';
-                continue; // Lanjut ke event berikutnya
+                buyButton.classList.add('disabled');
+                continue;
             }
 
             if (typeof quota !== 'undefined') {
@@ -126,8 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (currentCount >= quota) {
                             buyButton.textContent = 'Pendaftaran Penuh';
                             buyButton.disabled = true;
-                            buyButton.style.backgroundColor = '#999';
-                            buyButton.style.cursor = 'not-allowed';
+                            buyButton.classList.add('disabled');
                         }
                     }
                 } catch (error) {
@@ -428,6 +445,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Inisialisasi Aplikasi ---
     renderEvents();
-});
-
-
+}
