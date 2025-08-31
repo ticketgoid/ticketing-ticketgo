@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         let currentSlide = 0;
-        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); slides[index].classList.add('active-slide'); }
+        function showSlide(index) { slides.forEach(slide => slide.classList.remove('active-slide')); if(slides[index]) slides[index].classList.add('active-slide'); }
         function nextSlide() { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }
         function prevSlide() { currentSlide = (currentSlide - 1 + slides.length) % slides.length; showSlide(currentSlide); }
         if (nextBtn && prevBtn) {
@@ -41,14 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
-            if (allEvents.length > 4) {
+            const threshold = 4;
+            if (allEvents.length > threshold) {
                 eventGrid.classList.add('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.add('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.add('visible');
+                if(scrollLeftBtn) scrollLeftBtn.classList.add('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.add('visible');
             } else {
                 eventGrid.classList.remove('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.remove('visible');
+                if(scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.remove('visible');
             }
 
             if (allEvents.length === 0) {
@@ -73,12 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS (DENGAN PERBAIKAN URUTAN) ##
+    // ## FUNGSI FORMULIR DINAMIS (DENGAN URUTAN DAN STRUKTUR VALIDASI) ##
     async function generateFormFields(eventId) {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
-
-        // ## PERUBAHAN 1: Menambahkan parameter sort berdasarkan kolom "Urutan" ##
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
 
         try {
@@ -97,7 +96,35 @@ document.addEventListener('DOMContentLoaded', () => {
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
-                formHTML += `<div class="form-group floating-label"><input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" "><label for="${fieldId}">${field['Field Label']}</label></div>`;
+                const fieldLabel = field['Field Label'];
+                const fieldType = field['Field Type'].toLowerCase();
+                const isRequired = field['Is Required'] ? 'required' : '';
+
+                // ## PERUBAHAN 1: Buat struktur HTML khusus untuk telepon dan email ##
+                if (fieldType === 'tel') {
+                    formHTML += `
+                    <div class="form-group">
+                        <label for="${fieldId}" class="static-label">${fieldLabel}</label>
+                        <div class="phone-input-group">
+                            <span class="phone-prefix">+62</span>
+                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="81234567890">
+                        </div>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else if (fieldType === 'email') {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <label for="${fieldId}">${fieldLabel}</label>
+                        <span class="error-message"></span>
+                    </div>`;
+                } else {
+                    formHTML += `
+                    <div class="form-group floating-label">
+                        <input type="${fieldType}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
+                        <label for="${fieldId}">${fieldLabel}</label>
+                    </div>`;
+                }
             });
             formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
             formContainer.innerHTML = formHTML;
@@ -115,34 +142,41 @@ document.addEventListener('DOMContentLoaded', () => {
     function attachDynamicValidators(form) {
         const emailInput = form.querySelector('input[type="email"]');
         const phoneInput = form.querySelector('input[type="tel"]');
-
+        
         if (emailInput) {
+            const emailError = emailInput.parentElement.querySelector('.error-message');
             emailInput.addEventListener('input', () => {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (emailInput.value === '' || emailRegex.test(emailInput.value)) {
                     emailInput.classList.remove('input-error');
+                    if (emailError) emailError.classList.remove('visible');
                 } else {
                     emailInput.classList.add('input-error');
+                    if (emailError) {
+                        emailError.textContent = 'Gunakan format email yang valid.';
+                        emailError.classList.add('visible');
+                    }
                 }
             });
         }
 
         if (phoneInput) {
-            let phoneError = phoneInput.parentElement.querySelector('.phone-error-message');
-            if (!phoneError) {
-                phoneError = document.createElement('div');
-                phoneError.className = 'phone-error-message';
-                phoneInput.parentElement.appendChild(phoneError);
-            }
-            
+            const phoneError = phoneInput.parentElement.parentElement.querySelector('.error-message');
             phoneInput.addEventListener('input', () => {
                 phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
+                const phoneGroup = phoneInput.closest('.phone-input-group');
                 if (phoneInput.value.startsWith('0')) {
-                    phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
-                    phoneInput.classList.add('input-error');
+                    if (phoneError) {
+                        phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
+                        phoneError.classList.add('visible');
+                    }
+                    if (phoneGroup) phoneGroup.classList.add('input-error');
                 } else {
-                    phoneError.textContent = '';
-                    phoneInput.classList.remove('input-error');
+                    if (phoneError) {
+                        phoneError.textContent = '';
+                        phoneError.classList.remove('visible');
+                    }
+                    if (phoneGroup) phoneGroup.classList.remove('input-error');
                 }
             });
         }
@@ -260,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM (DENGAN PERBAIKAN VALIDASI & FORMAT) ---
+    // ## PERUBAHAN 3: Logika pengiriman form dengan validasi lengkap ##
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -269,17 +303,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const phoneInput = form.querySelector('input[type="tel"]');
             let isFormValid = true;
 
+            // Jalankan validasi akhir saat submit
             if (emailInput) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailInput.value)) {
-                    emailInput.classList.add('input-error');
+                if (!emailInput.value || !emailRegex.test(emailInput.value)) {
                     isFormValid = false;
+                    const emailError = emailInput.parentElement.querySelector('.error-message');
+                    emailInput.classList.add('input-error');
+                    if(emailError) {
+                        emailError.textContent = 'Format email tidak valid.';
+                        emailError.classList.add('visible');
+                    }
                 }
             }
             if (phoneInput) {
-                if (phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
-                    phoneInput.classList.add('input-error');
+                if (!phoneInput.value || phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
                     isFormValid = false;
+                    const phoneError = phoneInput.parentElement.parentElement.querySelector('.error-message');
+                    phoneInput.closest('.phone-input-group').classList.add('input-error');
+                    if(phoneError) {
+                        phoneError.textContent = 'Nomor tidak valid (minimal 9 angka, tanpa 0).';
+                        phoneError.classList.add('visible');
+                    }
                 }
             }
             if (!form.checkValidity()) {
@@ -314,6 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error!', error.message);
                     closeModal();
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
+                })
+                .finally(() => {
+                    // Tombol akan dibuat ulang
                 });
         });
     }
