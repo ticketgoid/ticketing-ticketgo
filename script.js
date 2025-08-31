@@ -56,16 +56,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
             } else {
                 allEvents.forEach(record => {
-                    const fields = record.fields;
-                    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
-                    const eventDate = new Date(fields['Waktu']);
-                    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
-                    const eventCard = document.createElement('div');
-                    eventCard.className = 'event-card';
-                    eventCard.innerHTML = `<div class="card-image"><img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}"><span class="tag festival">${fields['Tag'] || ''}</span></div><div class="card-content"><h3 class="event-title">${fields['Nama Event']}</h3><p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p><p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p><p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p><div class="price-buy"><p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p><button class="btn-buy" data-event-id="${record.id}">Beli</button></div></div>`;
-                    eventGrid.appendChild(eventCard);
-                });
+    const fields = record.fields;
+    // Pastikan data event lengkap sebelum ditampilkan
+    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
+
+    const eventDate = new Date(fields['Waktu']);
+    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
+
+    // Cek status pendaftaran dari Airtable
+    const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+
+    // Siapkan HTML untuk tombol berdasarkan status
+    const buttonHTML = isRegistrationOpen 
+        ? `<button class="btn-buy" data-event-id="${record.id}">Beli</button>`
+        : `<button class="btn-buy" disabled style="background-color: #999; cursor: not-allowed;">Ditutup</button>`;
+
+    const eventCard = document.createElement('div');
+    eventCard.className = 'event-card';
+    eventCard.innerHTML = `
+        <div class="card-image">
+            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
+            <span class="tag festival">${fields['Tag'] || ''}</span>
+        </div>
+        <div class="card-content">
+            <h3 class="event-title">${fields['Nama Event']}</h3>
+            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
+            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
+            <p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p>
+            <div class="price-buy">
+                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
+                ${buttonHTML} 
+            </div>
+        </div>`;
+    eventGrid.appendChild(eventCard);
+});
             }
             setupEventListeners();
         } catch (error) {
@@ -366,3 +391,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
