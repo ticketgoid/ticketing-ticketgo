@@ -501,7 +501,7 @@ input.input-error { border-color: #e53e3e !important; }
 }
 
 /* ## PERUBAHAN SATU-SATUNYA ADA DI SINI ## */
-/* Selector diubah dari #phone menjadi lebih umum agar berfungsi pada form dinamis */
+/* Selector diubah dari #phone menjadi lebih umum */
 .phone-input-group input[type="tel"] {
     border: none !important;
     box-shadow: none !important;
