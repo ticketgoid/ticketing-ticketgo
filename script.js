@@ -39,14 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
             allEvents = data.records;
             eventGrid.innerHTML = ''; 
 
-            // ## KEMBALIKAN KE LOGIKA SEMULA UNTUK TAMPILAN GRID ##
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
             const threshold = 4;
             if (allEvents.length > threshold) {
                 eventGrid.classList.add('two-rows');
+                if(scrollLeftBtn) scrollLeftBtn.classList.add('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.add('visible');
             } else {
                 eventGrid.classList.remove('two-rows');
+                if(scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
+                if(scrollRightBtn) scrollRightBtn.classList.remove('visible');
             }
 
 
@@ -96,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
                 
-                // Kembali ke struktur input sederhana tanpa validasi khusus
                 formHTML += `
                 <div class="form-group floating-label">
                     <input type="${field['Field Type'].toLowerCase()}" id="${fieldId}" name="${field['Field Label']}" ${field['Is Required'] ? 'required' : ''} placeholder=" ">
@@ -229,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const form = event.target;
+            const phoneInput = form.querySelector('input[type="tel"]');
 
             // Validasi sederhana bawaan browser
             if (!form.checkValidity()) {
@@ -241,8 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = 'Mengirim...';
             const formData = new FormData(form);
             
-            // Format +62 akan kita tambahkan kembali di langkah selanjutnya
-            // Validasi email juga akan ditambahkan kembali
+            if (phoneInput) {
+                const phoneFieldName = phoneInput.getAttribute('name');
+                formData.set(phoneFieldName, '+62' + phoneInput.value);
+            }
 
             formData.append('Event Name', formEventTitle.textContent);
             
