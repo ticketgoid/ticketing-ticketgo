@@ -9,111 +9,121 @@
 </head>
 <body>
 
-    <header>
-        <nav>
-            <a href="#" class="logo">
-                <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
-                <span>Ticket<span class="logo-go">Go</span></span>
-            </a>
-            <div class="nav-right">
-                <input type="text" id="searchInput" class="search-input" placeholder="Cari event...">
-                <a href="https://instagram.com/ticketgo.id" target="_blank" aria-label="Instagram" class="instagram-link">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="#" class="search-icon" id="searchIcon" aria-label="Search">
-                    <i class="fas fa-search"></i>
-                </a>
-            </div>
-        </nav>
-    </header>
+    <!-- ## KODE BARU: PRELOADER ## -->
+    <div id="preloader">
+        <img src="assets/Logo TicketGo PNG.png" alt="Loading Logo" class="preloader-logo">
+        <div class="spinner"></div>
+    </div>
 
-    <main>
-        <section id="hero">
-            <div class="hero-slider-container">
-                <div class="slide active-slide"><img src="assets/hero-img1.png" alt="Promotional Image 1"></div>
-                <div class="slide"><img src="assets/hero-img2.png" alt="Promotional Image 2"></div>
-            </div>
-            <button class="slider-arrow prev" id="prevBtn">&lt;</button>
-            <button class="slider-arrow next" id="nextBtn">&gt;</button>
-        </section>
-
-        <section id="events">
-            <h2>Event <span class="highlight">Mendatang</span></h2>
-            
-            <div class="event-carousel-container">
-                <button class="arrow-btn left" id="scrollLeftBtn">&#10094;</button>
-                
-                <div class="event-grid-wrapper">
-                    <div class="event-grid" id="eventGrid">
-                        </div>
-                </div>
-                
-                <button class="arrow-btn right" id="scrollRightBtn">&#10095;</button>
-            </div>
-        </section>
-
-        <section id="offline-tickets">
-            <h2>Cetak Tiket Offline-mu Juga!</h2>
-            <p class="section-subtitle">Tingkatkan pengalaman event-mu dengan tiket fisik berkualitas dari kami.</p>
-            <div class="offline-grid">
-                <div class="offline-card">
-                                        <h3>Gelang Tiket Tyvek</h3>
-                    <p class="description">Gunakan tiket gelang dari kertas Tyvek yang anti air, tidak mudah sobek, dan nyaman dipakai. Setiap gelang dilengkapi **unique barcode** yang terintegrasi dengan database peserta untuk check-in yang cepat dan aman.</p>
-                    <div class="offline-price">Rp 1.000 /pcs</div>
-                </div>
-                <div class="offline-card">
-                                        <h3>Cocard & Lanyard</h3>
-                    <p class="description">Berikan identitas profesional untuk panitia, media, atau peserta VIP dengan cocard custom. Dicetak full-color dengan bahan PVC berkualitas tinggi, lengkap dengan lanyard eksklusif. Pilihan tepat untuk branding event Anda.</p>
-                    <div class="offline-price">Rp 5.000 /pcs</div>
-                </div>
-                <div class="offline-card">
-                                        <h3>Stiker Custom</h3>
-                    <p class="description">Jadikan event-mu lebih berkesan dengan stiker vinyl custom sebagai merchandise atau tanda masuk. Tahan lama, anti gores, dan bisa dipotong sesuai desain logo atau maskot event Anda. Praktis dan disukai semua orang.</p>
-                    <div class="offline-price">Rp 100 /pcs</div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-about">
+    <!-- ## KODE BARU: PEMBUNGKUS KONTEN UTAMA ## -->
+    <div id="main-content" class="hidden">
+        <header>
+            <nav>
                 <a href="#" class="logo">
                     <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
                     <span>Ticket<span class="logo-go">Go</span></span>
                 </a>
-                <p>Platform jual beli tiket event online terpercaya.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Jelajahi</h4>
-                <ul>
-                    <li><a href="#">Event Terbaru</a></li>
-                    <li><a href="#">Promo</a></li>
-                    <li><a href="#">Kategori</a></li>
-                </ul>
-            </div>
-            <div class="footer-links">
-                <h4>Bantuan</h4>
-                <ul>
-                    <li><a href="#">Hubungi Kami</a></li>
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Syarat & Ketentuan</a></li>
-                </ul>
-            </div>
-            <div class="footer-links">
-                <h4>Ikuti Kami</h4>
-                <ul>
-                    <li><a href="https://instagram.com/ticketgo.id" target="_blank">Instagram</a></li>
-                    <li><a href="#">Twitter</a></li>
-                    <li><a href="#">Facebook</a></li>
-                    <li><a href="#" id="adminLink">Admin</a></li>
-                </ul>
-            </div>
-        </div>
-        <hr>
-        <p class="copyright">&copy; 2025 TicketGo. All rights reserved.</p>
-    </footer>
+                <div class="nav-right">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Cari event...">
+                    <a href="https://instagram.com/ticketgo.id" target="_blank" aria-label="Instagram" class="instagram-link">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="search-icon" id="searchIcon" aria-label="Search">
+                        <i class="fas fa-search"></i>
+                    </a>
+                </div>
+            </nav>
+        </header>
 
+        <main>
+            <section id="hero">
+                <div class="hero-slider-container">
+                    <div class="slide active-slide"><img src="assets/hero-img1.png" alt="Promotional Image 1"></div>
+                    <div class="slide"><img src="assets/hero-img2.png" alt="Promotional Image 2"></div>
+                </div>
+                <button class="slider-arrow prev" id="prevBtn">&lt;</button>
+                <button class="slider-arrow next" id="nextBtn">&gt;</button>
+            </section>
+
+            <section id="events">
+                <h2>Event <span class="highlight">Mendatang</span></h2>
+                <div class="event-carousel-container">
+                    <button class="arrow-btn left" id="scrollLeftBtn">&#10094;</button>
+                    <div class="event-grid-wrapper">
+                        <div class="event-grid" id="eventGrid">
+                            <!-- Event cards will be loaded here by JavaScript -->
+                        </div>
+                    </div>
+                    <button class="arrow-btn right" id="scrollRightBtn">&#10095;</button>
+                </div>
+            </section>
+
+            <section id="offline-tickets">
+                <h2>Cetak Tiket Offline-mu Juga!</h2>
+                <p class="section-subtitle">Tingkatkan pengalaman event-mu dengan tiket fisik berkualitas dari kami.</p>
+                <div class="offline-grid">
+                     <div class="offline-card">
+                        [Image of colorful paper event wristbands with barcodes]
+                        <h3>Gelang Tiket Tyvek</h3>
+                        <p class="description">Gunakan tiket gelang dari kertas Tyvek yang anti air, tidak mudah sobek, dan nyaman dipakai. Setiap gelang dilengkapi **unique barcode** yang terintegrasi dengan database peserta untuk check-in yang cepat dan aman.</p>
+                        <div class="offline-price">Rp 1.000 /pcs</div>
+                    </div>
+                    <div class="offline-card">
+                        [Image of a professional event cocard ID card with a lanyard]
+                        <h3>Cocard & Lanyard</h3>
+                        <p class="description">Berikan identitas profesional untuk panitia, media, atau peserta VIP dengan cocard custom. Dicetak full-color dengan bahan PVC berkualitas tinggi, lengkap dengan lanyard eksklusif. Pilihan tepat untuk branding event Anda.</p>
+                        <div class="offline-price">Rp 5.000 /pcs</div>
+                    </div>
+                    <div class="offline-card">
+                        [Image of a sheet of custom vinyl die-cut stickers]
+                        <h3>Stiker Custom</h3>
+                        <p class="description">Jadikan event-mu lebih berkesan dengan stiker vinyl custom sebagai merchandise atau tanda masuk. Tahan lama, anti gores, dan bisa dipotong sesuai desain logo atau maskot event Anda. Praktis dan disukai semua orang.</p>
+                        <div class="offline-price">Rp 100 /pcs</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-about">
+                    <a href="#" class="logo">
+                        <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
+                        <span>Ticket<span class="logo-go">Go</span></span>
+                    </a>
+                    <p>Platform jual beli tiket event online terpercaya.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Jelajahi</h4>
+                    <ul>
+                        <li><a href="#">Event Terbaru</a></li>
+                        <li><a href="#">Promo</a></li>
+                        <li><a href="#">Kategori</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Bantuan</h4>
+                    <ul>
+                        <li><a href="#">Hubungi Kami</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Syarat & Ketentuan</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Ikuti Kami</h4>
+                    <ul>
+                        <li><a href="https://instagram.com/ticketgo.id" target="_blank">Instagram</a></li>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">Facebook</a></li>
+                        <li><a href="#" id="adminLink">Admin</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="copyright">&copy; 2025 TicketGo. All rights reserved.</p>
+        </footer>
+    </div>
+    
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -126,17 +136,14 @@
             <div id="formView" style="display: none;">
                 <h2>Formulir Pendaftaran</h2>
                 <p class="event-context">Untuk event: <strong id="formEventTitle"></strong></p>
-                <form id="registrationForm" novalidate>
-                    </form>
+                <form id="registrationForm" novalidate></form>
             </div>
         </div>
     </div>
 
     <div id="feedbackModal" class="feedback-modal">
         <div class="feedback-content">
-            <div class="feedback-icon">
-                <i class="fas"></i>
-            </div>
+            <div class="feedback-icon"><i class="fas"></i></div>
             <h2 id="feedbackTitle"></h2>
             <p id="feedbackMessage"></p>
             <button id="closeFeedbackBtn" class="btn-primary">Oke</button>
@@ -146,5 +153,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
