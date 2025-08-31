@@ -41,15 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
-            if (allEvents.length > 4) {
-                eventGrid.classList.add('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.add('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.add('visible');
+            // ## PERBAIKAN: Hapus logika .visible dari sini ##
+            if (allEvents.length <= 4) {
+                if (scrollLeftBtn) scrollLeftBtn.style.display = 'none';
+                if (scrollRightBtn) scrollRightBtn.style.display = 'none';
             } else {
-                eventGrid.classList.remove('two-rows');
-                if (scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
-                if (scrollRightBtn) scrollRightBtn.classList.remove('visible');
+                if (scrollLeftBtn) scrollLeftBtn.style.display = 'flex';
+                if (scrollRightBtn) scrollRightBtn.style.display = 'flex';
             }
+
 
             if (allEvents.length === 0) {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             setupEventListeners();
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Gagal mengambil event dari Airtable:", error);
             eventGrid.innerHTML = '<p>Gagal memuat event. Cek kembali konfigurasi Anda.</p>';
         }
