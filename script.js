@@ -6,6 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
 
+    // --- Variabel Global & Elemen DOM ---
+    let allEvents = []; // ## MODIFIKASI: Variabel global untuk menyimpan data event
+    const eventGrid = document.getElementById('eventGrid');
+    
     // --- Logika Carousel Hero ---
     const slides = document.querySelectorAll('.slide');
     if (slides.length > 0) {
@@ -22,57 +26,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT DARI AIRTABLE ---
-    const eventGrid = document.getElementById('eventGrid');
     async function renderEvents() {
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        // Nama tabel di Airtable adalah "Events"
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Waktu&sort%5B0%5D%5Bdirection%5D=asc`;
 
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${AIRTABLE_API_KEY}`
-                }
-            });
-            if (!response.ok) {
-                throw new Error(`Error: ${response.status} - ${response.statusText}`);
-            }
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
+            
             const data = await response.json();
-            const events = data.records;
+            allEvents = data.records; // ## MODIFIKASI: Simpan data ke variabel global
 
-            eventGrid.innerHTML = ''; // Kosongkan grid sebelum memuat
+            eventGrid.innerHTML = ''; 
 
-            // Logika untuk layout dinamis (1 atau 2 baris)
             const scrollLeftBtn = document.getElementById('scrollLeftBtn');
             const scrollRightBtn = document.getElementById('scrollRightBtn');
             const threshold = 4;
-            if (events.length > threshold) {
+            if (allEvents.length > threshold) {
                 eventGrid.classList.add('two-rows');
-                scrollLeftBtn.classList.add('visible');
-                scrollRightBtn.classList.add('visible');
+                if (scrollLeftBtn) scrollLeftBtn.classList.add('visible');
+                if (scrollRightBtn) scrollRightBtn.classList.add('visible');
             } else {
                 eventGrid.classList.remove('two-rows');
-                scrollLeftBtn.classList.remove('visible');
-                scrollRightBtn.classList.remove('visible');
+                if (scrollLeftBtn) scrollLeftBtn.classList.remove('visible');
+                if (scrollRightBtn) scrollRightBtn.classList.remove('visible');
             }
 
-            if (events.length === 0) {
+            if (allEvents.length === 0) {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
             } else {
-                events.forEach(record => {
+                allEvents.forEach(record => {
                     const fields = record.fields;
+                    if (!fields['Nama Event'] || !fields['Gambar Event']) return;
                     
-                    if (!fields['Nama Event'] || !fields['Gambar Event']) {
-                        return; // Lewati baris ini jika nama atau gambar kosong
-                    }
-                    
-                    // Mengambil dan memformat Tanggal & Waktu dari satu field "Waktu"
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                     const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
 
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
+                    // ## MODIFIKASI: Menggunakan record.id unik, bukan nama event ##
                     eventCard.innerHTML = `
                         <div class="card-image">
                             <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
@@ -85,46 +78,94 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="event-description" style="display:none;">${fields['Deskripsi'] || ''}</p>
                             <div class="price-buy">
                                 <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
-                                <button class="btn-buy" data-event="${fields['Nama Event']}">Beli</button>
+                                <button class="btn-buy" data-event-id="${record.id}">Beli</button>
                             </div>
                         </div>`;
                     eventGrid.appendChild(eventCard);
                 });
             }
-            setupEventListeners();
+            setupEventListeners(); // Panggil setup listeners setelah semua card dibuat
         } catch (error) {
             console.error("Gagal mengambil event dari Airtable:", error);
             eventGrid.innerHTML = '<p>Gagal memuat event. Cek kembali konfigurasi API Key dan Base ID Anda.</p>';
         }
     }
 
+    // ## FUNGSI BARU: MEMBANGUN FORMULIR SECARA DINAMIS ##
+    async function generateFormFields(eventId) {
+        const formContainer = document.getElementById('registrationForm');
+        formContainer.innerHTML = '<p>Memuat formulir...</p>';
+
+        const filterFormula = `FIND('${eventId}', {Event})`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${encodeURIComponent(filterFormula)}`;
+
+        try {
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!response.ok) throw new Error(`Error: ${response.status}`);
+            const data = await response.json();
+            const fields = data.records;
+
+            if (fields.length === 0) {
+                formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
+                return;
+            }
+
+            let formHTML = '';
+            fields.forEach(record => {
+                const field = record.fields;
+                const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
+                
+                formHTML += `
+                    <div class="form-group floating-label">
+                        <input 
+                            type="${field['Field Type'].toLowerCase()}" 
+                            id="${fieldId}" 
+                            name="${field['Field Label']}" 
+                            ${field['Is Required'] ? 'required' : ''}
+                            placeholder=" ">
+                        <label for="${fieldId}">${field['Field Label']}</label>
+                    </div>`;
+            });
+            formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
+            formContainer.innerHTML = formHTML;
+
+        } catch (error) {
+            console.error("Gagal mengambil field formulir:", error);
+            formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+        }
+    }
+
+    // --- FUNGSI PENGATUR EVENT LISTENERS ---
     function setupEventListeners() {
+        // Search
         const searchInput = document.getElementById('searchInput');
-        const eventCards = document.querySelectorAll('.event-card');
         if(searchInput) {
             searchInput.addEventListener('input', () => {
                 const searchTerm = searchInput.value.toLowerCase();
-                eventCards.forEach(card => {
+                document.querySelectorAll('.event-card').forEach(card => {
                     const eventTitle = card.querySelector('.event-title').textContent.toLowerCase();
                     card.style.display = eventTitle.includes(searchTerm) ? 'flex' : 'none';
                 });
             });
         }
         
+        // Tombol Beli di setiap card
         document.querySelectorAll('.btn-buy').forEach(button => {
             button.addEventListener('click', () => {
-                const eventCard = button.closest('.event-card');
-                const eventName = button.dataset.event;
-                const eventImage = eventCard.querySelector('.card-image img').src;
-                const eventDescription = eventCard.querySelector('.event-description').textContent;
-                openModal(eventName, eventImage, eventDescription);
+                // ## MODIFIKASI: Mengambil event dari variabel global 'allEvents' berdasarkan ID unik ##
+                const eventId = button.dataset.eventId;
+                const eventData = allEvents.find(event => event.id === eventId);
+                if (eventData) {
+                    openModal(eventData);
+                }
             });
         });
         
+        // Tombol Scroll
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
         const scrollLeftBtn = document.getElementById('scrollLeftBtn');
         const scrollRightBtn = document.getElementById('scrollRightBtn');
-        if(scrollWrapper) {
+        if(scrollWrapper && scrollLeftBtn && scrollRightBtn) {
             scrollLeftBtn.addEventListener('click', () => {
                 const scrollAmount = scrollWrapper.clientWidth * 0.8;
                 scrollWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
@@ -136,27 +177,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- LOGIKA SEARCH ICON & SCROLL ---
     const searchIcon = document.getElementById('searchIcon');
     const searchInput = document.getElementById('searchInput');
     const eventsSection = document.getElementById('events');
     let hasScrolledOnInput = false;
-    if (searchIcon) {
+    if (searchIcon && searchInput) {
         searchIcon.addEventListener('click', (event) => {
             event.preventDefault();
             searchInput.classList.toggle('active');
             searchInput.focus();
             if (!searchInput.classList.contains('active')) hasScrolledOnInput = false;
         });
-    }
-    if (searchInput) {
         searchInput.addEventListener('input', () => {
-            if (!hasScrolledOnInput) {
+            if (!hasScrolledOnInput && eventsSection) {
                 eventsSection.scrollIntoView({ behavior: 'smooth' });
                 hasScrolledOnInput = true;
             }
         });
     }
 
+    // --- LOGIKA MODAL ---
     const modal = document.getElementById('eventModal');
     const closeButton = document.querySelector('.close-button');
     const showFormButton = document.getElementById('showFormButton');
@@ -167,105 +208,82 @@ document.addEventListener('DOMContentLoaded', () => {
     const registrationForm = document.getElementById('registrationForm');
     const modalEventImage = document.getElementById('modalEventImage');
     const modalEventDescription = document.getElementById('modalEventDescription');
-    const phoneInput = document.getElementById('phone');
-    const phoneError = document.getElementById('phoneError');
-    const emailInput = document.getElementById('email');
-    const emailError = document.getElementById('emailError');
-    
-    phoneInput.addEventListener('input', () => {
-        phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '');
-        if (phoneInput.value.startsWith('0')) {
-            phoneError.textContent = 'Gunakan format 8xx (tanpa 0 di depan)';
-            phoneError.classList.add('visible');
-            phoneInput.closest('.phone-input-group').classList.add('input-error');
-        } else {
-            phoneError.classList.remove('visible');
-            phoneInput.closest('.phone-input-group').classList.remove('input-error');
-        }
-    });
-
-    function validateEmail() {
-        const email = emailInput.value;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (email === '' || emailRegex.test(email)) {
-            emailError.classList.remove('visible');
-            emailInput.classList.remove('input-error');
-            return true;
-        } else {
-            emailError.textContent = 'Gunakan format email yang lengkap';
-            emailError.classList.add('visible');
-            emailInput.classList.add('input-error');
-            return false;
-        }
-    }
-    emailInput.addEventListener('input', validateEmail);
 
     const feedbackModal = document.getElementById('feedbackModal');
-    const feedbackContent = feedbackModal.querySelector('.feedback-content');
-    const feedbackIcon = feedbackModal.querySelector('.feedback-icon i');
-    const feedbackTitle = document.getElementById('feedbackTitle');
-    const feedbackMessage = document.getElementById('feedbackMessage');
     const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
-
+    
     function showFeedbackModal(status, title, message) {
+        const feedbackContent = feedbackModal.querySelector('.feedback-content');
+        const feedbackIcon = feedbackModal.querySelector('.feedback-icon i');
+        const feedbackTitle = document.getElementById('feedbackTitle');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        
         feedbackContent.className = 'feedback-content ' + status;
         feedbackIcon.className = status === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle';
         feedbackTitle.textContent = title;
         feedbackMessage.textContent = message;
         feedbackModal.classList.add('visible');
     }
-    closeFeedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('visible'));
+    if (closeFeedbackBtn) {
+        closeFeedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('visible'));
+    }
 
-    function openModal(eventName, eventImage, eventDescription) {
-        modalEventTitle.textContent = `Detail: ${eventName}`;
-        formEventTitle.textContent = eventName;
-        modalEventImage.src = eventImage;
-        modalEventDescription.textContent = eventDescription;
+    // ## MODIFIKASI: openModal sekarang menerima satu objek 'eventData' ##
+    function openModal(eventData) {
+        const fields = eventData.fields;
+        modalEventTitle.textContent = `Detail: ${fields['Nama Event']}`;
+        formEventTitle.textContent = fields['Nama Event'];
+        modalEventImage.src = fields['Gambar Event'][0].url;
+        modalEventDescription.textContent = fields['Deskripsi'] || '';
+        
+        modal.dataset.currentEventId = eventData.id; // Simpan ID untuk nanti
+
         modal.style.display = 'block';
         detailView.style.display = 'block';
         formView.style.display = 'none';
+        registrationForm.innerHTML = ''; // Selalu kosongkan form saat modal dibuka
     };
+    
+    // ## MODIFIKASI: Listener untuk tombol "Daftar" memanggil fungsi 'generateFormFields' ##
+    if (showFormButton) {
+        showFormButton.addEventListener('click', () => {
+            const eventId = modal.dataset.currentEventId;
+            if (eventId) {
+                detailView.style.display = 'none';
+                formView.style.display = 'block';
+                generateFormFields(eventId); // Panggil fungsi pembuat form
+            } else {
+                alert("Terjadi kesalahan, ID event tidak ditemukan.");
+            }
+        });
+    }
 
     const closeModal = () => { if (modal) modal.style.display = 'none'; };
-    if (showFormButton) showFormButton.addEventListener('click', () => { detailView.style.display = 'none'; formView.style.display = 'block'; });
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
+    // --- LOGIKA PENGIRIMAN FORM ---
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
-            const isEmailValid = validateEmail();
-            const isPhoneValid = !phoneInput.value.startsWith('0') && phoneInput.value.length > 8;
-            if (!isPhoneValid) {
-                 phoneError.textContent = 'Nomor telepon tidak valid';
-                 phoneError.classList.add('visible');
-                 phoneInput.closest('.phone-input-group').classList.add('input-error');
-            }
-            if (!isEmailValid || !isPhoneValid) { return; }
-
+            
+            // Validasi sederhana bawaan HTML5 akan berjalan karena atribut 'required'
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Mengirim...';
             
             const formData = new FormData(registrationForm);
-            formData.set('phone', '+62' + phoneInput.value);
-            formData.append('event', formEventTitle.textContent);
+            formData.append('Event Name', formEventTitle.textContent); // Kirim nama event bersama data form
             
             fetch(SCRIPT_URL, { method: 'POST', body: formData })
                 .then(response => response.json())
                 .then(data => {
                     closeModal();
                     if (data.result === 'success') {
-                        const userEmail = emailInput.value;
-                        const successMessage = `Silahkan cek email (${userEmail}) secara berkala, tiket akan segera dikirim. Periksa juga tab spam.`;
+                        const successMessage = `Silahkan cek email Anda secara berkala, tiket akan segera dikirim. Periksa juga tab spam.`;
                         showFeedbackModal('success', 'Pendaftaran Berhasil', successMessage);
-                        registrationForm.reset();
                     } else {
-                        if (data.error === 'duplicate') {
-                            showFeedbackModal('error', 'Pendaftaran Gagal', data.message);
-                        } else {
-                            throw new Error(data.error || 'Terjadi kesalahan.');
-                        }
+                        showFeedbackModal('error', 'Pendaftaran Gagal', data.message || 'Terjadi kesalahan yang tidak diketahui.');
                     }
                 })
                 .catch(error => {
@@ -274,18 +292,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
                 })
                 .finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Kirim Pendaftaran';
+                    // Tombol submit akan dibuat ulang saat form digenerate lagi, tidak perlu di-enable manual
                 });
         });
     }
     
-    // Hapus link dan file admin lama karena tidak digunakan lagi
-    const adminLink = document.getElementById('adminLink');
-    if (adminLink) {
-        adminLink.style.display = 'none'; // Sembunyikan link admin
-    }
-
+    // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
-
