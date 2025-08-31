@@ -30,130 +30,68 @@
     <main>
         <section id="hero">
             <div class="hero-slider-container">
-                <div class="slide active-slide"><img src="assets/hero-img1.png" alt="Promotional Image 1"></div>
-                <div class="slide"><img src="assets/hero-img2.png" alt="Promotional Image 2"></div>
+                <div class="slide active-slide">
+                    <img src="assets/hero-img1.png" alt="Hero Image 1">
+                </div>
+                <div class="slide">
+                    <img src="assets/hero-img2.png" alt="Hero Image 2">
+                </div>
+                <!-- Tambahkan slide lain jika perlu -->
             </div>
-            <button class="slider-arrow prev" id="prevBtn">&lt;</button>
-            <button class="slider-arrow next" id="nextBtn">&gt;</button>
+            <button id="prevBtn" class="slider-btn prev"><i class="fas fa-chevron-left"></i></button>
+            <button id="nextBtn" class="slider-btn next"><i class="fas fa-chevron-right"></i></button>
         </section>
 
         <section id="events">
-            <h2>Event <span class="highlight">Mendatang</span></h2>
-            
+            <h2>Event Terpopuler</h2>
             <div class="event-carousel-container">
-                <button class="arrow-btn left" id="scrollLeftBtn">&#10094;</button>
-                
+                <button id="scrollLeftBtn" class="arrow-btn"><i class="fas fa-chevron-left"></i></button>
                 <div class="event-grid-wrapper">
-                    <div class="event-grid" id="eventGrid">
-                        </div>
+                    <div id="eventGrid" class="event-grid">
+                        <!-- Event cards will be loaded here by JavaScript -->
+                    </div>
                 </div>
-                
-                <button class="arrow-btn right" id="scrollRightBtn">&#10095;</button>
+                <button id="scrollRightBtn" class="arrow-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
+        </section>
+        
+        <section id="admin-feature">
+            <h2>Buat Tiket Offline Anda</h2>
+            <p>Kelola dan jual tiket untuk event Anda dengan mudah, bahkan tanpa koneksi internet.</p>
+            <a href="admin.html" class="btn-secondary">Mulai Sekarang</a>
         </section>
 
-        <section id="offline-tickets">
-            <h2>Cetak Tiket Offline-mu Juga!</h2>
-            <p class="section-subtitle">Tingkatkan pengalaman event-mu dengan tiket fisik berkualitas dari kami.</p>
-            <div class="offline-grid">
-                <div class="offline-card">
-                                        <h3>Gelang Tiket Tyvek</h3>
-                    <p class="description">Gunakan tiket gelang dari kertas Tyvek yang anti air, tidak mudah sobek, dan nyaman dipakai. Setiap gelang dilengkapi **unique barcode** yang terintegrasi dengan database peserta untuk check-in yang cepat dan aman.</p>
-                    <div class="offline-price">Rp 1.000 /pcs</div>
-                </div>
-                <div class="offline-card">
-                                        <h3>Cocard & Lanyard</h3>
-                    <p class="description">Berikan identitas profesional untuk panitia, media, atau peserta VIP dengan cocard custom. Dicetak full-color dengan bahan PVC berkualitas tinggi, lengkap dengan lanyard eksklusif. Pilihan tepat untuk branding event Anda.</p>
-                    <div class="offline-price">Rp 5.000 /pcs</div>
-                </div>
-                <div class="offline-card">
-                                        <h3>Stiker Custom</h3>
-                    <p class="description">Jadikan event-mu lebih berkesan dengan stiker vinyl custom sebagai merchandise atau tanda masuk. Tahan lama, anti gores, dan bisa dipotong sesuai desain logo atau maskot event Anda. Praktis dan disukai semua orang.</p>
-                    <div class="offline-price">Rp 100 /pcs</div>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer>
-        <div class="footer-content">
-            <div class="footer-about">
-                <a href="#" class="logo">
-                    <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
-                    <span>Ticket<span class="logo-go">Go</span></span>
-                </a>
-                <p>Platform jual beli tiket event online terpercaya.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Jelajahi</h4>
-                <ul>
-                    <li><a href="#">Event Terbaru</a></li>
-                    <li><a href="#">Promo</a></li>
-                    <li><a href="#">Kategori</a></li>
-                </ul>
-            </div>
-            <div class="footer-links">
-                <h4>Bantuan</h4>
-                <ul>
-                    <li><a href="#">Hubungi Kami</a></li>
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Syarat & Ketentuan</a></li>
-                </ul>
-            </div>
-            <div class="footer-links">
-                <h4>Ikuti Kami</h4>
-                <ul>
-                    <li><a href="https://instagram.com/ticketgo.id" target="_blank">Instagram</a></li>
-                    <li><a href="#">Twitter</a></li>
-                    <li><a href="#">Facebook</a></li>
-                    <li><a href="#" id="adminLink">Admin</a></li>
-                </ul>
-            </div>
-        </div>
-        <hr>
-        <p class="copyright">&copy; 2025 TicketGo. All rights reserved.</p>
+        <p>&copy; 2024 TicketGo. All Rights Reserved.</p>
     </footer>
 
+    <!-- Modal for Event Details and Registration -->
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
+            
+            <!-- Detail View -->
             <div id="detailView">
-                <h2 id="modalEventTitle">Detail Event</h2>
-                <img id="modalEventImage" src="assets/event1.jpg" alt="Detail Event">
-                <p id="modalEventDescription">Informasi detail tentang event.</p>
+                <h2 id="modalEventTitle"></h2>
+                <img id="modalEventImage" src="" alt="Event Image" class="modal-image">
+                <p id="modalEventDescription"></p>
                 <button id="showFormButton" class="btn-primary">Daftar Sekarang</button>
             </div>
+
+            <!-- Form View -->
             <div id="formView" style="display: none;">
-                <h2>Formulir Pendaftaran</h2>
-                <p class="event-context">Untuk event: <strong id="formEventTitle"></strong></p>
+                <h2 id="formEventTitle"></h2>
+                <!-- ## PERUBAHAN: Formulir statis dihapus, menyisakan wadah kosong ## -->
                 <form id="registrationForm" novalidate>
-                    
-                    <div class="form-group floating-label">
-                        <input type="text" id="name" name="name" required placeholder=" ">
-                        <label for="name">Nama Lengkap</label>
-                    </div>
-
-                    <div class="form-group floating-label">
-                        <label for="phone">Nomor Telepon</label>
-                        <div class="phone-input-group">
-                            <span class="phone-prefix">+62</span>
-                            <input type="tel" id="phone" name="phone" required placeholder=" ">
-                        </div>
-                        <span class="error-message" id="phoneError"></span>
-                    </div>
-
-                    <div class="form-group floating-label">
-                        <input type="email" id="email" name="email" required placeholder=" ">
-                        <label for="email">Email Aktif</label>
-                        <span class="error-message" id="emailError"></span>
-                    </div>
-                    
-                    <button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>
+                    <!-- Formulir akan dibuat secara dinamis oleh JavaScript di sini -->
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Feedback Modal -->
     <div id="feedbackModal" class="feedback-modal">
         <div class="feedback-content">
             <div class="feedback-icon">
