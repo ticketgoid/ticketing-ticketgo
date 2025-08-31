@@ -159,19 +159,16 @@ function initializeApp() {
         const formContainer = document.getElementById('registrationForm');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
-
         try {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
             if (!response.ok) throw new Error(`Error: ${response.status}`);
             const data = await response.json();
             const allFormFields = data.records;
             const fields = allFormFields.filter(record => record.fields.Event && record.fields.Event.includes(eventId));
-
             if (fields.length === 0) {
                 formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
                 return;
             }
-
             let formHTML = '';
             fields.forEach(record => {
                 const field = record.fields;
@@ -179,7 +176,6 @@ function initializeApp() {
                 const fieldLabel = field['Field Label'];
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
-
                 if (fieldType === 'tel') {
                     formHTML += `
                     <div class="form-group">
@@ -205,17 +201,26 @@ function initializeApp() {
                     </div>`;
                 }
             });
-            formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
+            // ## PERUBAHAN UTAMA: Menambahkan reCAPTCHA dan Tombol Kirim ##
+            formHTML += `
+                <div class="g-recaptcha" data-sitekey="6Lc5g7krAAAAAKqfaS8w8gA4ulr5r-9V59GVz83V"></div>
+                <span id="recaptchaError" class="error-message"></span> 
+                <button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>
+            `;
             formContainer.innerHTML = formHTML;
-
+            // Render ulang widget reCAPTCHA jika ada
+            if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
+                const recaptchaContainer = formContainer.querySelector('.g-recaptcha');
+                if (recaptchaContainer) {
+                    grecaptcha.render(recaptchaContainer);
+                }
+            }
             attachDynamicValidators(formContainer);
-
         } catch (error) {
             console.error("Gagal mengambil field formulir:", error);
             formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
         }
     }
-
     // ## FUNGSI UNTUK MENEMPELKAN VALIDATOR ##
     function attachDynamicValidators(form) {
         const emailInput = form.querySelector('input[type="email"]');
@@ -376,7 +381,18 @@ function initializeApp() {
     if (registrationForm) {
         registrationForm.addEventListener('submit', (event) => {
             event.preventDefault();
-            const form = event.target;
+            const form = event.target
+            
+            const recaptchaResponse = grecaptcha.getResponse();
+            const recaptchaError = document.getElementById('recaptchaError');
+            if (!recaptchaResponse) {
+                recaptchaError.textContent = 'Harap centang kotak verifikasi ini.';
+                recaptchaError.classList.add('visible');
+                return; // Hentikan proses jika reCAPTCHA kosong
+            } else {
+                recaptchaError.classList.remove('visible');
+            }
+            
             const emailInput = form.querySelector('input[type="email"]');
             const phoneInput = form.querySelector('input[type="tel"]');
             let isFormValid = true;
@@ -446,5 +462,6 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
 
