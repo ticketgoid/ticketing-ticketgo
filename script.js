@@ -91,50 +91,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ## FUNGSI BARU: MEMBANGUN FORMULIR SECARA DINAMIS ##
-    async function generateFormFields(eventId) {
-        const formContainer = document.getElementById('registrationForm');
-        formContainer.innerHTML = '<p>Memuat formulir...</p>';
+    // ## FUNGSI BARU (VERSI PERBAIKAN): MEMBANGUN FORMULIR SECARA DINAMIS ##
+async function generateFormFields(eventId) {
+    const formContainer = document.getElementById('registrationForm');
+    formContainer.innerHTML = '<p>Memuat formulir...</p>';
 
-        const filterFormula = `FIND('${eventId}', {Event})`;
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${encodeURIComponent(filterFormula)}`;
+    // URL sekarang mengambil SEMUA field, tanpa filter
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields`;
 
-        try {
-            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-            if (!response.ok) throw new Error(`Error: ${response.status}`);
-            const data = await response.json();
-            const fields = data.records;
+    try {
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_KEY}` } });
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        
+        const data = await response.json();
+        const allFormFields = data.records;
 
-            if (fields.length === 0) {
-                formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
-                return;
-            }
+        // Logika penyaringan (filter) sekarang dilakukan di sini oleh JavaScript
+        const fields = allFormFields.filter(record => {
+            // Memastikan field 'Event' ada dan berisi ID event yang kita cari
+            return record.fields.Event && record.fields.Event.includes(eventId);
+        });
 
-            let formHTML = '';
-            fields.forEach(record => {
-                const field = record.fields;
-                const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
-                
-                formHTML += `
-                    <div class="form-group floating-label">
-                        <input 
-                            type="${field['Field Type'].toLowerCase()}" 
-                            id="${fieldId}" 
-                            name="${field['Field Label']}" 
-                            ${field['Is Required'] ? 'required' : ''}
-                            placeholder=" ">
-                        <label for="${fieldId}">${field['Field Label']}</label>
-                    </div>`;
-            });
-            formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
-            formContainer.innerHTML = formHTML;
-
-        } catch (error) {
-            console.error("Gagal mengambil field formulir:", error);
-            formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+        if (fields.length === 0) {
+            formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
+            return;
         }
-    }
 
+        let formHTML = '';
+        fields.forEach(record => {
+            const field = record.fields;
+            const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
+            
+            formHTML += `
+                <div class="form-group floating-label">
+                    <input 
+                        type="${field['Field Type'].toLowerCase()}" 
+                        id="${fieldId}" 
+                        name="${field['Field Label']}" 
+                        ${field['Is Required'] ? 'required' : ''}
+                        placeholder=" ">
+                    <label for="${fieldId}">${field['Field Label']}</label>
+                </div>`;
+        });
+        formHTML += `<button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>`;
+        formContainer.innerHTML = formHTML;
+
+    } catch (error) {
+        console.error("Gagal mengambil field formulir:", error);
+        formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+    }
+}
     // --- FUNGSI PENGATUR EVENT LISTENERS ---
     function setupEventListeners() {
         // Search
@@ -300,3 +306,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 });
+
