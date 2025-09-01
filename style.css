@@ -37,7 +37,7 @@
 }
 
 .preloader-logo {
-    height: 100px; /* Sesuaikan ukuran logo */
+    height: 300px; /* Sesuaikan ukuran logo */
     margin-bottom: 2rem;
 }
 
@@ -786,6 +786,7 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
