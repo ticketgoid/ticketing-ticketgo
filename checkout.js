@@ -158,25 +158,56 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const attachEventListeners = () => {
-        document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => radio.addEventListener('change', () => {
-            document.getElementById('increaseQty').disabled = false;
-            document.getElementById('buyButton').disabled = false;
-            updatePrice();
-        }));
-        document.getElementById('increaseQty').addEventListener('click', () => {
-            const qtyInput = document.getElementById('ticketQuantity');
-            qtyInput.value = parseInt(qtyInput.value) + 1;
-            document.getElementById('decreaseQty').disabled = false;
-            updatePrice();
+    // Kode event listener lainnya tetap sama
+    document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => radio.addEventListener('change', () => {
+        document.getElementById('increaseQty').disabled = false;
+        document.getElementById('buyButton').disabled = false;
+        updatePrice();
+    }));
+    document.getElementById('increaseQty').addEventListener('click', () => {
+        const qtyInput = document.getElementById('ticketQuantity');
+        qtyInput.value = parseInt(qtyInput.value) + 1;
+        document.getElementById('decreaseQty').disabled = false;
+        updatePrice();
+    });
+    document.getElementById('decreaseQty').addEventListener('click', () => {
+        const qtyInput = document.getElementById('ticketQuantity');
+        if (parseInt(qtyInput.value) > 1) qtyInput.value = parseInt(qtyInput.value) - 1;
+        if (qtyInput.value == 1) document.getElementById('decreaseQty').disabled = true;
+        updatePrice();
+    });
+    document.getElementById('buyButton').addEventListener('click', showReviewModal);
+
+    // --- KODE BARU UNTUK VALIDASI REAL-TIME ---
+    const emailInput = document.querySelector('input[type="email"]');
+    if (emailInput) {
+        // Buat elemen untuk pesan error di bawah input email
+        let errorEl = document.createElement('small');
+        errorEl.style.color = '#e53e3e';
+        errorEl.style.display = 'none'; // Sembunyikan secara default
+        errorEl.style.marginTop = '4px';
+        emailInput.parentElement.appendChild(errorEl);
+
+        // Tambahkan listener yang aktif saat pengguna mengetik
+        emailInput.addEventListener('input', () => {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const isValid = emailPattern.test(emailInput.value);
+            const buyButton = document.getElementById('buyButton');
+
+            // Jika email diisi tapi formatnya salah
+            if (emailInput.value && !isValid) {
+                emailInput.style.borderColor = '#e53e3e'; // Border merah
+                errorEl.textContent = 'Format email tidak valid.';
+                errorEl.style.display = 'block'; // Tampilkan pesan error
+                buyButton.disabled = true; // Nonaktifkan tombol beli
+            } else {
+                emailInput.style.borderColor = ''; // Kembalikan border ke normal
+                errorEl.style.display = 'none'; // Sembunyikan pesan error
+                buyButton.disabled = false; // Aktifkan kembali tombol beli
+            }
         });
-        document.getElementById('decreaseQty').addEventListener('click', () => {
-            const qtyInput = document.getElementById('ticketQuantity');
-            if (parseInt(qtyInput.value) > 1) qtyInput.value = parseInt(qtyInput.value) - 1;
-            if (qtyInput.value == 1) document.getElementById('decreaseQty').disabled = true;
-            updatePrice();
-        });
-        document.getElementById('buyButton').addEventListener('click', showReviewModal);
-    };
+    }
+};
 
     const updatePrice = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
@@ -193,19 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showReviewModal = () => {
-    // --- BLOK VALIDASI EMAIL BARU ---
-    const emailInput = document.querySelector('input[type="email"]');
-
-    // Hanya validasi jika ada input email dan sudah diisi sesuatu
-    if (emailInput && emailInput.value) { 
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Pola standar untuk email
-        if (!emailPattern.test(emailInput.value)) {
-            alert('Harap masukkan format email yang valid (contoh: nama@email.com).');
-            emailInput.focus(); // Langsung arahkan kursor ke input email
-            return; // Hentikan proses jika email tidak valid
-        }
-    }
-    // --- AKHIR BLOK VALIDASI EMAIL ---
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -239,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
