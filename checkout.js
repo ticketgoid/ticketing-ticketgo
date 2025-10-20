@@ -13,56 +13,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
-            /* === STRUKTUR LAYOUT UTAMA DUA KOLOM === */
-            .checkout-body {
-                display: flex;
-                flex-wrap: wrap; /* Agar responsif di layar kecil */
-                gap: 32px; /* Jarak antara kolom kiri dan kanan */
-                align-items: flex-start;
-            }
-            .event-details-column {
-                flex: 1;
-                min-width: 320px; /* Lebar minimum untuk kolom kiri */
-            }
-            .purchase-form-column {
-                flex: 1;
-                min-width: 320px; /* Lebar minimum untuk kolom kanan */
-            }
+            /* STRUKTUR LAYOUT UTAMA DUA KOLOM */
+            .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+            .event-details-column { flex: 1; min-width: 320px; }
+            .purchase-form-column { flex: 1; min-width: 320px; }
 
-            /* === PERBAIKAN 1: STYLING POSTER 4x5 DI KOLOM KIRI === */
+            /* STYLING POSTER 4x5 DI KOLOM KIRI */
             .event-poster-container {
-                width: 100%;
-                aspect-ratio: 4 / 5;
-                border-radius: 16px;
-                overflow: hidden;
-                margin-bottom: 24px;
-                background-color: #f0f2f5;
+                width: 100%; aspect-ratio: 4 / 5; border-radius: 16px;
+                overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             }
-            .event-poster {
-                width: 100%; height: 100%; object-fit: cover; display: block;
-            }
+            .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-            /* === PERBAIKAN 4: Merapikan Tombol Pilihan === */
+            /* === PERBAIKAN 3: Merapikan Tombol Pilihan === */
             .ticket-option label {
                 display: flex;
                 align-items: center; /* Membuat radio button dan teks sejajar vertikal */
-                gap: 12px; /* Jarak antara radio button dan teks */
+                gap: 12px;
                 width: 100%;
+                cursor: pointer;
             }
             .ticket-label-content {
                 display: flex;
                 justify-content: space-between; /* Mendorong harga ke kanan */
                 align-items: center;
-                width: 100%; /* Memastikan mengisi sisa ruang */
+                width: 100%;
             }
+            /* Menghilangkan tampilan radio button asli */
+            .ticket-option input[type="radio"] { display: none; }
 
-            /* Style lainnya (tidak berubah) */
+            /* Styling pseudo-element sebagai radio button kustom */
+            .ticket-option label::before {
+                content: ''; width: 20px; height: 20px; border-radius: 50%;
+                border: 2px solid #ddd; display: grid; place-content: center;
+                transition: all 0.2s ease; flex-shrink: 0;
+            }
+            .ticket-option input[type="radio"]:checked + label::before {
+                border-color: #00A97F; background-color: #fff;
+            }
+            /* Bulatan hijau di dalam */
+            .ticket-option label::after {
+                content: ''; width: 12px; height: 12px; background-color: #00A97F;
+                border-radius: 50%; position: absolute;
+                left: 26px; /* Disesuaikan agar pas di tengah */
+                transform: scale(0);
+                transition: transform 0.2s ease;
+            }
+            .ticket-option input[type="radio"]:checked + label::after {
+                transform: scale(1);
+            }
+            
+            /* Style lainnya */
             .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
-            .ticket-option input[type="radio"] + label::before { content: ''; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; display: grid; place-content: center; transition: all 0.2s ease; position: relative; flex-shrink: 0; }
-            .ticket-option input[type="radio"]:checked + label::before { border-color: #00A97F; background-color: #fff; }
-            .ticket-option input[type="radio"] + label::after { content: ''; width: 12px; height: 12px; background-color: #00A97F; border-radius: 50%; position: absolute; top: 50%; left: 10px; transform: translate(-50%, -50%) scale(0); transition: transform 0.2s ease; }
-            .ticket-option input[type="radio"]:checked + label::after { transform: translate(-50%, -50%) scale(1); }
             #buyButton.btn-primary { width: 100%; background-color: #007bff; color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease; margin-top: 20px; }
             #buyButton.btn-primary:hover { background-color: #0056b3; }
             #buyButton.btn-primary:active { transform: scale(0.98); }
@@ -117,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderLayout = () => {
-        // PERBAIKAN 3: Mengembalikan logika Seat Map dan Pilihan Kursi
+        // === PERBAIKAN 1 & 2: Mengembalikan logika Seat Map dan Pilihan Kursi ===
         let seatMapHTML = '';
         if (eventDetails['Seat_Map'] && eventDetails['Seat_Map'][0]?.url) {
             seatMapHTML = `<div class="form-section seat-map-container"><h3>Lihat Peta Kursi</h3><img src="${eventDetails['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>`;
@@ -135,8 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let ticketOptionsHTML = ticketTypes.map(record => {
             const adminFee = record.fields['Admin_Fee'] || 0;
-            return `<div class="ticket-option" data-ticket-id="${record.id}"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${adminFee}"><label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${record.fields.Name}</span><span class="ticket-price">Rp ${record.fields.Price.toLocaleString('id-ID')}</span></div></label></div>`;
+            return `<div class="ticket-option"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${adminFee}"><label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${record.fields.Name}</span><span class="ticket-price">Rp ${record.fields.Price.toLocaleString('id-ID')}</span></div></label></div>`;
         }).join('');
+
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
             const fieldLabel = field['Field_Label'];
@@ -151,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
-        // PERBAIKAN 1 & 2: Mengubah struktur HTML menjadi dua kolom
         const layoutHTML = `
             <div class="checkout-body">
                 <div class="event-details-column">
