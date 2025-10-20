@@ -13,7 +13,7 @@ window.addEventListener('load', () => {
 
 function initializeApp() {
     // --- KONFIGURASI PENTING ---
-    const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
+    const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
 
     // --- Variabel Global & Elemen DOM ---
@@ -156,4 +156,5 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
