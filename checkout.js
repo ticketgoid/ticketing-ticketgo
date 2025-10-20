@@ -1,9 +1,9 @@
 // GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
-    const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c4to_replace_this_part_with_your_real_key_e4498c3473f2774d3664c'; // Ganti dengan API Key Anda yang valid
+    const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKf_replace_this_part_with_your_real_script_url_HeTYG0j_bnpshhg/exec'; // Ganti dengan URL Script Anda
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
 
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
@@ -60,14 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
-            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records (ticket_types, form_fields) serta kolom 'Seat Map' & 'Pilihan Kursi' sudah diisi di Airtable. Error: ${error.message}`;
+            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan semua kolom yang dibutuhkan (ticket_types, form_fields, Seat Map, Pilihan Kursi) sudah diisi di Airtable. Error: ${error.message}`;
             checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
         }
     };
     
-    // FUNGSI INI DIMODIFIKASI SECARA SIGNIFIKAN
+    // FUNGSI INI DIMODIFIKASI UNTUK MENGGANTI DROPDOWN MENJADI TOMBOL RADIO
     const renderLayout = () => {
-        // Bagian untuk membuat Seat Map
+        // Bagian untuk membuat Seat Map (tidak berubah)
         let seatMapHTML = '';
         if (eventDetails['Seat Map'] && eventDetails['Seat Map'][0]?.url) {
             seatMapHTML = `
@@ -78,24 +78,37 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // Bagian untuk membuat dropdown Pilihan Kursi
+        // === PERUBAHAN UTAMA DI SINI ===
+        // Bagian untuk membuat pilihan kursi sebagai tombol radio
         let seatSelectionHTML = '';
         const seatOptions = eventDetails['Pilihan Kursi'] ? eventDetails['Pilihan Kursi'].split('\n').filter(opt => opt.trim() !== '') : [];
         if (seatOptions.length > 0) {
+            const seatOptionsContent = seatOptions.map((option, index) => {
+                const trimmedOption = option.trim();
+                // Buat ID unik untuk setiap input radio
+                const optionId = `seat_option_${index}`;
+                return `
+                    <div class="ticket-option">
+                        <input type="radio" id="${optionId}" name="Pilihan Kursi" value="${trimmedOption}" required>
+                        <label for="${optionId}">
+                            <div class="ticket-label-content">
+                                <span class="ticket-name">${trimmedOption}</span>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+
             seatSelectionHTML = `
                 <div class="form-section">
                     <h3>1. Pilih Kursi</h3>
-                    <div class="form-group">
-                        <select id="seatChoice" name="Pilihan Kursi" class="form-control" required>
-                            <option value="" disabled selected>-- Pilih Kategori Kursi --</option>
-                            ${seatOptions.map(option => `<option value="${option.trim()}">${option.trim()}</option>`).join('')}
-                        </select>
-                    </div>
+                    <div id="seatOptionsContainer">${seatOptionsContent}</div>
                 </div>
             `;
         }
+        // === AKHIR PERUBAHAN ===
 
-        // Bagian untuk membuat pilihan jenis tiket
+        // Bagian untuk membuat pilihan jenis tiket (tidak berubah)
         let ticketOptionsHTML = ticketTypes.map(record => `
             <div class="ticket-option" data-ticket-id="${record.id}">
                 <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${record.fields['Admin Fee'] || 0}">
@@ -108,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        // Bagian untuk membuat form data diri
+        // Bagian untuk membuat form data diri (tidak berubah)
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
             if (!field['Field Label'] || !field['Field Type']) return '';
@@ -210,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewContainer.innerHTML = `<div class="review-row"><span>${name} x ${quantity}</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
     };
 
-    // FUNGSI INI JUGA DIMODIFIKASI
     const showReviewModal = () => {
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
@@ -228,15 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const formData = new FormData(form);
         let formDataHTML = '';
-        // Tangkap Pilihan Kursi dan tampilkan paling atas
+
+        // Cara pengambilan data tidak perlu diubah, FormData cerdas!
         const seatChoiceValue = formData.get('Pilihan Kursi');
         if (seatChoiceValue) {
             formDataHTML += `<div class="review-row"><span>Pilihan Kursi</span><span>${seatChoiceValue}</span></div>`;
         }
         
-        // Loop sisa data form
         for (let [key, value] of formData.entries()) {
-            // Jangan tampilkan lagi Pilihan Kursi karena sudah di atas
             if (key !== 'Pilihan Kursi') {
                 formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
             }
