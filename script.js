@@ -62,7 +62,7 @@ function initializeApp() {
             } else {
                 allEvents.forEach(record => {
                     const fields = record.fields;
-                    if (!fields['Nama Event'] || !fields['Gambar Event'] || !fields['Gambar Event'].length === 0) return;
+                    if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
 
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -79,11 +79,11 @@ function initializeApp() {
                     eventCard.setAttribute('data-event-id', record.id); 
                     eventCard.innerHTML = `
                         <div class="card-image">
-                            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
+                            <img src="${fields['GambarEvent'][0].url}" alt="${fields['NamaEvent']}">
                             <span class="tag festival">${fields['Tag'] || ''}</span>
                         </div>
                         <div class="card-content">
-                            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
+                            <h3 class="event-title">${fields['NamaEvent']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
                             <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
                             <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
                             <div class="price-buy">
@@ -156,3 +156,4 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
