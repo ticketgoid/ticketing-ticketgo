@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
-    const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2';
+    const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
 
     const checkoutMain = document.getElementById('checkout-main');
@@ -246,5 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
