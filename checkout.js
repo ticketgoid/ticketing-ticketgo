@@ -10,29 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
-    // --- PENAMBAHAN KODE LOGGING ---
+    // --- KODE LOGGING ---
     /**
-     * Menampilkan pesan log langsung di halaman web.
-     * @param {string} message Pesan yang ingin ditampilkan.
-     * @param {string} type Tipe log ('info', 'success', 'error', 'warn').
+     * Menyiapkan container dan style untuk logger.
+     * Dijalankan sekali di awal untuk memastikan elemen log selalu ada.
      */
-    const logToPage = (message, type = 'info') => {
-        const logContainer = document.getElementById('log-container');
-        if (!logContainer) return; // Pastikan container ada
-
-        const logEntry = document.createElement('p');
-        const timestamp = new Date().toLocaleTimeString('en-GB');
-        logEntry.innerHTML = `<span>[${timestamp}]</span> ${message}`;
-        logEntry.className = `log-entry log-${type}`;
-        
-        // Tambahkan log baru di atas
-        logContainer.prepend(logEntry);
-    };
-
-    /**
-     * Menyisipkan CSS untuk styling container log.
-     */
-    const injectLoggerCSS = () => {
+    const setupLogger = () => {
+        // 1. Buat dan sisipkan CSS untuk styling log
         const style = document.createElement('style');
         style.textContent = `
             #log-container {
@@ -42,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 width: 350px;
                 max-height: 250px;
                 overflow-y: auto;
-                background-color: rgba(0, 0, 0, 0.8);
+                background-color: rgba(0, 0, 0, 0.85);
                 color: #fff;
                 padding: 10px;
                 border-radius: 8px;
@@ -52,13 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 box-shadow: 0 4px 10px rgba(0,0,0,0.5);
                 border: 1px solid #444;
             }
-            .log-entry {
-                margin: 0 0 8px 0;
-                padding: 4px 6px;
-                border-radius: 3px;
-                border-left: 4px solid;
-                line-height: 1.4;
-            }
+            .log-entry { margin: 0 0 8px 0; padding: 4px 6px; border-radius: 3px; border-left: 4px solid; line-height: 1.4; word-wrap: break-word; }
             .log-entry span { opacity: 0.7; margin-right: 5px; }
             .log-info { border-color: #3498db; }
             .log-success { border-color: #2ecc71; color: #a6ffda; }
@@ -66,8 +44,35 @@ document.addEventListener('DOMContentLoaded', () => {
             .log-warn { border-color: #f1c40f; color: #fff1b5;}
         `;
         document.head.appendChild(style);
+
+        // 2. Buat dan sisipkan container log ke body jika belum ada
+        if (!document.getElementById('log-container')) {
+            const logContainer = document.createElement('div');
+            logContainer.id = 'log-container';
+            document.body.appendChild(logContainer);
+        }
     };
-    // --- AKHIR PENAMBAHAN KODE LOGGING ---
+
+    /**
+     * Menampilkan pesan log langsung di halaman web.
+     * @param {string} message Pesan yang ingin ditampilkan.
+     * @param {string} type Tipe log ('info', 'success', 'error', 'warn').
+     */
+    const logToPage = (message, type = 'info') => {
+        const logContainer = document.getElementById('log-container');
+        if (!logContainer) {
+            console.error('Log container not found!');
+            return;
+        }
+
+        const logEntry = document.createElement('p');
+        const timestamp = new Date().toLocaleTimeString('en-GB');
+        logEntry.innerHTML = `<span>[${timestamp}]</span> ${message}`;
+        logEntry.className = `log-entry log-${type}`;
+        
+        logContainer.prepend(logEntry); // Tampilkan log baru di atas
+    };
+    // --- AKHIR KODE LOGGING ---
 
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -125,8 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
-            const errorMsg = `Gagal memuat detail event. Pastikan field 'EventID_Text' sudah dibuat di Airtable. Error: ${error.message}`;
+            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan field 'EventID_Text' ada di Airtable. Error: ${error.message}`;
             checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+            // Pesan error ini sekarang akan selalu tampil di log box
             logToPage(errorMsg, 'error');
         }
     };
@@ -160,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
-        // MODIFIKASI: Menambahkan <div id="log-container"></div>
+        // PERUBAHAN: Container log tidak lagi dirender di sini
         const layoutHTML = `
             <div class="event-header">
                 <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
@@ -193,8 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
                 </div>
-            </div>
-            <div id="log-container"></div>`;
+            </div>`;
         checkoutMain.innerHTML = layoutHTML;
     };
 
@@ -224,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePrice();
         });
         document.getElementById('buyButton').addEventListener('click', showReviewModal);
-        // Event listener untuk modal sudah berada di file HTML utama, jadi tidak perlu ditambahkan di sini.
     };
 
     const updatePrice = () => {
@@ -283,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Panggil fungsi utama untuk memulai semuanya
-    injectLoggerCSS();
+    // --- INISIALISASI ---
+    // 1. Siapkan logger terlebih dahulu
+    setupLogger();
+    // 2. Baru jalankan proses pembangunan halaman
     buildPage();
 });
