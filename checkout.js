@@ -193,6 +193,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showReviewModal = () => {
+    // --- BLOK VALIDASI EMAIL BARU ---
+    const emailInput = document.querySelector('input[type="email"]');
+
+    // Hanya validasi jika ada input email dan sudah diisi sesuatu
+    if (emailInput && emailInput.value) { 
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Pola standar untuk email
+        if (!emailPattern.test(emailInput.value)) {
+            alert('Harap masukkan format email yang valid (contoh: nama@email.com).');
+            emailInput.focus(); // Langsung arahkan kursor ke input email
+            return; // Hentikan proses jika email tidak valid
+        }
+    }
+    // --- AKHIR BLOK VALIDASI EMAIL ---
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -226,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
