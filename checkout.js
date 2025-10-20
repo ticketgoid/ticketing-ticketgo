@@ -10,25 +10,90 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
-    // --- FUNGSI BARU UNTUK MENAMBAHKAN STYLE ---
     /**
-     * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis,
-     * termasuk membuat gambar peta kursi menjadi responsif.
+     * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis.
+     * Termasuk perbaikan untuk radio button dan tombol Beli Tiket.
      */
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
+            /* Membuat gambar peta kursi menjadi responsif */
             .seat-map-image {
-                max-width: 100%; /* Batasi lebar gambar agar tidak melebihi container */
-                height: auto;    /* Jaga rasio aspek gambar */
-                display: block;  /* Hapus spasi ekstra di bawah gambar */
-                border-radius: 8px; /* Opsional: sudut yang lebih halus */
+                max-width: 100%;
+                height: auto;
+                display: block;
+                border-radius: 8px;
                 margin-top: 10px;
+            }
+
+            /* === PERBAIKAN 1: Memusatkan Bulatan Hijau di Radio Button === */
+            /* Kita asumsikan style radio button menggunakan pseudo-element ::before pada label */
+            .ticket-option input[type="radio"] + label::before {
+                content: '';
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 2px solid #ddd;
+                display: grid; /* Gunakan Grid untuk centering */
+                place-content: center; /* Cara modern untuk memusatkan item */
+                transition: all 0.2s ease;
+            }
+
+            .ticket-option input[type="radio"]:checked + label::before {
+                border-color: #00A97F; /* Warna border saat dipilih */
+                background-color: #fff;
+            }
+            
+            /* Ini adalah bulatan hijau di dalamnya */
+            .ticket-option input[type="radio"] + label::after {
+                content: '';
+                width: 12px;
+                height: 12px;
+                background-color: #00A97F;
+                border-radius: 50%;
+                position: absolute; /* Posisikan relatif terhadap container */
+                top: 50%;
+                left: 20px; /* Sesuaikan dengan posisi radio button Anda */
+                transform: translate(-50%, -50%) scale(0); /* Sembunyikan & pusatkan */
+                transition: transform 0.2s ease;
+            }
+
+            .ticket-option input[type="radio"]:checked + label::after {
+                transform: translate(-50%, -50%) scale(1); /* Tampilkan saat dipilih */
+            }
+
+
+            /* === PERBAIKAN 2: Desain Modern untuk Tombol 'Beli Tiket' === */
+            #buyButton.btn-primary {
+                width: 100%; /* Lebar penuh */
+                background-color: #007bff; /* Warna biru modern */
+                color: white;
+                border: none;
+                padding: 15px 20px;
+                font-size: 16px;
+                font-weight: bold;
+                border-radius: 12px; /* Sudut lebih bulat */
+                cursor: pointer;
+                text-align: center;
+                transition: background-color 0.3s ease, transform 0.1s ease;
+                margin-top: 20px;
+            }
+
+            #buyButton.btn-primary:hover {
+                background-color: #0056b3; /* Warna lebih gelap saat disentuh mouse */
+            }
+            
+            #buyButton.btn-primary:active {
+                transform: scale(0.98); /* Efek sedikit ditekan saat diklik */
+            }
+
+            #buyButton.btn-primary:disabled {
+                background-color: #cccccc;
+                cursor: not-allowed;
             }
         `;
         document.head.appendChild(style);
     };
-    // --- AKHIR FUNGSI BARU ---
 
 
     const fetchData = async (url) => {
@@ -38,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildPage = async () => {
-        injectStyles(); // Panggil fungsi style di sini
+        injectStyles(); // Panggil fungsi style di awal
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('eventId');
