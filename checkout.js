@@ -27,89 +27,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
             /* Perbaikan untuk radio button */
             .ticket-option input[type="radio"] + label::before {
-                content: '';
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                border: 2px solid #ddd;
-                display: grid;
-                place-content: center;
-                transition: all 0.2s ease;
-                position: relative; 
-                flex-shrink: 0;
+                content: ''; width: 20px; height: 20px; border-radius: 50%;
+                border: 2px solid #ddd; display: grid; place-content: center;
+                transition: all 0.2s ease; position: relative; flex-shrink: 0;
             }
-
             .ticket-option input[type="radio"]:checked + label::before {
-                border-color: #00A97F;
-                background-color: #fff;
+                border-color: #00A97F; background-color: #fff;
             }
-            
             .ticket-option input[type="radio"] + label::after {
-                content: '';
-                width: 12px;
-                height: 12px;
-                background-color: #00A97F;
-                border-radius: 50%;
-                position: absolute; 
-                top: 50%;
-                left: 10px;
-                transform: translate(-50%, -50%) scale(0); 
-                transition: transform 0.2s ease;
+                content: ''; width: 12px; height: 12px; background-color: #00A97F;
+                border-radius: 50%; position: absolute; top: 50%; left: 10px;
+                transform: translate(-50%, -50%) scale(0); transition: transform 0.2s ease;
             }
-
             .ticket-option input[type="radio"]:checked + label::after {
                 transform: translate(-50%, -50%) scale(1);
             }
 
             /* Desain Modern untuk Tombol 'Beli Tiket' */
             #buyButton.btn-primary {
-                width: 100%;
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 15px 20px;
-                font-size: 16px;
-                font-weight: bold;
-                border-radius: 12px;
-                cursor: pointer;
-                text-align: center;
+                width: 100%; background-color: #007bff; color: white; border: none;
+                padding: 15px 20px; font-size: 16px; font-weight: bold;
+                border-radius: 12px; cursor: pointer; text-align: center;
                 transition: background-color 0.3s ease, transform 0.1s ease;
                 margin-top: 20px;
             }
+            #buyButton.btn-primary:hover { background-color: #0056b3; }
+            #buyButton.btn-primary:active { transform: scale(0.98); }
+            #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
 
-            #buyButton.btn-primary:hover {
-                background-color: #0056b3;
-            }
-            
-            #buyButton.btn-primary:active {
-                transform: scale(0.98);
-            }
-
-            #buyButton.btn-primary:disabled {
-                background-color: #cccccc;
-                cursor: not-allowed;
-            }
-
-            /* === PERBAIKAN BARU: Membuat Gambar Header Tampil Penuh === */
+            /* === PERUBAHAN BARU: Header dengan Rasio 4x5 === */
             .event-header {
                 width: 100%;
-                height: 280px; /* Beri tinggi yang pasti agar gambar bisa mengisi ruang */
+                aspect-ratio: 4 / 5; /* PENTING: Mengatur rasio lebar:tinggi */
                 border-radius: 12px 12px 0 0;
-                overflow: hidden; /* Sembunyikan bagian gambar yang meluber */
+                overflow: hidden;
                 margin-bottom: 20px;
-                background-color: #0c1e3e; /* Warna latar belakang fallback */
+                background-color: #f0f2f5; /* Warna latar belakang fallback */
             }
 
             .event-poster {
                 width: 100%;
                 height: 100%;
-                object-fit: cover; /* PENTING: Mengisi kontainer, boleh memotong gambar */
+                object-fit: cover; /* Mengisi kontainer, boleh memotong gambar */
                 display: block;
             }
         `;
         document.head.appendChild(style);
     };
-
 
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -118,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildPage = async () => {
-        injectStyles(); // Panggil fungsi style di awal
+        injectStyles();
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('eventId');
@@ -151,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const [ticketTypesData, formFieldsData] = await Promise.all([
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
+                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%[5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
             ]);
 
             ticketTypes = ticketTypesData.records;
@@ -163,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
-            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan semua kolom yang dibutuhkan (ticket_types, form_fields, Seat Map, Pilihan Kursi) sudah diisi di Airtable. Error: ${error.message}`;
+            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan semua kolom yang dibutuhkan sudah diisi di Airtable. Error: ${error.message}`;
             checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
         }
     };
@@ -231,9 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
+        // === PERUBAHAN SUMBER GAMBAR DI SINI ===
         const layoutHTML = `
             <div class="event-header">
-                <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
+                <img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
             </div>
             <div class="purchase-container">
                 <div class="event-info">
@@ -242,15 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="purchase-form">
                     ${seatMapHTML}
-
                     <form id="customer-data-form" novalidate>
                         ${seatSelectionHTML}
-
                         <div class="form-section">
                             <h3>2. Pilih Jenis Tiket</h3>
                             <div id="ticketOptionsContainer">${ticketOptionsHTML}</div>
                         </div>
-
                         <div class="form-section">
                             <h3>3. Pilih Jumlah Beli</h3>
                             <div class="quantity-selector">
@@ -259,13 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button type="button" id="increaseQty" disabled>+</button>
                             </div>
                         </div>
-
                         <div class="form-section">
                             <h3>4. Isi Data Diri</h3>
                             ${formFieldsHTML}
                         </div>
                     </form>
-                    
                     <div class="form-section price-review-section">
                         <h3>Ringkasan Harga</h3>
                         <div id="price-review"><p>Pilih jenis tiket untuk melihat harga.</p></div>
