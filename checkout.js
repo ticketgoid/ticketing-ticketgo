@@ -3,57 +3,91 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
-
+    
     const checkoutMain = document.getElementById('checkout-main');
-    let eventDetails = {};
-    let ticketTypes = [];
-    let formFields = [];
+    let logContainer;
+
+    // --- FUNGSI DEBUG UNTUK MENAMPILKAN LOG DI HALAMAN ---
+    const setupLogContainer = () => {
+        checkoutMain.innerHTML = `
+            <div id="debug-log" style="font-family: monospace; background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 8px; max-width: 1100px; margin: 2rem auto;">
+                <h3 style="margin: 0 0 1rem 0; border-bottom: 1px solid #d1d5db; padding-bottom: 0.5rem;">Debug Log Halaman Checkout</h3>
+            </div>
+            <div id="content-container"></div>`;
+        logContainer = document.getElementById('debug-log');
+    };
+
+    const logToPage = (message, type = 'LOG') => {
+        if (!logContainer) return;
+        const color = type === 'ERROR' ? '#ef4444' : type === 'SUCCESS' ? '#22c55e' : '#6b7280';
+        logContainer.innerHTML += `<p style="margin: 0.25rem 0; color: ${color}; border-bottom: 1px dashed #e5e7eb; padding-bottom: 0.25rem;"><strong>[${type}]</strong> ${message}</p>`;
+        console.log(`[${type}] ${message}`);
+    };
+
+    // --- FUNGSI UTAMA APLIKASI ---
 
     const fetchData = async (url) => {
+        logToPage(`Mengambil data dari: ${url.split('?')[0]}`);
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-        if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
-        return await response.json();
+        if (!response.ok) {
+            throw new Error(`Airtable API Error: ${response.status} - Gagal mengambil data.`);
+        }
+        const data = await response.json();
+        logToPage(`Data berhasil diambil.`, 'SUCCESS');
+        return data;
     };
 
     const buildPage = async () => {
+        setupLogContainer();
+        logToPage('Memulai proses build halaman...');
+
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('eventId');
+
         if (!eventId) {
-            checkoutMain.innerHTML = '<p class="error-message">Error: Event ID tidak ditemukan di URL.</p>';
+            logToPage('Event ID tidak ditemukan di URL.', 'ERROR');
             return;
         }
+        logToPage(`Event ID ditemukan: ${eventId}`);
 
         try {
             // Langkah 1: Ambil detail event utama berdasarkan ID-nya.
+            logToPage(`Langkah 1: Mengambil detail untuk Event ID: ${eventId}`);
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
-            eventDetails = eventData.fields;
+            const eventDetails = eventData.fields;
+            logToPage(`Detail Event ditemukan: "${eventDetails['Nama Event']}"`);
 
-            // Langkah 2: Gunakan eventId (BUKAN eventName) untuk mengambil data terkait. INI ADALAH PERBAIKANNYA.
+            // Langkah 2: Gunakan eventId untuk mengambil data tiket dan formulir.
+            logToPage(`Langkah 2: Mengambil Tiket & Form Fields yang terhubung dengan Event ID: ${eventId}`);
             const [ticketTypesData, formFieldsData] = await Promise.all([
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))`),
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
             ]);
 
-            ticketTypes = ticketTypesData.records;
-            formFields = formFieldsData.records;
+            const ticketTypes = ticketTypesData.records;
+            const formFields = formFieldsData.records;
+            logToPage(`Ditemukan ${ticketTypes.length} jenis tiket dan ${formFields.length} isian formulir.`);
 
             if (ticketTypes.length === 0) {
-                 checkoutMain.innerHTML = '<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>';
+                 logToPage('Tidak ada tiket yang tersedia untuk event ini. Proses dihentikan.', 'ERROR');
+                 document.getElementById('content-container').innerHTML = '<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>';
                  return;
             }
 
-            renderLayout();
+            logToPage('Semua data berhasil diambil. Memulai render HTML...', 'SUCCESS');
+            renderLayout(eventDetails, ticketTypes, formFields);
             attachEventListeners();
             updatePrice();
 
         } catch (error) {
+            logToPage(`Terjadi kesalahan fatal: ${error.message}`, 'ERROR');
             console.error('Gagal membangun halaman:', error);
-            checkoutMain.innerHTML = `<p class="error-message">Gagal memuat detail event. Pastikan konfigurasi Airtable sudah benar. Pesan error: ${error.message}</p>`;
+            document.getElementById('content-container').innerHTML = `<p class="error-message" style="color:red; font-weight:bold;">Gagal memuat detail event. Pastikan konfigurasi Airtable Anda (nama field link, dll) sudah benar.</p>`;
         }
     };
 
-    const renderLayout = () => {
+    const renderLayout = (eventDetails, ticketTypes, formFields) => {
+        const contentContainer = document.getElementById('content-container');
         let ticketOptionsHTML = ticketTypes.map(record => `
             <div class="ticket-option" data-ticket-id="${record.id}">
                 <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${record.fields['Admin Fee'] || 0}">
@@ -115,9 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
                 </div>
             </div>`;
-        checkoutMain.innerHTML = layoutHTML;
+        contentContainer.innerHTML = layoutHTML;
     };
-
     const attachEventListeners = () => {
         document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -198,3 +231,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
