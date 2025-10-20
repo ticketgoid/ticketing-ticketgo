@@ -326,13 +326,14 @@ let formFieldsHTML = formFields.map(record => {
     // Loop melalui data form untuk ditampilkan
     for (let [key, value] of formData.entries()) {
         if (key === 'ticket_choice') {
-            // Ganti 'ticket_choice' dengan 'Jenis Tiket' dan nama tiket yang benar
             formDataHTML += `<div class="review-row"><span>Jenis Tiket</span><span>${selectedTicket.dataset.name}</span></div>`;
         } else if (key.toLowerCase().includes('nomor')) {
-            // Tambahkan +62 pada isian Nomor
             formDataHTML += `<div class="review-row"><span>${key}</span><span>+62${value}</span></div>`;
+        } else if (key === 'Pilihan_Kursi') { // <-- KODE BARU DITAMBAHKAN DISINI
+            // Ganti 'Pilihan_Kursi' menjadi 'Pilihan Kursi'
+            formDataHTML += `<div class="review-row"><span>Pilihan Kursi</span><span>${value}</span></div>`;
         } else {
-            // Tampilkan field lain seperti biasa
+            // Display other fields as usual
             formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
         }
     }
@@ -357,6 +358,7 @@ let formFieldsHTML = formFields.map(record => {
     
     buildPage();
 });
+
 
 
 
