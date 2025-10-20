@@ -794,9 +794,94 @@ input.input-error {
 
 #closeFeedbackBtn:hover {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
-
 }
 
+/* MODERN TICKET SELECTION STYLES */
+.ticket-option {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+/* Hide the default radio button */
+.ticket-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* Style the label as the clickable card */
+.ticket-option label {
+    display: block;
+    padding: 1rem 1rem 1rem 3.5rem; /* Leave space for the custom radio icon */
+    border: 2px solid #e5e7eb; /* Light gray border */
+    border-radius: 12px;
+    transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+    position: relative;
+    font-weight: 500;
+}
+
+/* Create the custom radio button circle */
+.ticket-option label::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    transition: all 0.2s ease-out;
+}
+
+/* Create the inner dot that appears when selected */
+.ticket-option label::after {
+    content: '';
+    position: absolute;
+    left: 1.44rem;
+    top: 50%;
+    transform: translateY(-50%) scale(0); /* Hide by default */
+    width: 14px;
+    height: 14px;
+    background-color: var(--teal);
+    border-radius: 50%;
+    transition: transform 0.2s ease-out;
+}
+
+/* --- INTERACTIVE STATES --- */
+
+/* Add a glow effect on hover */
+.ticket-option input[type="radio"]:hover + label {
+    border-color: var(--teal);
+    box-shadow: 0 4px 20px rgba(20, 184, 166, 0.15);
+}
+
+/* Style the label when its radio button is selected */
+.ticket-option input[type="radio"]:checked + label {
+    border-color: var(--teal);
+    background-color: #f0fdfa; /* Light teal background */
+}
+
+/* Change the outer circle's border color when selected */
+.ticket-option input[type="radio"]:checked + label::before {
+    border-color: var(--teal);
+}
+
+/* Show the inner dot when selected */
+.ticket-option input[type="radio"]:checked + label::after {
+    transform: translateY(-50%) scale(1);
+}
+
+/* Style the price text */
+.ticket-option label strong {
+    color: var(--orange);
+    font-weight: 700;
+}
 
 
 
