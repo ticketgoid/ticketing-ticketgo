@@ -1,0 +1,11 @@
+# File: netlify.toml
+
+[build]
+  # Direktori tempat Netlify akan menemukan file-file backend Anda
+  functions = "netlify/functions"
+
+[[redirects]]
+  # Mengarahkan permintaan dari /api/* ke function yang sesuai
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
