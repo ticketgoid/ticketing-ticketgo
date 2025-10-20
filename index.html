@@ -125,69 +125,13 @@
             <p class="copyright">&copy; 2025 TicketGo. All rights reserved.</p>
         </footer>
     </div>
-    
-    <div id="eventModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <div id="detailView">
-                <h2 id="modalEventTitle">Detail Event</h2>
-                <img id="modalEventImage" src="assets/event1.jpg" alt="Detail Event">
-                <p id="modalEventDescription">Informasi detail tentang event.</p>
-                <button id="showFormButton" class="btn-primary">Daftar Sekarang</button>
-            </div>
-            <div id="formView" style="display: none;">
-    <h2>Formulir Pendaftaran</h2>
-    <p class="event-context">Untuk event: <strong id="formEventTitle"></strong></p>
-    
-    <div id="ticketSelection">
-        <label>Pilih Tiket:</label>
-        <div id="ticketOptionsContainer">
-            </div>
-    </div>
-    <br>
-    
-    <form id="registrationForm" novalidate>
-        </form>
-    
-        <div id="paymentOverview">
-            <h4>Ringkasan Pesanan</h4>
-            <div class="summary-row">
-                <span>Subtotal</span>
-                <span id="summarySubtotal">Rp 0</span>
-            </div>
-            <div class="summary-row savings" style="display: none;">
-                <span>Hemat</span>
-                <span id="summarySavings">- Rp 0</span>
-            </div>
-                <div class="summary-row">
-                    <span>Biaya Admin</span>
-                    <span id="summaryAdminFee">Rp 0</span>
-            </div>
-                <hr>
-                 <div class="summary-row total">
-                    <span>Total Pembayaran</span>
-                    <span id="summaryTotal">Rp 0</span>
-                </div>
-            </div>
-    
-                <button id="payButton" class="btn-primary">Bayar Sekarang</button>
-            </div>
-        </div>
-    </div>
 
-    <div id="feedbackModal" class="feedback-modal">
-        <div class="feedback-content">
-            <div class="feedback-icon"><i class="fas"></i></div>
-            <h2 id="feedbackTitle"></h2>
-            <p id="feedbackMessage"></p>
-            <button id="closeFeedbackBtn" class="btn-primary">Oke</button>
-        </div>
-    </div>
-
+    <script src="checkout.js"></script>
     <script src="script.js"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </body>
 </html>
+
 
 
 
