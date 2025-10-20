@@ -64,19 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        let formFieldsHTML = formFields.map(record => {
-            const field = record.fields;
-            const fieldId = `form_${field['Field Label'].replace(/[^a-zA-Z0-9]/g, '')}`;
-            const fieldLabel = field['Field Label'];
-            const fieldType = field['Field Type'].toLowerCase();
-            const isRequired = field['Is Required'] ? 'required' : '';
+        // GANTI BAGIAN INI DI checkout.js
+let formFieldsHTML = formFields.map(record => {
+    const field = record.fields;
+    // Pastikan field memiliki 'Field Label' dan 'Field Type' untuk menghindari error
+    if (!field['Field Label'] || !field['Field Type']) {
+        return ''; // Lewati field yang tidak lengkap
+    }
+    const fieldId = `form_${field['Field Label'].replace(/[^a-zA-Z0-9]/g, '')}`;
+    const fieldLabel = field['Field Label'];
+    const fieldType = field['Field Type'].toLowerCase();
+    const isRequired = field['Is Required'] ? 'required' : '';
 
-            if (fieldType === 'tel') {
-                return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789"></div></div>`;
-            } else {
-                return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><input type="${fieldType}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="${fieldLabel}"></div>`;
-            }
-        }).join('');
+    if (fieldType === 'tel') {
+        return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789"></div></div>`;
+    } else {
+        return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><input type="${fieldType}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="${fieldLabel}"></div>`;
+    }
+}).join('');
 
         const layoutHTML = `
             <div class="event-header">
@@ -242,4 +247,5 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     buildPage();
+
 });
