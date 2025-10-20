@@ -114,19 +114,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<div class="ticket-option"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${adminFee}"><label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${record.fields.Name}</span><span class="ticket-price">Rp ${record.fields.Price.toLocaleString('id-ID')}</span></div></label></div>`;
         }).join('');
 
-        // === PERBAIKAN 1: Memastikan Form Fields ditampilkan ===
-        let formFieldsHTML = formFields.map(record => {
-            const field = record.fields;
-            const fieldLabel = field['FieldLabel'];
-            const fieldType = field['FieldType'];
-            if (!fieldLabel || !fieldType) return '';
-            const fieldId = `form_${fieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-            const isRequired = field['Is_Required'] ? 'required' : '';
-            if (fieldType.toLowerCase() === 'tel') {
-                return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789"></div></div>`;
-            } else {
-                return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><input type="${fieldType.toLowerCase()}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="${fieldLabel}"></div>`;
-            }
+        // ... di dalam fungsi renderLayout
+let formFieldsHTML = formFields.map(record => {
+    const field = record.fields;
+    const fieldLabel = field['FieldLabel'];
+    const fieldType = field['FieldType'];
+    if (!fieldLabel || !fieldType) return '';
+    const fieldId = `form_${fieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const isRequired = field['Is_Required'] ? 'required' : '';
+
+    // Logika untuk placeholder kustom
+    let placeholder = fieldLabel; // Default placeholder
+    if (fieldLabel.toLowerCase().includes('nama')) {
+        placeholder = 'Sesuai Identitas (KTP, SIM, Kartu Pelajar, dsb)';
+    } else if (fieldType.toLowerCase() === 'email') {
+        placeholder = 'contoh@gmail.com';
+    }
+
+    if (fieldType.toLowerCase() === 'tel') {
+        return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789"></div></div>`;
+    } else {
+        // Gunakan placeholder yang sudah dimodifikasi
+        return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><input type="${fieldType.toLowerCase()}" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="${placeholder}"></div>`;
+    }
         }).join('');
 
         const layoutHTML = `
@@ -206,6 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 buyButton.disabled = false; // Aktifkan kembali tombol beli
             }
         });
+        // --- KODE BARU: MEMBATASI INPUT NOMOR HANYA ANGKA ---
+    const phoneInput = document.querySelector('input[type="tel"]');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', (e) => {
+            // Hapus semua karakter yang bukan angka secara real-time
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+    }
     }
 };
 
@@ -257,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
