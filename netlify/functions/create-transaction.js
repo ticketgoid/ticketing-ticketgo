@@ -1,8 +1,13 @@
 // File: netlify/functions/create-transaction.js
 
-// Handler function yang akan dieksekusi oleh Netlify
+// Import 'node-fetch' untuk kompatibilitas yang lebih baik
+const fetch = require('node-fetch');
+
 exports.handler = async function (event, context) {
-  // Hanya izinkan permintaan POST
+  // Tambahkan ini untuk melihat log setiap kali fungsi dipanggil
+  console.log("Fungsi create-transaction dimulai...");
+  console.log("Metode HTTP:", event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -12,22 +17,24 @@ exports.handler = async function (event, context) {
 
   try {
     const payload = JSON.parse(event.body);
-    
-    // Ambil Server Key dari Environment Variables di Netlify (lebih aman)
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
-    const isProduction = false; // Ganti ke true jika sudah live
+    const isProduction = false;
+
+    // Tambahkan ini untuk debugging
+    console.log("Payload yang diterima dari frontend:", JSON.stringify(payload, null, 2));
+    console.log("Membaca MIDTRANS_SERVER_KEY:", serverKey ? `***${serverKey.slice(-4)}` : "TIDAK DITEMUKAN!");
 
     if (!serverKey) {
-        throw new Error("MIDTRANS_SERVER_KEY belum diatur di Netlify.");
+        throw new Error("MIDTRANS_SERVER_KEY tidak ditemukan di environment variables.");
     }
 
     const midtransApiUrl = isProduction
       ? 'https://app.midtrans.com/snap/v1/transactions'
       : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
-    // Enkripsi Server Key untuk header Authorization
     const encodedKey = Buffer.from(serverKey + ':').toString('base64');
 
+    console.log("Mengirim permintaan ke Midtrans...");
     const midtransResponse = await fetch(midtransApiUrl, {
       method: 'POST',
       headers: {
@@ -36,30 +43,30 @@ exports.handler = async function (event, context) {
         'Authorization': `Basic ${encodedKey}`,
       },
       body: JSON.stringify({
-        transaction_details: {
-          order_id: payload.order_id,
-          gross_amount: payload.gross_amount,
-        },
+        transaction_details: payload.transaction_details, // Perbaiki bagian ini
         item_details: payload.item_details,
         customer_details: payload.customer_details,
         credit_card: { secure: true },
       }),
     });
-
+    
+    console.log("Menerima respons dari Midtrans dengan status:", midtransResponse.status);
     const data = await midtransResponse.json();
+    console.log("Isi respons dari Midtrans:", JSON.stringify(data, null, 2));
 
     if (!midtransResponse.ok) {
       throw new Error(data.error_messages?.join(', ') || 'Gagal membuat transaksi dengan Midtrans');
     }
 
-    // Jika berhasil, kirim token kembali ke frontend
+    console.log("Berhasil! Mengirim token ke frontend.");
     return {
       statusCode: 200,
       body: JSON.stringify({ token: data.token }),
     };
 
   } catch (error) {
-    // Jika terjadi error, kirim pesan yang jelas
+    // Ini adalah bagian paling penting, akan mencetak error detail ke log
+    console.error("!!! ERROR TERJADI DI DALAM FUNGSI:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),
