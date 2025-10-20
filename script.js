@@ -52,8 +52,7 @@ function initializeApp() {
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?filterByFormula=%7BPendaftaran%20Dibuka%7D%3D1&sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
-
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
         try {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
             if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -64,36 +63,43 @@ function initializeApp() {
             if (allEvents.length === 0) {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
             } else {
-                allEvents.forEach(record => {
-                    const fields = record.fields;
-                    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
+                    // GANTI BAGIAN forEach DI DALAM renderEvents
+allEvents.forEach(record => {
+    const fields = record.fields;
+    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
 
-                    const eventDate = new Date(fields['Waktu']);
-                    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
-                    const isPriority = fields['Prioritas'] === true;
+    const eventDate = new Date(fields['Waktu']);
+    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
+    const isPriority = fields['Prioritas'] === true;
+    
+    // --> LOGIKA BARU DIMULAI DI SINI
+    const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+    const buttonHTML = isRegistrationOpen
+        ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
+        : `<button class="btn-buy disabled" disabled>Ditutup</button>`;
+    // <-- LOGIKA BARU BERAKHIR DI SINI
 
-                    const eventCard = document.createElement('div');
-                    eventCard.className = 'event-card';
-                    eventCard.setAttribute('data-event-id', record.id); 
-                    eventCard.innerHTML = `
-                        <div class="card-image">
-                            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
-                            <span class="tag festival">${fields['Tag'] || ''}</span>
-                        </div>
-                        <div class="card-content">
-                            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
-                            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
-                            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
-                            <div class="price-buy">
-                                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
-                                <button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>
-                            </div>
-                        </div>`;
-                    eventGrid.appendChild(eventCard);
-                });
+    const eventCard = document.createElement('div');
+    eventCard.className = 'event-card';
+    eventCard.setAttribute('data-event-id', record.id); 
+    eventCard.innerHTML = `
+        <div class="card-image">
+            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
+            <span class="tag festival">${fields['Tag'] || ''}</span>
+        </div>
+        <div class="card-content">
+            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
+            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
+            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
+            <div class="price-buy">
+                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
+                ${buttonHTML} 
+            </div>
+        </div>`; // Gunakan buttonHTML yang sudah dibuat
+    eventGrid.appendChild(eventCard);
+});
             }
-            checkAllEventQuotas();
             setupEventListeners();
         } catch (error) {
             console.error("Gagal mengambil event dari Airtable:", error);
@@ -103,7 +109,56 @@ function initializeApp() {
 
     // ## FUNGSI CEK KUOTA EVENT ##
     async function checkAllEventQuotas() {
-        // ... (Fungsi ini tetap sama, tidak perlu diubah) ...
+        const scrollLeftBtn = document.getElementById('scrollLeftBtn');
+        const scrollRightBtn = document.getElementById('scrollRightBtn');
+        const threshold = 4;
+        if (allEvents.length > threshold) {
+            eventGrid.classList.add('two-rows');
+            if(scrollLeftBtn) scrollLeftBtn.style.display = 'block';
+            if(scrollRightBtn) scrollRightBtn.style.display = 'block';
+        } else {
+            eventGrid.classList.remove('two-rows');
+            if(scrollLeftBtn) scrollLeftBtn.style.display = 'none';
+            if(scrollRightBtn) scrollRightBtn.style.display = 'none';
+        }
+
+        for (const record of allEvents) {
+            const eventId = record.id;
+            const fields = record.fields;
+            const eventName = fields['Nama Event'];
+            const quota = fields['Kuota'];
+            const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+            const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
+            
+            if (!eventCard) continue;
+            
+            const buyButton = eventCard.querySelector('.btn-buy');
+
+            if (!isRegistrationOpen) {
+                buyButton.textContent = 'Ditutup';
+                buyButton.disabled = true;
+                buyButton.classList.add('disabled');
+                continue;
+            }
+
+            if (typeof quota !== 'undefined') {
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?event=${encodeURIComponent(eventName)}`);
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        const currentCount = data.count;
+                        if (currentCount >= quota) {
+                            buyButton.textContent = 'Pendaftaran Penuh';
+                            buyButton.disabled = true;
+                            buyButton.classList.add('disabled');
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Gagal memeriksa kuota untuk ${eventName}:`, error);
+                }
+            }
+        }
     }
     
     // --- FUNGSI PENGATUR EVENT LISTENERS ---
@@ -161,4 +216,5 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
