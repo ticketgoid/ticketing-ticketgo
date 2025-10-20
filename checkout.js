@@ -211,8 +211,7 @@ let formFieldsHTML = formFields.map(record => {
             }
         }
     };
-    document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
-    };
+
     // Listener untuk semua radio button (kursi dan tiket)
     document.querySelectorAll('input[name="Pilihan_Kursi"], input[name="ticket_choice"]').forEach(radio => {
         radio.addEventListener('change', () => {
@@ -287,6 +286,9 @@ let formFieldsHTML = formFields.map(record => {
             }
         });
     }
+    
+    // Hubungkan tombol di modal ke fungsi pembayaran Midtrans
+    document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
 };
 
     const updatePrice = () => {
@@ -463,6 +465,7 @@ const showFeedback = (type, title, message) => {
     
     buildPage();
 });
+
 
 
 
