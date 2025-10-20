@@ -17,7 +17,6 @@ function initializeApp() {
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
 
     // --- Variabel Global & Elemen DOM ---
-    let allEvents = [];
     const eventGrid = document.getElementById('eventGrid');
     
     // --- Logika Carousel Hero ---
@@ -55,7 +54,7 @@ function initializeApp() {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
             if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
             const data = await response.json();
-            allEvents = data.records;
+            const allEvents = data.records;
             eventGrid.innerHTML = ''; 
 
             if (allEvents.length === 0) {
@@ -115,7 +114,7 @@ function initializeApp() {
             });
         }
         
-        // Mengarahkan ke halaman checkout.html
+        // Mengarahkan ke halaman checkout.html menggunakan event delegation
         eventGrid.addEventListener('click', function(e) {
             if (e.target && e.target.matches('button.btn-buy:not(:disabled)')) {
                 const eventId = e.target.closest('.event-card').dataset.eventId;
