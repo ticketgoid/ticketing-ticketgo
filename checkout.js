@@ -89,12 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const layoutHTML = `
             <div class="event-header">
-                <img src="${eventDetails['Gambar Event'][0].url}" alt="Poster Event" class="event-poster">
+                <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
             </div>
             <div class="purchase-container">
                 <div class="event-info">
-                    <h1>${eventDetails['Nama Event']}</h1>
-                    <p class="event-description">${eventDetails.Deskripsi}</p>
+                    <h1>${eventDetails['Nama Event'] || 'Nama Event'}</h1>
+                    <p class="event-description">${eventDetails.Deskripsi || 'Deskripsi tidak tersedia.'}</p>
                 </div>
                 <div class="purchase-form">
                     <div class="form-section">
