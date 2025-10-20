@@ -341,14 +341,14 @@ async function generateFormFields(eventId, eventData) {
         }
         
         document.querySelectorAll('.btn-buy').forEach(button => {
-            button.addEventListener('click', () => {
-                const eventId = button.dataset.eventId;
-                const eventData = allEvents.find(event => event.id === eventId);
-                if (eventData) {
-                    openModal(eventData);
-                }
-            });
-        });
+    button.addEventListener('click', () => {
+        const eventId = button.dataset.eventId;
+        if (eventId) {
+            // Arahkan ke halaman checkout baru dengan ID event
+            window.location.href = `checkout.html?eventId=${eventId}`;
+        }
+    });
+});
         
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
         const scrollLeftBtn = document.getElementById('scrollLeftBtn');
@@ -544,5 +544,6 @@ async function generateFormFields(eventId, eventData) {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
 
