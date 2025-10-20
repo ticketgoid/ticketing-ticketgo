@@ -4,6 +4,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = '/api/create-transaction';
+    const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyoAFKygJRhEeemcAS5PPM_GA9KklFbhxPYzuW9IJ1DDSe7AU9nC4tScHS26VpuMN66ow/exec';
+
+// FUNGSI BARU UNTUK MENGIRIM DATA KE GOOGLE SHEET
+const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
+    try {
+        // Gabungkan semua data menjadi satu paket untuk dikirim
+        const payload = {
+            order_id: paymentResult.order_id,
+            transaction_status: paymentResult.transaction_status,
+            gross_amount: paymentResult.gross_amount,
+            customer_details: customerData,
+            item_details: itemDetails
+        };
+
+        await fetch(GOOGLE_SHEET_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+        });
+        console.log("Data berhasil dikirim ke Google Sheet.");
+    } catch (error) {
+        console.error("Gagal mengirim data ke Google Sheet:", error);
+    }
+};
     
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
@@ -99,15 +123,34 @@ const initiatePayment = async () => {
             throw new Error("Token pembayaran tidak diterima dari server.");
         }
 
-        window.snap.pay(result.token, {
-            onSuccess: (result) => showFeedback('success', 'Pembayaran Berhasil!', 'Tiket Anda akan segera dikirimkan.'),
-            onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
-            onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.'),
-            onClose: () => {
-                confirmButton.disabled = false;
-                confirmButton.textContent = 'Lanjutkan Pembayaran';
-            }
-        });
+        // Di dalam fungsi initiatePayment, cari bagian window.snap.pay
+
+window.snap.pay(result.token, {
+    onSuccess: (paymentResult) => {
+        // Tampilkan notifikasi sukses ke pengguna
+        showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
+        
+        // Siapkan data yang rapi untuk dikirim ke Google Sheet
+        const customerDetailsForSheet = {
+            first_name: customerName,
+            email: customerEmail,
+            phone: '+62' + customerPhone
+        };
+        const itemDetailsForSheet = {
+            name: selectedTicket.dataset.name,
+            quantity: quantity
+        };
+
+        // Panggil fungsi untuk menyimpan data ke spreadsheet
+        saveDataToSheet(paymentResult, customerDetailsForSheet, itemDetailsForSheet);
+    },
+    onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
+    onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
+    onClose: () => {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Lanjutkan Pembayaran';
+    }
+});
 
     } catch (error) {
         console.error('Payment initiation error:', error);
@@ -323,6 +366,7 @@ const initiatePayment = async () => {
     
     buildPage();
 });
+
 
 
 
