@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beli Tiket - TicketGo</title>
+    <link rel="icon" href="assets/favicon.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="checkout-page">
+
+    <header>
+        <nav>
+            <a href="index.html" class="logo">
+                <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
+                <span>Ticket<span class="logo-go">Go</span></span>
+            </a>
+        </nav>
+    </header>
+
+    <main id="checkout-main">
+        <div id="loader" class="checkout-loader">
+            <div class="spinner"></div>
+            <p>Sedang menyiapkan halaman...</p>
+        </div>
+    </main>
+
+    <footer>
+        <hr>
+        <p class="copyright">&copy; 2025 TicketGo. All rights reserved.</p>
+    </footer>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content review-modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Konfirmasi Pembelian</h2>
+            <p>Harap periksa kembali detail pesanan Anda sebelum melanjutkan ke pembayaran.</p>
+            
+            <div id="reviewDetails">
+                </div>
+
+            <button id="confirmPaymentBtn" class="btn-primary">Lanjutkan Pembayaran</button>
+        </div>
+    </div>
+
+    <div id="feedbackModal" class="feedback-modal">
+        <div class="feedback-content">
+            <div class="feedback-icon"><i class="fas"></i></div>
+            <h2 id="feedbackTitle"></h2>
+            <p id="feedbackMessage"></p>
+            <button id="closeFeedbackBtn" class="btn-primary">Oke</button>
+        </div>
+    </div>
+
+    <script src="checkout.js"></script>
+    <script type="text/javascript"
+      src="https://app.sandbox.midtrans.com/snap/snap.js"
+      data-client-key="CLIENT_KEY_ANDA"></script>
+</body>
+</html>
