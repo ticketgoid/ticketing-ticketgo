@@ -30,26 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .ticket-option label { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
             .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
             .ticket-option input[type="radio"] { display: none; }
-
-            /* === PERBAIKAN 2: Memusatkan Tombol Hijau === */
-            .ticket-option label::before {
-                content: ''; width: 20px; height: 20px; border-radius: 50%;
-                border: 2px solid #ddd; display: grid; place-content: center; /* Membantu centering */
-                transition: all 0.2s ease; flex-shrink: 0;
-                position: relative; /* Diperlukan agar ::after bisa diposisikan di dalamnya */
-            }
-            .ticket-option input[type="radio"]:checked + label::before { border-color: #00A97F; }
-
-            .ticket-option label::after {
-                content: ''; width: 12px; height: 12px; background-color: #00A97F;
-                border-radius: 50%; position: absolute;
-                top: 50%; left: 50%; /* Posisikan di tengah ::before */
-                transform: translate(-50%, -50%) scale(0); /* Sembunyikan & pusatkan */
-                transition: transform 0.2s ease-out;
-            }
-            .ticket-option input[type="radio"]:checked + label::after {
-                transform: translate(-50%, -50%) scale(1); /* Tampilkan saat dipilih */
-            }
             
             /* Style lainnya */
             .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
@@ -246,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
