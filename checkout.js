@@ -10,6 +10,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
+    // --- FUNGSI BARU UNTUK MENAMBAHKAN STYLE ---
+    /**
+     * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis,
+     * termasuk membuat gambar peta kursi menjadi responsif.
+     */
+    const injectStyles = () => {
+        const style = document.createElement('style');
+        style.textContent = `
+            .seat-map-image {
+                max-width: 100%; /* Batasi lebar gambar agar tidak melebihi container */
+                height: auto;    /* Jaga rasio aspek gambar */
+                display: block;  /* Hapus spasi ekstra di bawah gambar */
+                border-radius: 8px; /* Opsional: sudut yang lebih halus */
+                margin-top: 10px;
+            }
+        `;
+        document.head.appendChild(style);
+    };
+    // --- AKHIR FUNGSI BARU ---
+
+
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
         if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
@@ -17,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildPage = async () => {
+        injectStyles(); // Panggil fungsi style di sini
+
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('eventId');
 
@@ -42,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formulaParts = ids.map(id => `RECORD_ID()='${id}'`);
                 return `OR(${formulaParts.join(',')})`;
             };
-            
+
             const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
             const formFilter = encodeURIComponent(createFilterFormula(formFieldIds));
 
@@ -64,10 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
             checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
         }
     };
-    
-    // FUNGSI INI DIMODIFIKASI UNTUK MENGGANTI DROPDOWN MENJADI TOMBOL RADIO
+
     const renderLayout = () => {
-        // Bagian untuk membuat Seat Map (tidak berubah)
         let seatMapHTML = '';
         if (eventDetails['Seat Map'] && eventDetails['Seat Map'][0]?.url) {
             seatMapHTML = `
@@ -78,14 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // === PERUBAHAN UTAMA DI SINI ===
-        // Bagian untuk membuat pilihan kursi sebagai tombol radio
         let seatSelectionHTML = '';
         const seatOptions = eventDetails['Pilihan Kursi'] ? eventDetails['Pilihan Kursi'].split('\n').filter(opt => opt.trim() !== '') : [];
         if (seatOptions.length > 0) {
             const seatOptionsContent = seatOptions.map((option, index) => {
                 const trimmedOption = option.trim();
-                // Buat ID unik untuk setiap input radio
                 const optionId = `seat_option_${index}`;
                 return `
                     <div class="ticket-option">
@@ -106,9 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-        // === AKHIR PERUBAHAN ===
 
-        // Bagian untuk membuat pilihan jenis tiket (tidak berubah)
         let ticketOptionsHTML = ticketTypes.map(record => `
             <div class="ticket-option" data-ticket-id="${record.id}">
                 <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${record.fields['Admin Fee'] || 0}">
@@ -121,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        // Bagian untuk membuat form data diri (tidak berubah)
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
             if (!field['Field Label'] || !field['Field Type']) return '';
@@ -136,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
-        // Gabungkan semua bagian menjadi layout akhir
         const layoutHTML = `
             <div class="event-header">
                 <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
@@ -241,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(form);
         let formDataHTML = '';
 
-        // Cara pengambilan data tidak perlu diubah, FormData cerdas!
         const seatChoiceValue = formData.get('Pilihan Kursi');
         if (seatChoiceValue) {
             formDataHTML += `<div class="review-row"><span>Pilihan Kursi</span><span>${seatChoiceValue}</span></div>`;
