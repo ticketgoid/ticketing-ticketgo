@@ -10,22 +10,34 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
+    /**
+     * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis.
+     */
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
-            /* Desain Header dengan Rasio 4x5 */
-            .event-header {
+            /* === PERBAIKAN UTAMA: Memaksa Header ke Rasio 4x5 === */
+            #checkout-main .event-header {
                 width: 100%;
-                aspect-ratio: 4 / 5;
-                border-radius: 12px 12px 0 0;
+                max-width: 480px; /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
+                margin-left: auto;   /* Pusatkan header */
+                margin-right: auto;  /* Pusatkan header */
+                aspect-ratio: 4 / 5; /* PENTING: Mengatur rasio lebar:tinggi */
+                border-radius: 16px; /* Sudut membulat di semua sisi */
                 overflow: hidden;
-                margin-bottom: 20px;
+                margin-bottom: 24px;
                 background-color: #f0f2f5;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Tambahan shadow halus */
             }
-            .event-poster {
-                width: 100%; height: 100%; object-fit: cover; display: block;
+
+            #checkout-main .event-poster {
+                width: 100%;
+                height: 100%;
+                object-fit: cover; /* Mengisi kontainer, boleh memotong sisi gambar yang tidak pas */
+                display: block;
             }
-            /* Style lainnya */
+            /* ========================================================== */
+
             .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
             .ticket-option input[type="radio"] + label::before { content: ''; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; display: grid; place-content: center; transition: all 0.2s ease; position: relative; flex-shrink: 0; }
             .ticket-option input[type="radio"]:checked + label::before { border-color: #00A97F; background-color: #fff; }
@@ -85,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderLayout = () => {
-        // PERBAIKAN: Menggunakan Nama_Kolom dengan underscore
         let seatMapHTML = '';
         if (eventDetails['Seat_Map'] && eventDetails['Seat_Map'][0]?.url) {
             seatMapHTML = `<div class="form-section seat-map-container"><h3>Lihat Peta Kursi</h3><img src="${eventDetails['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>`;
