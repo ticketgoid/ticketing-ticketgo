@@ -25,11 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Langkah 1: Ambil detail event utama berdasarkan ID-nya. Ini sudah benar.
+            // Langkah 1: Ambil detail event utama berdasarkan ID-nya.
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
             eventDetails = eventData.fields;
 
-            // Langkah 2: Gunakan eventId (BUKAN eventName) untuk mengambil data terkait.
+            // Langkah 2: Gunakan eventId (BUKAN eventName) untuk mengambil data terkait. INI ADALAH PERBAIKANNYA.
             const [ticketTypesData, formFieldsData] = await Promise.all([
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))`),
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
@@ -52,9 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
             checkoutMain.innerHTML = `<p class="error-message">Gagal memuat detail event. Pastikan konfigurasi Airtable sudah benar. Pesan error: ${error.message}</p>`;
         }
     };
-
-    // --- SISA KODE (renderLayout, attachEventListeners, dll.) TETAP SAMA ---
-    // Pastikan sisa file Anda sama dengan kode di bawah ini
 
     const renderLayout = () => {
         let ticketOptionsHTML = ticketTypes.map(record => `
