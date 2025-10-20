@@ -35,9 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 display: grid;
                 place-content: center;
                 transition: all 0.2s ease;
-                /* Pastikan label memiliki posisi relatif untuk pseudo-element ::after */
                 position: relative; 
-                flex-shrink: 0; /* Mencegah elemen mengecil */
+                flex-shrink: 0;
             }
 
             .ticket-option input[type="radio"]:checked + label::before {
@@ -52,9 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 background-color: #00A97F;
                 border-radius: 50%;
                 position: absolute; 
-                /* Sesuaikan posisi ini agar tepat di tengah lingkaran ::before */
                 top: 50%;
-                left: 10px; /* Lebar ::before / 2 */
+                left: 10px;
                 transform: translate(-50%, -50%) scale(0); 
                 transition: transform 0.2s ease;
             }
@@ -92,26 +90,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 cursor: not-allowed;
             }
 
-            /* === PERBAIKAN BARU: Gambar Poster Event (Kaluna) === */
+            /* === PERBAIKAN BARU: Membuat Gambar Header Tampil Penuh === */
             .event-header {
                 width: 100%;
-                /* Hilangkan tinggi tetap jika ada, biarkan gambar menentukan tinggi */
-                /* min-height: 200px; */ /* Contoh jika perlu tinggi minimum */
-                display: flex; /* Gunakan flexbox untuk penataan */
-                justify-content: center; /* Pusatkan gambar secara horizontal */
-                align-items: center; /* Pusatkan gambar secara vertikal */
-                background-color: #f0f2f5; /* Warna latar belakang jika ada whitespace */
-                overflow: hidden; /* Pastikan tidak ada scrollbar tak terduga */
-                border-radius: 12px 12px 0 0; /* Sudut membulat di atas */
+                height: 280px; /* Beri tinggi yang pasti agar gambar bisa mengisi ruang */
+                border-radius: 12px 12px 0 0;
+                overflow: hidden; /* Sembunyikan bagian gambar yang meluber */
                 margin-bottom: 20px;
+                background-color: #0c1e3e; /* Warna latar belakang fallback */
             }
 
             .event-poster {
-                max-width: 100%;   /* Batasi lebar maksimal gambar */
-                height: auto;      /* Biarkan tinggi menyesuaikan agar tidak terpotong */
-                object-fit: contain; /* PENTING: Pastikan gambar full dan tidak terpotong */
-                display: block;    /* Hapus spasi di bawah gambar (default inline) */
-                border-radius: 12px 12px 0 0; /* Opsional: sesuaikan border-radius */
+                width: 100%;
+                height: 100%;
+                object-fit: cover; /* PENTING: Mengisi kontainer, boleh memotong gambar */
+                display: block;
             }
         `;
         document.head.appendChild(style);
