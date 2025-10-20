@@ -10,149 +10,64 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
-    // --- KODE LOGGING ---
-    /**
-     * Menyiapkan container dan style untuk logger.
-     * Dijalankan sekali di awal untuk memastikan elemen log selalu ada.
-     */
-    const setupLogger = () => {
-        // 1. Buat dan sisipkan CSS untuk styling log
-        const style = document.createElement('style');
-        style.textContent = `
-            #log-container {
-                position: fixed;
-                bottom: 15px;
-                right: 15px;
-                width: 350px;
-                max-height: 250px;
-                overflow-y: auto;
-                background-color: rgba(0, 0, 0, 0.85);
-                color: #fff;
-                padding: 10px;
-                border-radius: 8px;
-                font-family: 'Consolas', 'Menlo', monospace;
-                font-size: 12px;
-                z-index: 9999;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-                border: 1px solid #444;
-            }
-            .log-entry { margin: 0 0 8px 0; padding: 4px 6px; border-radius: 3px; border-left: 4px solid; line-height: 1.4; word-wrap: break-word; }
-            .log-entry span { opacity: 0.7; margin-right: 5px; }
-            .log-info { border-color: #3498db; }
-            .log-success { border-color: #2ecc71; color: #a6ffda; }
-            .log-error { border-color: #e74c3c; color: #ffacac; font-weight: bold; }
-            .log-warn { border-color: #f1c40f; color: #fff1b5;}
-        `;
-        document.head.appendChild(style);
-
-        // 2. Buat dan sisipkan container log ke body jika belum ada
-        if (!document.getElementById('log-container')) {
-            const logContainer = document.createElement('div');
-            logContainer.id = 'log-container';
-            document.body.appendChild(logContainer);
-        }
-    };
-
-    /**
-     * Menampilkan pesan log langsung di halaman web.
-     * @param {string} message Pesan yang ingin ditampilkan.
-     * @param {string} type Tipe log ('info', 'success', 'error', 'warn').
-     */
-    const logToPage = (message, type = 'info') => {
-        const logContainer = document.getElementById('log-container');
-        if (!logContainer) {
-            console.error('Log container not found!');
-            return;
-        }
-
-        const logEntry = document.createElement('p');
-        const timestamp = new Date().toLocaleTimeString('en-GB');
-        logEntry.innerHTML = `<span>[${timestamp}]</span> ${message}`;
-        logEntry.className = `log-entry log-${type}`;
-        
-        logContainer.prepend(logEntry); // Tampilkan log baru di atas
-    };
-    // --- AKHIR KODE LOGGING ---
-
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
         if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
         return await response.json();
     };
 
-// GANTI FUNGSI buildPage DI checkout.js DENGAN YANG INI
-const buildPage = async () => {
-    logToPage('Memulai proses pembangunan halaman...');
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('eventId');
+    const buildPage = async () => {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('eventId');
 
-    if (!eventId) {
-        const errorMsg = 'Error: Event ID tidak ditemukan di URL.';
-        checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
-        logToPage(errorMsg, 'error');
-        return;
-    }
-    logToPage(`Event ID ditemukan: <strong>${eventId}</strong>`, 'success');
-
-    try {
-        // --- LANGKAH 1: Ambil data event utama untuk mendapatkan ID data tertaut ---
-        logToPage('Mengambil data event utama...');
-        const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
-        eventDetails = eventData.fields;
-        logToPage(`Event "${eventDetails['Nama Event']}" berhasil diambil.`, 'success');
-
-        // Ambil array of record IDs dari data event
-        const ticketTypeIds = eventDetails.ticket_types || [];
-        const formFieldIds = eventDetails.form_fields || [];
-
-        if (ticketTypeIds.length === 0) {
-            const warnMsg = 'Tiket untuk event ini belum tersedia atau sudah habis.';
-            checkoutMain.innerHTML = `<p class="error-message">${warnMsg}</p>`;
-            logToPage(warnMsg, 'warn');
+        if (!eventId) {
+            checkoutMain.innerHTML = `<p class="error-message">Error: Event ID tidak ditemukan di URL.</p>`;
             return;
         }
-        logToPage(`Ditemukan ${ticketTypeIds.length} tiket & ${formFieldIds.length} form tertaut.`);
 
-        // --- LANGKAH 2: Buat formula filter untuk mengambil record berdasarkan ID ---
-        // Formula ini terlihat seperti: OR(RECORD_ID()='id1', RECORD_ID()='id2', ...)
-        const createFilterFormula = (ids) => {
-            if (ids.length === 0) return "RECORD_ID()='INVALID_ID'"; // Mencegah error jika kosong
-            const formulaParts = ids.map(id => `RECORD_ID()='${id}'`);
-            return `OR(${formulaParts.join(',')})`;
-        };
-        
-        const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
-        const formFilter = encodeURIComponent(createFilterFormula(formFieldIds));
+        try {
+            // Langkah 1: Ambil data event utama
+            const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
+            eventDetails = eventData.fields;
 
-        // --- LANGKAH 3: Ambil data tiket dan form secara spesifik ---
-        logToPage('Mengambil detail tiket dan form berdasarkan ID...');
-        const [ticketTypesData, formFieldsData] = await Promise.all([
-            fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
-            fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
-        ]);
+            const ticketTypeIds = eventDetails.ticket_types || [];
+            const formFieldIds = eventDetails.form_fields || [];
 
-        ticketTypes = ticketTypesData.records;
-        formFields = formFieldsData.records;
-        logToPage('Detail tiket dan form berhasil diambil.', 'success');
+            if (ticketTypeIds.length === 0) {
+                checkoutMain.innerHTML = `<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>`;
+                return;
+            }
 
-        // --- Lanjutan proses sama seperti sebelumnya ---
-        logToPage('Memulai render layout HTML...');
-        renderLayout();
-        logToPage('Layout berhasil dirender.', 'success');
-        
-        logToPage('Menambahkan event listeners...');
-        attachEventListeners();
-        logToPage('Event listeners berhasil ditambahkan.', 'success');
+            // Langkah 2: Buat formula filter untuk mengambil record berdasarkan ID
+            const createFilterFormula = (ids) => {
+                if (ids.length === 0) return "RECORD_ID()='INVALID_ID'";
+                const formulaParts = ids.map(id => `RECORD_ID()='${id}'`);
+                return `OR(${formulaParts.join(',')})`;
+            };
+            
+            const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
+            const formFilter = encodeURIComponent(createFilterFormula(formFieldIds));
 
-        updatePrice();
+            // Langkah 3: Ambil data tiket dan form secara spesifik
+            const [ticketTypesData, formFieldsData] = await Promise.all([
+                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
+                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
+            ]);
 
-    } catch (error) {
-        console.error('Gagal membangun halaman:', error);
-        const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records sudah diisi. Error: ${error.message}`;
-        checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
-        logToPage(errorMsg, 'error');
-    }
-};
+            ticketTypes = ticketTypesData.records;
+            formFields = formFieldsData.records;
+
+            // Lanjutkan proses render
+            renderLayout();
+            attachEventListeners();
+            updatePrice();
+
+        } catch (error) {
+            console.error('Gagal membangun halaman:', error); // Log error tetap ada di console browser untuk debugging
+            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records sudah diisi. Error: ${error.message}`;
+            checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+        }
+    };
     
     const renderLayout = () => {
         let ticketOptionsHTML = ticketTypes.map(record => `
@@ -183,7 +98,6 @@ const buildPage = async () => {
             }
         }).join('');
 
-        // PERUBAHAN: Container log tidak lagi dirender di sini
         const layoutHTML = `
             <div class="event-header">
                 <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
@@ -226,7 +140,6 @@ const buildPage = async () => {
                 document.getElementById('increaseQty').disabled = false;
                 document.getElementById('buyButton').disabled = false;
                 updatePrice();
-                logToPage(`Tiket dipilih: <strong>${e.target.dataset.name}</strong>`);
             });
         });
         document.getElementById('increaseQty').addEventListener('click', () => {
@@ -266,10 +179,8 @@ const buildPage = async () => {
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
             form.reportValidity();
-            logToPage('Validasi form gagal. Mohon lengkapi data diri.', 'warn');
             return;
         }
-        logToPage('Validasi form berhasil, menampilkan modal review.', 'success');
 
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
@@ -304,10 +215,6 @@ const buildPage = async () => {
         }
     };
     
-    // --- INISIALISASI ---
-    // 1. Siapkan logger terlebih dahulu
-    setupLogger();
-    // 2. Baru jalankan proses pembangunan halaman
+    // Langsung jalankan proses pembangunan halaman
     buildPage();
 });
-
