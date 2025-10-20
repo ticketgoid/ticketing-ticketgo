@@ -195,19 +195,15 @@ let formFieldsHTML = formFields.map(record => {
     const checkButtonState = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
-        
-        // Cek apakah opsi pemilihan kursi ada di halaman ini
         const seatOptionsExist = document.querySelector('input[name="Pilihan_Kursi"]');
 
         if (seatOptionsExist) {
-            // Jika ada pilihan kursi, keduanya harus dipilih
             if (seatSelected && ticketSelected) {
                 buyButton.disabled = false;
             } else {
                 buyButton.disabled = true;
             }
         } else {
-            // Jika tidak ada pilihan kursi, cukup pilih tiket
             if (ticketSelected) {
                 buyButton.disabled = false;
             } else {
@@ -216,19 +212,19 @@ let formFieldsHTML = formFields.map(record => {
         }
     };
 
-    // Tambahkan listener ke semua radio button (kursi dan tiket)
+    // Listener untuk semua radio button (kursi dan tiket)
     document.querySelectorAll('input[name="Pilihan_Kursi"], input[name="ticket_choice"]').forEach(radio => {
         radio.addEventListener('change', () => {
-            checkButtonState(); // Cek status setiap kali ada perubahan
+            checkButtonState();
             updatePrice();
         });
     });
 
-    // Listener khusus untuk mengaktifkan tombol kuantitas
+    // Listener untuk tombol kuantitas
     document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => radio.addEventListener('change', () => {
         document.getElementById('increaseQty').disabled = false;
     }));
-        
+    
     document.getElementById('increaseQty').addEventListener('click', () => {
         const qtyInput = document.getElementById('ticketQuantity');
         qtyInput.value = parseInt(qtyInput.value) + 1;
@@ -243,53 +239,47 @@ let formFieldsHTML = formFields.map(record => {
     });
     document.getElementById('buyButton').addEventListener('click', showReviewModal);
 
-    // --- KODE BARU UNTUK VALIDASI REAL-TIME ---
+    // Validasi real-time untuk email
     const emailInput = document.querySelector('input[type="email"]');
     if (emailInput) {
-        // Buat elemen untuk pesan error di bawah input email
         let errorEl = document.createElement('small');
         errorEl.style.color = '#e53e3e';
-        errorEl.style.display = 'none'; // Sembunyikan secara default
+        errorEl.style.display = 'none';
         errorEl.style.marginTop = '4px';
         emailInput.parentElement.appendChild(errorEl);
-
-        // Tambahkan listener yang aktif saat pengguna mengetik
         emailInput.addEventListener('input', () => {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const isValid = emailPattern.test(emailInput.value);
-            const buyButton = document.getElementById('buyButton');
-
-            // Jika email diisi tapi formatnya salah
             if (emailInput.value && !isValid) {
-                emailInput.style.borderColor = '#e53e3e'; // Border merah
+                emailInput.style.borderColor = '#e53e3e';
                 errorEl.textContent = 'Format email tidak valid.';
-                errorEl.style.display = 'block'; // Tampilkan pesan error
-                buyButton.disabled = true; // Nonaktifkan tombol beli
+                errorEl.style.display = 'block';
+                buyButton.disabled = true;
             } else {
-                emailInput.style.borderColor = ''; // Kembalikan border ke normal
-                errorEl.style.display = 'none'; // Sembunyikan pesan error
-                buyButton.disabled = false; // Aktifkan kembali tombol beli
+                emailInput.style.borderColor = '';
+                errorEl.style.display = 'none';
+                checkButtonState(); // Cek ulang tombol setelah email valid
             }
         });
-        // --- KODE BARU: MEMBATASI INPUT NOMOR HANYA ANGKA ---
+    }
+
+    // Membatasi input nomor hanya angka
     const phoneInput = document.querySelector('input[type="tel"]');
     if (phoneInput) {
         phoneInput.addEventListener('input', (e) => {
-            // Hapus semua karakter yang bukan angka secara real-time
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
         });
+    }
+    
+    // Fungsionalitas Tombol Tutup (X) pada Modal
     const reviewModal = document.getElementById('reviewModal');
     if (reviewModal) {
         const closeButton = reviewModal.querySelector('.close-button');
-        
-        // Menutup modal saat tombol 'X' diklik
         if (closeButton) {
             closeButton.addEventListener('click', () => {
                 reviewModal.style.display = 'none';
             });
         }
-
-        // Menutup modal saat mengklik area di luar konten modal
         window.addEventListener('click', (event) => {
             if (event.target == reviewModal) {
                 reviewModal.style.display = 'none';
@@ -367,6 +357,7 @@ let formFieldsHTML = formFields.map(record => {
     
     buildPage();
 });
+
 
 
 
