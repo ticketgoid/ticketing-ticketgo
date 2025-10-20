@@ -1,4 +1,4 @@
-// GANTI SELURUH ISI FILE script.js DENGAN VERSI BERSIH INI
+// GANTI SELURUH ISI FILE script.js DENGAN KODE BERSIH INI
 window.addEventListener('load', () => {
     const preloader = document.getElementById('preloader');
     const mainContent = document.getElementById('main-content');
@@ -116,10 +116,9 @@ function initializeApp() {
         }
         
         // Mengarahkan ke halaman checkout.html
-        // Perlu event delegation karena event card dibuat dinamis
         eventGrid.addEventListener('click', function(e) {
-            if (e.target && e.target.matches('button.btn-buy')) {
-                const eventId = e.target.dataset.eventId;
+            if (e.target && e.target.matches('button.btn-buy:not(:disabled)')) {
+                const eventId = e.target.closest('.event-card').dataset.eventId;
                 if (eventId) {
                     window.location.href = `checkout.html?eventId=${eventId}`;
                 }
