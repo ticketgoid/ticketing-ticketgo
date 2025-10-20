@@ -37,9 +37,30 @@ document.addEventListener('DOMContentLoaded', () => {
             #buyButton.btn-primary:hover { background-color: #0056b3; }
             #buyButton.btn-primary:active { transform: scale(0.98); }
             #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
-        `;
-        document.head.appendChild(style);
-    };
+            /* === GAYA BARU UNTUK TOMBOL LANJUTKAN PEMBAYARAN === */
+        #confirmPaymentBtn {
+            width: 100%;
+            background-color: #007bff; /* Warna biru modern */
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-top: 20px;
+        }
+        #confirmPaymentBtn:hover {
+            background-color: #0056b3; /* Warna lebih gelap saat hover */
+        }
+        #confirmPaymentBtn:active {
+            transform: scale(0.98); /* Efek klik */
+        }
+    `;
+    document.head.appendChild(style);
+};
 
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -257,7 +278,23 @@ let formFieldsHTML = formFields.map(record => {
             // Hapus semua karakter yang bukan angka secara real-time
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
         });
-    }
+    const reviewModal = document.getElementById('reviewModal');
+    if (reviewModal) {
+        const closeButton = reviewModal.querySelector('.close-button');
+        
+        // Menutup modal saat tombol 'X' diklik
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                reviewModal.style.display = 'none';
+            });
+        }
+
+        // Menutup modal saat mengklik area di luar konten modal
+        window.addEventListener('click', (event) => {
+            if (event.target == reviewModal) {
+                reviewModal.style.display = 'none';
+            }
+        });
     }
 };
 
@@ -276,39 +313,61 @@ let formFieldsHTML = formFields.map(record => {
     };
 
     const showReviewModal = () => {
-        const form = document.getElementById('customer-data-form');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+    const form = document.getElementById('customer-data-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+    const quantity = parseInt(document.getElementById('ticketQuantity').value);
+    const price = parseFloat(selectedTicket.dataset.price);
+
+    // Ambil Biaya Admin dari data-attribute, default ke 0 jika tidak ada
+    const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+    
+    // Lakukan kalkulasi
+    const subtotal = price * quantity;
+    const totalAdminFee = adminFee * quantity; // Kalkulasi total biaya admin
+    const finalTotal = subtotal + totalAdminFee;
+
+    const formData = new FormData(form);
+    let formDataHTML = '';
+
+    // Loop melalui data form untuk ditampilkan
+    for (let [key, value] of formData.entries()) {
+        if (key === 'ticket_choice') {
+            // Ganti 'ticket_choice' dengan 'Jenis Tiket' dan nama tiket yang benar
+            formDataHTML += `<div class="review-row"><span>Jenis Tiket</span><span>${selectedTicket.dataset.name}</span></div>`;
+        } else if (key.toLowerCase().includes('nomor')) {
+            // Tambahkan +62 pada isian Nomor
+            formDataHTML += `<div class="review-row"><span>${key}</span><span>+62${value}</span></div>`;
+        } else {
+            // Tampilkan field lain seperti biasa
+            formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
         }
-        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-        const quantity = parseInt(document.getElementById('ticketQuantity').value);
-        const price = parseFloat(selectedTicket.dataset.price);
-        const adminFee = parseFloat(selectedTicket.dataset.adminFee);
-        const subtotal = price * quantity;
-        const totalAdminFee = adminFee * quantity;
-        const finalTotal = subtotal + totalAdminFee;
-        const formData = new FormData(form);
-        let formDataHTML = '';
-        const seatChoiceValue = formData.get('Pilihan_Kursi');
-        if (seatChoiceValue) {
-            formDataHTML += `<div class="review-row"><span>Pilihan Kursi</span><span>${seatChoiceValue}</span></div>`;
-        }
-        for (let [key, value] of formData.entries()) {
-            if (key !== 'Pilihan_Kursi') {
-                formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
-            }
-        }
-        const reviewDetailsContainer = document.getElementById('reviewDetails');
-        if (reviewDetailsContainer) {
-            reviewDetailsContainer.innerHTML = `<h4>Detail Pesanan:</h4><div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div><div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div><hr><h4>Data Pemesan:</h4>${formDataHTML}`;
-        }
-        const reviewModal = document.getElementById('reviewModal');
-        if (reviewModal) reviewModal.style.display = 'flex';
-    };
+    }
+
+    const reviewDetailsContainer = document.getElementById('reviewDetails');
+    if (reviewDetailsContainer) {
+        // Tampilkan semua detail yang sudah benar
+        reviewDetailsContainer.innerHTML = `
+            <h4>Detail Pesanan:</h4>
+            <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
+            <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
+            <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
+            <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
+            <hr>
+            <h4>Data Pemesan:</h4>
+            ${formDataHTML}`;
+    }
+
+    const reviewModal = document.getElementById('reviewModal');
+    if (reviewModal) reviewModal.style.display = 'flex';
+};
     
     buildPage();
 });
+
 
 
 
