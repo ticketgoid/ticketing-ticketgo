@@ -171,12 +171,12 @@ function initializeApp() {
             const formFieldsData = await formFieldsResponse.json();
             
             // 2. Ambil Tipe Tiket untuk event ini
-            const ticketTypesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            const ticketTypesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Nama Event}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
             if (!ticketTypesResponse.ok) throw new Error(`Error fetching ticket types: ${ticketTypesResponse.status}`);
             const ticketTypesData = await ticketTypesResponse.json();
     
             // 3. Ambil Bundles untuk event ini
-            const bundlesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Bundles?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            const bundlesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Bundles?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Nama Event}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
             if (!bundlesResponse.ok) throw new Error(`Error fetching bundles: ${bundlesResponse.status}`);
             const bundlesData = await bundlesResponse.json();
     
@@ -552,3 +552,4 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
