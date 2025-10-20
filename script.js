@@ -11,7 +11,7 @@ window.addEventListener('load', () => {
         if(mainContent) {
             mainContent.classList.remove('hidden');
         }
-    }, 2000); // 
+    }, 2000); 
 
     // Setelah preloader disembunyikan, baru jalankan semua fungsi utama website.
     initializeApp();
@@ -154,22 +154,64 @@ function initializeApp() {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS ##
-    async function generateFormFields(eventId) {
+    // ## FUNGSI FORMULIR DINAMIS BARU ##
+    async function generateFormFields(eventId, eventData) {
         const formContainer = document.getElementById('registrationForm');
+        const ticketOptionsContainer = document.getElementById('ticketOptionsContainer');
         formContainer.innerHTML = '<p>Memuat formulir...</p>';
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
+        ticketOptionsContainer.innerHTML = '';
+    
+        const eventName = eventData.fields['Nama Event'];
+        const adminFee = eventData.fields['Admin Fee'] || 0;
+    
         try {
-            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-            if (!response.ok) throw new Error(`Error: ${response.status}`);
-            const data = await response.json();
-            const allFormFields = data.records;
-            const fields = allFormFields.filter(record => record.fields.Event && record.fields.Event.includes(eventId));
+            // 1. Ambil Field Form (Nama, Email, dll)
+            const formFieldsResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!formFieldsResponse.ok) throw new Error(`Error fetching form fields: ${formFieldsResponse.status}`);
+            const formFieldsData = await formFieldsResponse.json();
+            
+            // 2. Ambil Tipe Tiket untuk event ini
+            const ticketTypesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!ticketTypesResponse.ok) throw new Error(`Error fetching ticket types: ${ticketTypesResponse.status}`);
+            const ticketTypesData = await ticketTypesResponse.json();
+    
+            // 3. Ambil Bundles untuk event ini
+            const bundlesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Bundles?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            if (!bundlesResponse.ok) throw new Error(`Error fetching bundles: ${bundlesResponse.status}`);
+            const bundlesData = await bundlesResponse.json();
+    
+            // Render Opsi Tiket dan Bundle
+            ticketTypesData.records.forEach(ticket => {
+                const t = ticket.fields;
+                ticketOptionsContainer.innerHTML += `
+                    <div class="ticket-option">
+                        <input type="radio" id="${ticket.id}" name="ticket_choice" value="${ticket.id}" data-price="${t.Price}" data-name="${t.Name}" data-qty="1">
+                        <label for="${ticket.id}">${t.Name} - <strong>Rp ${t.Price.toLocaleString('id-ID')}</strong></label>
+                    </div>
+                `;
+            });
+            bundlesData.records.forEach(bundle => {
+                const b = bundle.fields;
+                // Asumsi harga normal tiket tunggal ada di record pertama Tipe Tiket
+                const singleTicketPrice = ticketTypesData.records.length > 0 ? ticketTypesData.records[0].fields.Price : 0;
+                const normalPrice = singleTicketPrice * b['Ticket Quantity'];
+                const savings = normalPrice - b['Bundle Price'];
+    
+                ticketOptionsContainer.innerHTML += `
+                    <div class="ticket-option">
+                        <input type="radio" id="${bundle.id}" name="ticket_choice" value="${bundle.id}" data-price="${b['Bundle Price']}" data-name="${b.Name}" data-qty="${b['Ticket Quantity']}" data-savings="${savings > 0 ? savings : 0}">
+                        <label for="${bundle.id}">${b.Name} (${b['Ticket Quantity']} Tiket) - <strong>Rp ${b['Bundle Price'].toLocaleString('id-ID')}</strong></label>
+                    </div>
+                `;
+            });
+
+            // Render Form Input Data Diri
+            let formHTML = '';
+            const fields = formFieldsData.records.filter(record => record.fields.Event && record.fields.Event.includes(eventId));
             if (fields.length === 0) {
                 formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
                 return;
             }
-            let formHTML = '';
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
@@ -201,26 +243,54 @@ function initializeApp() {
                     </div>`;
                 }
             });
-            // ## PERUBAHAN UTAMA: Menambahkan reCAPTCHA dan Tombol Kirim ##
-            formHTML += `
-                <div class="g-recaptcha" data-sitekey="6LcEiLkrAAAAAOEm3U6v2i8BpDg4IUbShQt0d_EI"></div>
-                <span id="recaptchaError" class="error-message"></span> 
-                <button type="submit" id="submitBtn" class="btn-primary">Kirim Pendaftaran</button>
-            `;
             formContainer.innerHTML = formHTML;
-            // Render ulang widget reCAPTCHA jika ada
-            if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
-                const recaptchaContainer = formContainer.querySelector('.g-recaptcha');
-                if (recaptchaContainer) {
-                    grecaptcha.render(recaptchaContainer);
-                }
-            }
+    
+            // Tambahkan event listener untuk mengupdate ringkasan
+            document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
+                radio.addEventListener('change', () => updatePaymentOverview(adminFee));
+            });
+            updatePaymentOverview(adminFee); // Inisialisasi ringkasan
             attachDynamicValidators(formContainer);
+    
         } catch (error) {
-            console.error("Gagal mengambil field formulir:", error);
-            formContainer.innerHTML = '<p>Gagal memuat formulir. Coba lagi nanti.</p>';
+            console.error("Gagal membangun formulir:", error);
+            formContainer.innerHTML = `<p>Gagal memuat formulir: ${error.message}. Coba lagi nanti.</p>`;
         }
     }
+
+    // ## FUNGSI BARU UNTUK UPDATE RINGKASAN PEMBAYARAN ##
+    function updatePaymentOverview(adminFee) {
+        const selectedOption = document.querySelector('input[name="ticket_choice"]:checked');
+        const subtotalEl = document.getElementById('summarySubtotal');
+        const savingsEl = document.getElementById('summarySavings');
+        const savingsRow = document.querySelector('.summary-row.savings');
+        const adminFeeEl = document.getElementById('summaryAdminFee');
+        const totalEl = document.getElementById('summaryTotal');
+    
+        if (!selectedOption) {
+            subtotalEl.textContent = 'Rp 0';
+            adminFeeEl.textContent = 'Rp 0';
+            totalEl.textContent = 'Rp 0';
+            savingsRow.style.display = 'none';
+            return;
+        }
+    
+        const subtotal = parseFloat(selectedOption.dataset.price);
+        const savings = parseFloat(selectedOption.dataset.savings || 0);
+        const total = subtotal + adminFee;
+    
+        subtotalEl.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
+        adminFeeEl.textContent = `Rp ${adminFee.toLocaleString('id-ID')}`;
+        totalEl.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+    
+        if (savings > 0) {
+            savingsEl.textContent = `- Rp ${savings.toLocaleString('id-ID')}`;
+            savingsRow.style.display = 'flex';
+        } else {
+            savingsRow.style.display = 'none';
+        }
+    }
+    
     // ## FUNGSI UNTUK MENEMPELKAN VALIDATOR ##
     function attachDynamicValidators(form) {
         const emailInput = form.querySelector('input[type="email"]');
@@ -354,6 +424,7 @@ function initializeApp() {
         modalEventImage.src = fields['Gambar Event'][0].url;
         modalEventDescription.textContent = fields['Deskripsi'] || '';
         modal.dataset.currentEventId = eventData.id;
+        modal.dataset.eventData = JSON.stringify(eventData); // Simpan semua data event
         modal.style.display = 'block';
         detailView.style.display = 'block';
         formView.style.display = 'none';
@@ -363,10 +434,11 @@ function initializeApp() {
     if (showFormButton) {
         showFormButton.addEventListener('click', () => {
             const eventId = modal.dataset.currentEventId;
-            if (eventId) {
+            const eventData = JSON.parse(modal.dataset.eventData);
+            if (eventId && eventData) {
                 detailView.style.display = 'none';
                 formView.style.display = 'block';
-                generateFormFields(eventId);
+                generateFormFields(eventId, eventData);
             } else {
                 alert("Terjadi kesalahan, ID event tidak ditemukan.");
             }
@@ -377,93 +449,106 @@ function initializeApp() {
     if (closeButton) closeButton.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    // --- LOGIKA PENGIRIMAN FORM ---
-    if (registrationForm) {
-        registrationForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const form = event.target
-            
-            const recaptchaResponse = grecaptcha.getResponse();
-            const recaptchaError = document.getElementById('recaptchaError');
-            if (!recaptchaResponse) {
-                recaptchaError.textContent = 'Harap centang kotak verifikasi ini.';
-                recaptchaError.classList.add('visible');
-                return; // Hentikan proses jika reCAPTCHA kosong
-            } else {
-                recaptchaError.classList.remove('visible');
-            }
-            
-            const emailInput = form.querySelector('input[type="email"]');
-            const phoneInput = form.querySelector('input[type="tel"]');
-            let isFormValid = true;
-
-            if (emailInput) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailInput.value || !emailRegex.test(emailInput.value)) {
-                    isFormValid = false;
-                    const emailError = emailInput.parentElement.querySelector('.error-message');
-                    emailInput.classList.add('input-error');
-                    if(emailError) {
-                        emailError.textContent = 'Format email tidak valid.';
-                        emailError.classList.add('visible');
-                    }
-                }
-            }
-            if (phoneInput) {
-                if (!phoneInput.value || phoneInput.value.startsWith('0') || phoneInput.value.length < 9) {
-                    isFormValid = false;
-                    const phoneError = phoneInput.parentElement.parentElement.querySelector('.error-message');
-                    phoneInput.closest('.phone-input-group').classList.add('input-error');
-                    if(phoneError) {
-                        phoneError.textContent = 'Nomor tidak valid (minimal 9 angka, tanpa 0).';
-                        phoneError.classList.add('visible');
-                    }
-                }
-            }
-            if (!form.checkValidity()) {
-                isFormValid = false;
-                form.reportValidity();
-            }
-            if (!isFormValid) return;
-
-            const submitBtn = form.querySelector('#submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Mengirim...';
-            const formData = new FormData(form);
-            
-            if (phoneInput) {
-                const phoneFieldName = phoneInput.getAttribute('name');
-                formData.set(phoneFieldName, '+62' + phoneInput.value);
-            }
-
-            formData.append('Event Name', formEventTitle.textContent);
-            
-            fetch(SCRIPT_URL, { method: 'POST', body: formData })
-                .then(response => response.json())
-                .then(data => {
-                    closeModal();
-                    if (data.result === 'success') {
-                        showFeedbackModal('success', 'Pendaftaran Berhasil', 'Tiket akan segera dikirim melalui email. Periksa juga folder spam.');
-                    } else {
-                        showFeedbackModal('error', 'Pendaftaran Gagal', data.message || 'Terjadi kesalahan yang tidak diketahui.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error!', error.message);
-                    closeModal();
-                    showFeedbackModal('error', 'Pendaftaran Gagal', 'Terjadi masalah koneksi. Pastikan URL Script sudah benar dan coba lagi.');
-                })
-                .finally(() => {
-                    // Tombol akan dibuat ulang saat form digenerate lagi, tidak perlu di-enable.
-                });
-        });
-    }
+    // --- LOGIKA PENGIRIMAN FORM BARU (UNTUK MIDTRANS) ---
+    document.getElementById('payButton').addEventListener('click', async () => {
+        const payButton = document.getElementById('payButton');
+        // 1. Validasi form
+        if (!registrationForm.checkValidity()) {
+            registrationForm.reportValidity();
+            return;
+        }
     
+        // 2. Ambil semua data yang diperlukan
+        const selectedOption = document.querySelector('input[name="ticket_choice"]:checked');
+        if (!selectedOption) {
+            alert('Silakan pilih jenis tiket terlebih dahulu.');
+            return;
+        }
+        
+        payButton.disabled = true;
+        payButton.textContent = 'Memproses...';
+    
+        const formData = new FormData(registrationForm);
+        // Membuat objek dari FormData untuk kemudahan akses
+        const formObject = Object.fromEntries(formData.entries());
+        
+        // Cari nama field dinamis untuk Nama, Email, dan Telepon
+        const nameKey = Object.keys(formObject).find(k => k.toLowerCase().includes('nama')) || 'Nama Lengkap';
+        const emailKey = Object.keys(formObject).find(k => k.toLowerCase().includes('email')) || 'Email';
+        const phoneKey = Object.keys(formObject).find(k => k.toLowerCase().includes('telepon') || k.toLowerCase().includes('whatsapp')) || 'Nomor Telepon';
+
+        const customerDetails = {
+            first_name: formObject[nameKey],
+            email: formObject[emailKey],
+            phone: '+62' + formObject[phoneKey],
+        };
+        
+        const summaryAdminFeeText = document.getElementById('summaryAdminFee').textContent;
+        const summaryTotalText = document.getElementById('summaryTotal').textContent;
+
+        const orderDetails = {
+            event_name: document.getElementById('formEventTitle').textContent,
+            item_name: selectedOption.dataset.name,
+            quantity: parseInt(selectedOption.dataset.qty),
+            price: parseFloat(selectedOption.dataset.price),
+            admin_fee: parseFloat(summaryAdminFeeText.replace(/[^0-9]/g, '')),
+            total: parseFloat(summaryTotalText.replace(/[^0-9]/g, ''))
+        };
+    
+        // 3. Kirim ke Backend Anda untuk membuat transaksi Midtrans
+        try {
+            // GANTI DENGAN URL BACKEND ANDA YANG SUDAH DI-DEPLOY
+            const response = await fetch('URL_BACKEND_ANDA/create-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderDetails, customerDetails })
+            });
+
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+    
+            if (data.token) {
+                // 4. Buka pop-up pembayaran Midtrans Snap
+                window.snap.pay(data.token, {
+                    onSuccess: function(result){
+                      console.log('Payment successful!', result);
+                      closeModal();
+                      showFeedbackModal('success', 'Pembayaran Berhasil!', 'E-ticket akan segera dikirim ke email Anda.');
+                      // Di sini Anda bisa menambahkan logika untuk mengirim data ke Google Apps Script
+                      // setelah pembayaran dikonfirmasi.
+                    },
+                    onPending: function(result){
+                      console.log('Payment pending.', result);
+                      closeModal();
+                      showFeedbackModal('pending', 'Menunggu Pembayaran', 'Selesaikan pembayaran Anda sebelum batas waktu berakhir.');
+                    },
+                    onError: function(result){
+                      console.error('Payment error!', result);
+                      closeModal();
+                      showFeedbackModal('error', 'Pembayaran Gagal', 'Terjadi kesalahan saat memproses pembayaran.');
+                    },
+                    onClose: function(){
+                        // Re-enable tombol jika user menutup popup tanpa membayar
+                        payButton.disabled = false;
+                        payButton.textContent = 'Bayar Sekarang';
+                    }
+                });
+            } else {
+                throw new Error('Token pembayaran tidak diterima dari server.');
+            }
+    
+        } catch (error) {
+            console.error('Error saat membuat transaksi:', error);
+            showFeedbackModal('error', 'Gagal Terhubung', 'Tidak dapat terhubung ke server pembayaran. Coba lagi nanti.');
+        } finally {
+            // Biarkan tombol disable, akan di-handle oleh onClose callback dari Midtrans
+        }
+    });
+
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
-
-
-
-
-
