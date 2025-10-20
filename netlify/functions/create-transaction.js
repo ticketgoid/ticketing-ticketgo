@@ -1,10 +1,8 @@
 // File: netlify/functions/create-transaction.js
 
-// Import 'node-fetch' untuk kompatibilitas yang lebih baik
 const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
-  // Tambahkan ini untuk melihat log setiap kali fungsi dipanggil
   console.log("Fungsi create-transaction dimulai...");
   console.log("Metode HTTP:", event.httpMethod);
 
@@ -20,7 +18,6 @@ exports.handler = async function (event, context) {
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     const isProduction = false;
 
-    // Tambahkan ini untuk debugging
     console.log("Payload yang diterima dari frontend:", JSON.stringify(payload, null, 2));
     console.log("Membaca MIDTRANS_SERVER_KEY:", serverKey ? `***${serverKey.slice(-4)}` : "TIDAK DITEMUKAN!");
 
@@ -35,6 +32,19 @@ exports.handler = async function (event, context) {
     const encodedKey = Buffer.from(serverKey + ':').toString('base64');
 
     console.log("Mengirim permintaan ke Midtrans...");
+    
+    // ==================== BAGIAN YANG DIPERBAIKI ====================
+    const midtransPayload = {
+      transaction_details: {
+        order_id: payload.order_id,
+        gross_amount: payload.gross_amount,
+      },
+      item_details: payload.item_details,
+      customer_details: payload.customer_details,
+      credit_card: { secure: true },
+    };
+    // ==============================================================
+
     const midtransResponse = await fetch(midtransApiUrl, {
       method: 'POST',
       headers: {
@@ -42,12 +52,7 @@ exports.handler = async function (event, context) {
         'Accept': 'application/json',
         'Authorization': `Basic ${encodedKey}`,
       },
-      body: JSON.stringify({
-        transaction_details: payload.transaction_details, // Perbaiki bagian ini
-        item_details: payload.item_details,
-        customer_details: payload.customer_details,
-        credit_card: { secure: true },
-      }),
+      body: JSON.stringify(midtransPayload), // Menggunakan payload yang sudah diperbaiki
     });
     
     console.log("Menerima respons dari Midtrans dengan status:", midtransResponse.status);
@@ -65,7 +70,6 @@ exports.handler = async function (event, context) {
     };
 
   } catch (error) {
-    // Ini adalah bagian paling penting, akan mencetak error detail ke log
     console.error("!!! ERROR TERJADI DI DALAM FUNGSI:", error);
     return {
       statusCode: 500,
