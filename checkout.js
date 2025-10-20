@@ -359,24 +359,43 @@ let formFieldsHTML = formFields.map(record => {
     if (reviewModal) reviewModal.style.display = 'flex';
 };
     // FUNGSI BARU UNTUK PROSES PEMBAYARAN MIDTRANS
+// GANTI FUNGSI INI DI checkout.js
 const initiatePayment = async () => {
     const confirmButton = document.getElementById('confirmPaymentBtn');
     confirmButton.disabled = true;
     confirmButton.textContent = 'Memproses...';
 
     try {
-        // 1. Kumpulkan semua data yang diperlukan dari halaman
+        // 1. Kumpulkan data dasar
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
         const price = parseFloat(selectedTicket.dataset.price);
         const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
         const finalTotal = (price + adminFee) * quantity;
-
+        
         const form = document.getElementById('customer-data-form');
         const formData = new FormData(form);
         const customerData = Object.fromEntries(formData.entries());
 
-        // 2. Siapkan payload untuk dikirim ke Google Apps Script
+        // --- LOGIKA BARU YANG LEBIH FLEKSIBEL ---
+        // Cari kunci (FieldLabel) secara dinamis
+        let customerName = '';
+        let customerEmail = '';
+        let customerPhone = '';
+
+        for (const [key, value] of Object.entries(customerData)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('nama')) {
+                customerName = value;
+            } else if (lowerKey.includes('email')) {
+                customerEmail = value;
+            } else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) {
+                customerPhone = value;
+            }
+        }
+        // --- AKHIR LOGIKA BARU ---
+
+        // 2. Siapkan payload dengan data yang sudah ditemukan
         const payload = {
             order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
             gross_amount: finalTotal,
@@ -387,13 +406,18 @@ const initiatePayment = async () => {
                 name: selectedTicket.dataset.name,
             }],
             customer_details: {
-                first_name: customerData.Nama,
-                email: customerData.Email,
-                phone: '+62' + customerData.Nomor,
+                first_name: customerName, // Menggunakan variabel dinamis
+                email: customerEmail,     // Menggunakan variabel dinamis
+                phone: '+62' + customerPhone, // Menggunakan variabel dinamis
             }
         };
+        
+        // Pastikan data penting tidak kosong sebelum mengirim
+        if (!customerName || !customerEmail || !customerPhone) {
+            throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
+        }
 
-        // 3. Kirim data ke backend (Google Apps Script)
+        // 3. Kirim data ke backend (tidak ada perubahan di sini)
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -405,7 +429,7 @@ const initiatePayment = async () => {
             throw new Error(result.error);
         }
 
-        // 4. Gunakan token dari backend untuk membuka popup Midtrans
+        // 4. Buka popup Midtrans (tidak ada perubahan di sini)
         window.snap.pay(result.token, {
             onSuccess: function(result) {
                 showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
@@ -417,7 +441,6 @@ const initiatePayment = async () => {
                 showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.');
             },
             onClose: function() {
-                console.log('Anda menutup popup tanpa menyelesaikan pembayaran');
                 confirmButton.disabled = false;
                 confirmButton.textContent = 'Lanjutkan Pembayaran';
             }
@@ -430,41 +453,10 @@ const initiatePayment = async () => {
         confirmButton.textContent = 'Lanjutkan Pembayaran';
     }
 };
-
-// FUNGSI BARU UNTUK MENAMPILKAN MODAL FEEDBACK
-const showFeedback = (type, title, message) => {
-    document.getElementById('reviewModal').style.display = 'none'; // Sembunyikan modal review
-
-    const feedbackModal = document.getElementById('feedbackModal');
-    const icon = feedbackModal.querySelector('.fas');
-    const content = feedbackModal.querySelector('.feedback-content');
-
-    // Reset kelas
-    icon.className = 'fas';
-    content.className = 'feedback-content';
-
-    if (type === 'success') {
-        icon.classList.add('fa-check-circle');
-        content.classList.add('success');
-    } else if (type === 'pending') {
-        icon.classList.add('fa-hourglass-half');
-        content.classList.add('pending'); // Anda bisa menambahkan style untuk ini
-    } else {
-        icon.classList.add('fa-times-circle');
-        content.classList.add('error');
-    }
-
-    document.getElementById('feedbackTitle').textContent = title;
-    document.getElementById('feedbackMessage').textContent = message;
-    feedbackModal.style.display = 'flex';
-
-    document.getElementById('closeFeedbackBtn').onclick = () => {
-        feedbackModal.style.display = 'none';
-    };
-};
     
     buildPage();
 });
+
 
 
 
