@@ -6,26 +6,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const SCRIPT_URL = '/api/create-transaction';
     const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyoAFKygJRhEeemcAS5PPM_GA9KklFbhxPYzuW9IJ1DDSe7AU9nC4tScHS26VpuMN66ow/exec';
 
-// FUNGSI BARU UNTUK MENGIRIM DATA KE GOOGLE SHEET
+// Anda akan mengganti fungsi lama Anda dengan yang ini
 const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
+    // 1. CCTV #1: Memberi tahu kita bahwa fungsi ini sudah mulai berjalan.
+    console.log("Mencoba mengirim data ke Google Sheet...");
+
     try {
-        // Gabungkan semua data menjadi satu paket untuk dikirim
+        // 2. CCTV #2: Menyiapkan "paket" data yang akan dikirim.
         const payload = {
             order_id: paymentResult.order_id,
-            transaction_status: paymentResult.transaction_status,
-            gross_amount: paymentResult.gross_amount,
-            customer_details: customerData,
-            item_details: itemDetails
+            // ...data lainnya
         };
 
-        await fetch(GOOGLE_SHEET_SCRIPT_URL, {
+        // 3. CCTV #3: Menampilkan isi paket data tersebut agar kita bisa periksa.
+        console.log("Payload yang akan dikirim:", JSON.stringify(payload, null, 2));
+
+        // 4. INTI PROSES: Mengirim data menggunakan 'fetch'.
+        // Kita tidak akan menggunakan 'mode: no-cors' karena Apps Script kita sudah mendukung CORS.
+        const response = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'application/json' },
         });
-        console.log("Data berhasil dikirim ke Google Sheet.");
+
+        // 5. CCTV #4: Mengecek "surat balasan" dari server Apps Script.
+        console.log("Menerima respons dari Apps Script. Status:", response.status);
+        if (!response.ok) {
+           // Jika statusnya bukan "sukses" (bukan 200), kita lempar sebagai error.
+           throw new Error(`Server merespons dengan status ${response.status}`);
+        }
+        
+        // 6. CCTV #5: Membaca isi surat balasan dan menampilkannya.
+        const result = await response.json();
+        console.log("Respons dari Google Sheet:", result);
+        
+        console.log("Data berhasil diproses dan dikirim ke Google Sheet.");
+
     } catch (error) {
-        console.error("Gagal mengirim data ke Google Sheet:", error);
+        // 7. CCTV PENTING: Jika ada masalah di langkah mana pun,
+        // CCTV ini akan menyala dan menampilkan pesan error berwarna MERAH.
+        console.error("!!! GAGAL MENGIRIM DATA KE GOOGLE SHEET:", error);
     }
 };
     
@@ -366,6 +386,7 @@ window.snap.pay(result.token, {
     
     buildPage();
 });
+
 
 
 
