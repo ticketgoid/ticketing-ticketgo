@@ -80,62 +80,79 @@ document.addEventListener('DOMContentLoaded', () => {
         return await response.json();
     };
 
-    const buildPage = async () => {
-        logToPage('Memulai proses pembangunan halaman...');
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('eventId');
+// GANTI FUNGSI buildPage DI checkout.js DENGAN YANG INI
+const buildPage = async () => {
+    logToPage('Memulai proses pembangunan halaman...');
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('eventId');
 
-        if (!eventId) {
-            const errorMsg = 'Error: Event ID tidak ditemukan di URL.';
-            checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
-            logToPage(errorMsg, 'error');
+    if (!eventId) {
+        const errorMsg = 'Error: Event ID tidak ditemukan di URL.';
+        checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+        logToPage(errorMsg, 'error');
+        return;
+    }
+    logToPage(`Event ID ditemukan: <strong>${eventId}</strong>`, 'success');
+
+    try {
+        // --- LANGKAH 1: Ambil data event utama untuk mendapatkan ID data tertaut ---
+        logToPage('Mengambil data event utama...');
+        const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
+        eventDetails = eventData.fields;
+        logToPage(`Event "${eventDetails['Nama Event']}" berhasil diambil.`, 'success');
+
+        // Ambil array of record IDs dari data event
+        const ticketTypeIds = eventDetails.ticket_types || [];
+        const formFieldIds = eventDetails.form_fields || [];
+
+        if (ticketTypeIds.length === 0) {
+            const warnMsg = 'Tiket untuk event ini belum tersedia atau sudah habis.';
+            checkoutMain.innerHTML = `<p class="error-message">${warnMsg}</p>`;
+            logToPage(warnMsg, 'warn');
             return;
         }
-        logToPage(`Event ID ditemukan: <strong>${eventId}</strong>`, 'success');
+        logToPage(`Ditemukan ${ticketTypeIds.length} tiket & ${formFieldIds.length} form tertaut.`);
 
-        try {
-            logToPage('Mengambil data detail event utama...');
-            const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
-            eventDetails = eventData.fields;
-            logToPage('Data event utama berhasil diambil.', 'success');
+        // --- LANGKAH 2: Buat formula filter untuk mengambil record berdasarkan ID ---
+        // Formula ini terlihat seperti: OR(RECORD_ID()='id1', RECORD_ID()='id2', ...)
+        const createFilterFormula = (ids) => {
+            if (ids.length === 0) return "RECORD_ID()='INVALID_ID'"; // Mencegah error jika kosong
+            const formulaParts = ids.map(id => `RECORD_ID()='${id}'`);
+            return `OR(${formulaParts.join(',')})`;
+        };
+        
+        const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
+        const formFilter = encodeURIComponent(createFilterFormula(formFieldIds));
 
-            const filterFormula = `?filterByFormula={EventID_Text}%3D'${eventId}'`;
-            logToPage('Mengambil data jenis tiket dan form...');
+        // --- LANGKAH 3: Ambil data tiket dan form secara spesifik ---
+        logToPage('Mengambil detail tiket dan form berdasarkan ID...');
+        const [ticketTypesData, formFieldsData] = await Promise.all([
+            fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
+            fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
+        ]);
 
-            const [ticketTypesData, formFieldsData] = await Promise.all([
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types${filterFormula}`),
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields${filterFormula}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
-            ]);
+        ticketTypes = ticketTypesData.records;
+        formFields = formFieldsData.records;
+        logToPage('Detail tiket dan form berhasil diambil.', 'success');
 
-            ticketTypes = ticketTypesData.records;
-            formFields = formFieldsData.records;
-            logToPage(`Ditemukan <strong>${ticketTypes.length}</strong> jenis tiket dan <strong>${formFields.length}</strong> kolom form.`, 'success');
+        // --- Lanjutan proses sama seperti sebelumnya ---
+        logToPage('Memulai render layout HTML...');
+        renderLayout();
+        logToPage('Layout berhasil dirender.', 'success');
+        
+        logToPage('Menambahkan event listeners...');
+        attachEventListeners();
+        logToPage('Event listeners berhasil ditambahkan.', 'success');
 
-            if (ticketTypes.length === 0) {
-                const warnMsg = 'Tiket untuk event ini belum tersedia atau sudah habis.';
-                checkoutMain.innerHTML = `<p class="error-message">${warnMsg}</p>`;
-                logToPage(warnMsg, 'warn');
-                return;
-            }
+        updatePrice();
 
-            logToPage('Memulai render layout HTML...');
-            renderLayout();
-            logToPage('Layout berhasil dirender.', 'success');
-            
-            logToPage('Menambahkan event listeners...');
-            attachEventListeners();
-            logToPage('Event listeners berhasil ditambahkan.', 'success');
-
-            updatePrice();
-
-        } catch (error) {
-            console.error('Gagal membangun halaman:', error);
-            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan field 'EventID_Text' ada di Airtable. Error: ${error.message}`;
-            checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
-            // Pesan error ini sekarang akan selalu tampil di log box
-            logToPage(errorMsg, 'error');
-        }
-    };
+    } catch (error) {
+        console.error('Gagal membangun halaman:', error);
+        const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records sudah diisi. Error: ${error.message}`;
+        checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+        logToPage(errorMsg, 'error');
+    }
+};
     
     const renderLayout = () => {
         let ticketOptionsHTML = ticketTypes.map(record => `
@@ -293,3 +310,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Baru jalankan proses pembangunan halaman
     buildPage();
 });
+
