@@ -1,5 +1,4 @@
-// GANTI SELURUH ISI FILE script.js DENGAN KODE INI
-
+// GANTI SELURUH ISI FILE script.js DENGAN VERSI BERSIH INI
 window.addEventListener('load', () => {
     const preloader = document.getElementById('preloader');
     const mainContent = document.getElementById('main-content');
@@ -16,7 +15,6 @@ function initializeApp() {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
 
     // --- Variabel Global & Elemen DOM ---
     let allEvents = [];
@@ -63,101 +61,44 @@ function initializeApp() {
             if (allEvents.length === 0) {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
             } else {
-                    // GANTI BAGIAN forEach DI DALAM renderEvents
-allEvents.forEach(record => {
-    const fields = record.fields;
-    if (!fields['Nama Event'] || !fields['Gambar Event'] || fields['Gambar Event'].length === 0) return;
+                allEvents.forEach(record => {
+                    const fields = record.fields;
+                    if (!fields['Nama Event'] || !fields['Gambar Event'] || !fields['Gambar Event'].length === 0) return;
 
-    const eventDate = new Date(fields['Waktu']);
-    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
-    const isPriority = fields['Prioritas'] === true;
-    
-    // --> LOGIKA BARU DIMULAI DI SINI
-    const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
-    const buttonHTML = isRegistrationOpen
-        ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
-        : `<button class="btn-buy disabled" disabled>Ditutup</button>`;
-    // <-- LOGIKA BARU BERAKHIR DI SINI
+                    const eventDate = new Date(fields['Waktu']);
+                    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
+                    const isPriority = fields['Prioritas'] === true;
+                    
+                    const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+                    const buttonHTML = isRegistrationOpen
+                        ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
+                        : `<button class="btn-buy disabled" disabled>Ditutup</button>`;
 
-    const eventCard = document.createElement('div');
-    eventCard.className = 'event-card';
-    eventCard.setAttribute('data-event-id', record.id); 
-    eventCard.innerHTML = `
-        <div class="card-image">
-            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
-            <span class="tag festival">${fields['Tag'] || ''}</span>
-        </div>
-        <div class="card-content">
-            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
-            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
-            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
-            <div class="price-buy">
-                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
-                ${buttonHTML} 
-            </div>
-        </div>`; // Gunakan buttonHTML yang sudah dibuat
-    eventGrid.appendChild(eventCard);
-});
+                    const eventCard = document.createElement('div');
+                    eventCard.className = 'event-card';
+                    eventCard.setAttribute('data-event-id', record.id); 
+                    eventCard.innerHTML = `
+                        <div class="card-image">
+                            <img src="${fields['Gambar Event'][0].url}" alt="${fields['Nama Event']}">
+                            <span class="tag festival">${fields['Tag'] || ''}</span>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="event-title">${fields['Nama Event']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
+                            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
+                            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
+                            <div class="price-buy">
+                                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
+                                ${buttonHTML} 
+                            </div>
+                        </div>`;
+                    eventGrid.appendChild(eventCard);
+                });
             }
             setupEventListeners();
         } catch (error) {
             console.error("Gagal mengambil event dari Airtable:", error);
             eventGrid.innerHTML = '<p>Gagal memuat event. Cek kembali konfigurasi Anda.</p>';
-        }
-    }
-
-    // ## FUNGSI CEK KUOTA EVENT ##
-    async function checkAllEventQuotas() {
-        const scrollLeftBtn = document.getElementById('scrollLeftBtn');
-        const scrollRightBtn = document.getElementById('scrollRightBtn');
-        const threshold = 4;
-        if (allEvents.length > threshold) {
-            eventGrid.classList.add('two-rows');
-            if(scrollLeftBtn) scrollLeftBtn.style.display = 'block';
-            if(scrollRightBtn) scrollRightBtn.style.display = 'block';
-        } else {
-            eventGrid.classList.remove('two-rows');
-            if(scrollLeftBtn) scrollLeftBtn.style.display = 'none';
-            if(scrollRightBtn) scrollRightBtn.style.display = 'none';
-        }
-
-        for (const record of allEvents) {
-            const eventId = record.id;
-            const fields = record.fields;
-            const eventName = fields['Nama Event'];
-            const quota = fields['Kuota'];
-            const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
-            const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`);
-            
-            if (!eventCard) continue;
-            
-            const buyButton = eventCard.querySelector('.btn-buy');
-
-            if (!isRegistrationOpen) {
-                buyButton.textContent = 'Ditutup';
-                buyButton.disabled = true;
-                buyButton.classList.add('disabled');
-                continue;
-            }
-
-            if (typeof quota !== 'undefined') {
-                try {
-                    const response = await fetch(`${SCRIPT_URL}?event=${encodeURIComponent(eventName)}`);
-                    const data = await response.json();
-
-                    if (data.status === 'success') {
-                        const currentCount = data.count;
-                        if (currentCount >= quota) {
-                            buyButton.textContent = 'Pendaftaran Penuh';
-                            buyButton.disabled = true;
-                            buyButton.classList.add('disabled');
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Gagal memeriksa kuota untuk ${eventName}:`, error);
-                }
-            }
         }
     }
     
@@ -175,13 +116,14 @@ allEvents.forEach(record => {
         }
         
         // Mengarahkan ke halaman checkout.html
-        document.querySelectorAll('.btn-buy').forEach(button => {
-            button.addEventListener('click', () => {
-                const eventId = button.dataset.eventId;
+        // Perlu event delegation karena event card dibuat dinamis
+        eventGrid.addEventListener('click', function(e) {
+            if (e.target && e.target.matches('button.btn-buy')) {
+                const eventId = e.target.dataset.eventId;
                 if (eventId) {
                     window.location.href = `checkout.html?eventId=${eventId}`;
                 }
-            });
+            }
         });
         
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
@@ -216,5 +158,3 @@ allEvents.forEach(record => {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
-
-
