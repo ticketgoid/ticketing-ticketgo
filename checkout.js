@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTeOVovjZS9wJISdI4TJo5v3XRa87bwtqPQd_ZGX_sELM2ThhdtO5UwOZVOn8Nd85B/exec';
-
+    const SCRIPT_URL = '/api/create-transaction';
+    
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
     let ticketTypes = [];
@@ -323,5 +323,6 @@ const initiatePayment = async () => {
     
     buildPage();
 });
+
 
 
