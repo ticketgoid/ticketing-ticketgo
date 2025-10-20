@@ -168,12 +168,46 @@ let formFieldsHTML = formFields.map(record => {
     };
 
     const attachEventListeners = () => {
-    // Kode event listener lainnya tetap sama
+    const buyButton = document.getElementById('buyButton');
+
+    // Fungsi untuk memeriksa status pilihan dan mengatur tombol
+    const checkButtonState = () => {
+        const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+        const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
+        
+        // Cek apakah opsi pemilihan kursi ada di halaman ini
+        const seatOptionsExist = document.querySelector('input[name="Pilihan_Kursi"]');
+
+        if (seatOptionsExist) {
+            // Jika ada pilihan kursi, keduanya harus dipilih
+            if (seatSelected && ticketSelected) {
+                buyButton.disabled = false;
+            } else {
+                buyButton.disabled = true;
+            }
+        } else {
+            // Jika tidak ada pilihan kursi, cukup pilih tiket
+            if (ticketSelected) {
+                buyButton.disabled = false;
+            } else {
+                buyButton.disabled = true;
+            }
+        }
+    };
+
+    // Tambahkan listener ke semua radio button (kursi dan tiket)
+    document.querySelectorAll('input[name="Pilihan_Kursi"], input[name="ticket_choice"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            checkButtonState(); // Cek status setiap kali ada perubahan
+            updatePrice();
+        });
+    });
+
+    // Listener khusus untuk mengaktifkan tombol kuantitas
     document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => radio.addEventListener('change', () => {
         document.getElementById('increaseQty').disabled = false;
-        document.getElementById('buyButton').disabled = false;
-        updatePrice();
     }));
+        
     document.getElementById('increaseQty').addEventListener('click', () => {
         const qtyInput = document.getElementById('ticketQuantity');
         qtyInput.value = parseInt(qtyInput.value) + 1;
@@ -275,6 +309,7 @@ let formFieldsHTML = formFields.map(record => {
     
     buildPage();
 });
+
 
 
 
