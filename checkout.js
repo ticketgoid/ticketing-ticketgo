@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis.
-     * Termasuk perbaikan untuk radio button dan tombol Beli Tiket.
      */
     const injectStyles = () => {
         const style = document.createElement('style');
@@ -26,53 +25,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 margin-top: 10px;
             }
 
-            /* === PERBAIKAN 1: Memusatkan Bulatan Hijau di Radio Button === */
-            /* Kita asumsikan style radio button menggunakan pseudo-element ::before pada label */
+            /* Perbaikan untuk radio button */
             .ticket-option input[type="radio"] + label::before {
                 content: '';
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
                 border: 2px solid #ddd;
-                display: grid; /* Gunakan Grid untuk centering */
-                place-content: center; /* Cara modern untuk memusatkan item */
+                display: grid;
+                place-content: center;
                 transition: all 0.2s ease;
+                /* Pastikan label memiliki posisi relatif untuk pseudo-element ::after */
+                position: relative; 
+                flex-shrink: 0; /* Mencegah elemen mengecil */
             }
 
             .ticket-option input[type="radio"]:checked + label::before {
-                border-color: #00A97F; /* Warna border saat dipilih */
+                border-color: #00A97F;
                 background-color: #fff;
             }
             
-            /* Ini adalah bulatan hijau di dalamnya */
             .ticket-option input[type="radio"] + label::after {
                 content: '';
                 width: 12px;
                 height: 12px;
                 background-color: #00A97F;
                 border-radius: 50%;
-                position: absolute; /* Posisikan relatif terhadap container */
+                position: absolute; 
+                /* Sesuaikan posisi ini agar tepat di tengah lingkaran ::before */
                 top: 50%;
-                left: 20px; /* Sesuaikan dengan posisi radio button Anda */
-                transform: translate(-50%, -50%) scale(0); /* Sembunyikan & pusatkan */
+                left: 10px; /* Lebar ::before / 2 */
+                transform: translate(-50%, -50%) scale(0); 
                 transition: transform 0.2s ease;
             }
 
             .ticket-option input[type="radio"]:checked + label::after {
-                transform: translate(-50%, -50%) scale(1); /* Tampilkan saat dipilih */
+                transform: translate(-50%, -50%) scale(1);
             }
 
-
-            /* === PERBAIKAN 2: Desain Modern untuk Tombol 'Beli Tiket' === */
+            /* Desain Modern untuk Tombol 'Beli Tiket' */
             #buyButton.btn-primary {
-                width: 100%; /* Lebar penuh */
-                background-color: #007bff; /* Warna biru modern */
+                width: 100%;
+                background-color: #007bff;
                 color: white;
                 border: none;
                 padding: 15px 20px;
                 font-size: 16px;
                 font-weight: bold;
-                border-radius: 12px; /* Sudut lebih bulat */
+                border-radius: 12px;
                 cursor: pointer;
                 text-align: center;
                 transition: background-color 0.3s ease, transform 0.1s ease;
@@ -80,16 +80,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             #buyButton.btn-primary:hover {
-                background-color: #0056b3; /* Warna lebih gelap saat disentuh mouse */
+                background-color: #0056b3;
             }
             
             #buyButton.btn-primary:active {
-                transform: scale(0.98); /* Efek sedikit ditekan saat diklik */
+                transform: scale(0.98);
             }
 
             #buyButton.btn-primary:disabled {
                 background-color: #cccccc;
                 cursor: not-allowed;
+            }
+
+            /* === PERBAIKAN BARU: Gambar Poster Event (Kaluna) === */
+            .event-header {
+                width: 100%;
+                /* Hilangkan tinggi tetap jika ada, biarkan gambar menentukan tinggi */
+                /* min-height: 200px; */ /* Contoh jika perlu tinggi minimum */
+                display: flex; /* Gunakan flexbox untuk penataan */
+                justify-content: center; /* Pusatkan gambar secara horizontal */
+                align-items: center; /* Pusatkan gambar secara vertikal */
+                background-color: #f0f2f5; /* Warna latar belakang jika ada whitespace */
+                overflow: hidden; /* Pastikan tidak ada scrollbar tak terduga */
+                border-radius: 12px 12px 0 0; /* Sudut membulat di atas */
+                margin-bottom: 20px;
+            }
+
+            .event-poster {
+                max-width: 100%;   /* Batasi lebar maksimal gambar */
+                height: auto;      /* Biarkan tinggi menyesuaikan agar tidak terpotong */
+                object-fit: contain; /* PENTING: Pastikan gambar full dan tidak terpotong */
+                display: block;    /* Hapus spasi di bawah gambar (default inline) */
+                border-radius: 12px 12px 0 0; /* Opsional: sesuaikan border-radius */
             }
         `;
         document.head.appendChild(style);
