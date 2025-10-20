@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = '/api/create-transaction';
-    const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyoAFKygJRhEeemcAS5PPM_GA9KklFbhxPYzuW9IJ1DDSe7AU9nC4tScHS26VpuMN66ow/exec';
+    const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfmli2Q7q68ImRz2V2Is5V9XBXgoDG_6UuO5TFTyKDhIFMwtPgfv_bXw3spyZRCubEbQ/exec';
 
 // Anda akan mengganti fungsi lama Anda dengan yang ini
 const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
@@ -386,6 +386,7 @@ window.snap.pay(result.token, {
     
     buildPage();
 });
+
 
 
 
