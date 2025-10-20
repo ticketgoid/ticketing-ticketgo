@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTeOVovjZS9wJISdI4TJo5v3XRa87bwtqPQd_ZGX_sELM2ThhdtO5UwOZVOn8Nd85B/exec';
 
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
@@ -211,7 +211,8 @@ let formFieldsHTML = formFields.map(record => {
             }
         }
     };
-
+    document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
+    };
     // Listener untuk semua radio button (kursi dan tiket)
     document.querySelectorAll('input[name="Pilihan_Kursi"], input[name="ticket_choice"]').forEach(radio => {
         radio.addEventListener('change', () => {
@@ -355,9 +356,114 @@ let formFieldsHTML = formFields.map(record => {
     const reviewModal = document.getElementById('reviewModal');
     if (reviewModal) reviewModal.style.display = 'flex';
 };
+    // FUNGSI BARU UNTUK PROSES PEMBAYARAN MIDTRANS
+const initiatePayment = async () => {
+    const confirmButton = document.getElementById('confirmPaymentBtn');
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Memproses...';
+
+    try {
+        // 1. Kumpulkan semua data yang diperlukan dari halaman
+        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+        const quantity = parseInt(document.getElementById('ticketQuantity').value);
+        const price = parseFloat(selectedTicket.dataset.price);
+        const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+        const finalTotal = (price + adminFee) * quantity;
+
+        const form = document.getElementById('customer-data-form');
+        const formData = new FormData(form);
+        const customerData = Object.fromEntries(formData.entries());
+
+        // 2. Siapkan payload untuk dikirim ke Google Apps Script
+        const payload = {
+            order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
+            gross_amount: finalTotal,
+            item_details: [{
+                id: selectedTicket.value,
+                price: price + adminFee,
+                quantity: quantity,
+                name: selectedTicket.dataset.name,
+            }],
+            customer_details: {
+                first_name: customerData.Nama,
+                email: customerData.Email,
+                phone: '+62' + customerData.Nomor,
+            }
+        };
+
+        // 3. Kirim data ke backend (Google Apps Script)
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const result = await response.json();
+
+        if (result.error) {
+            throw new Error(result.error);
+        }
+
+        // 4. Gunakan token dari backend untuk membuka popup Midtrans
+        window.snap.pay(result.token, {
+            onSuccess: function(result) {
+                showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
+            },
+            onPending: function(result) {
+                showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda sebelum batas waktu. Status: ${result.transaction_status}`);
+            },
+            onError: function(result) {
+                showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.');
+            },
+            onClose: function() {
+                console.log('Anda menutup popup tanpa menyelesaikan pembayaran');
+                confirmButton.disabled = false;
+                confirmButton.textContent = 'Lanjutkan Pembayaran';
+            }
+        });
+
+    } catch (error) {
+        console.error('Payment initiation error:', error);
+        showFeedback('error', 'Terjadi Kesalahan', 'Gagal memproses pembayaran. Silakan coba lagi nanti.');
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Lanjutkan Pembayaran';
+    }
+};
+
+// FUNGSI BARU UNTUK MENAMPILKAN MODAL FEEDBACK
+const showFeedback = (type, title, message) => {
+    document.getElementById('reviewModal').style.display = 'none'; // Sembunyikan modal review
+
+    const feedbackModal = document.getElementById('feedbackModal');
+    const icon = feedbackModal.querySelector('.fas');
+    const content = feedbackModal.querySelector('.feedback-content');
+
+    // Reset kelas
+    icon.className = 'fas';
+    content.className = 'feedback-content';
+
+    if (type === 'success') {
+        icon.classList.add('fa-check-circle');
+        content.classList.add('success');
+    } else if (type === 'pending') {
+        icon.classList.add('fa-hourglass-half');
+        content.classList.add('pending'); // Anda bisa menambahkan style untuk ini
+    } else {
+        icon.classList.add('fa-times-circle');
+        content.classList.add('error');
+    }
+
+    document.getElementById('feedbackTitle').textContent = title;
+    document.getElementById('feedbackMessage').textContent = message;
+    feedbackModal.style.display = 'flex';
+
+    document.getElementById('closeFeedbackBtn').onclick = () => {
+        feedbackModal.style.display = 'none';
+    };
+};
     
     buildPage();
 });
+
 
 
 
