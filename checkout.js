@@ -25,26 +25,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Langkah 1: Ambil detail event utama berdasarkan ID-nya
+            // Langkah 1: Ambil detail event utama berdasarkan ID-nya. Ini sudah benar.
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
             eventDetails = eventData.fields;
-            const eventName = eventDetails['Nama Event'];
 
-            if (!eventName) {
-                throw new Error("Nama event tidak ditemukan dari data yang diambil.");
-            }
-
-            // Langkah 2: Gunakan nama event untuk mengambil jenis tiket dan form fields
+            // Langkah 2: Gunakan eventId (BUKAN eventName) untuk mengambil data terkait.
             const [ticketTypesData, formFieldsData] = await Promise.all([
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Event}))`),
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Event}))&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
+                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))`),
+                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${eventId}%22%2C+ARRAYJOIN({Event}))&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
             ]);
 
             ticketTypes = ticketTypesData.records;
             formFields = formFieldsData.records;
 
             if (ticketTypes.length === 0) {
-                 checkoutMain.innerHTML = '<p class="error-message">Tiket untuk event ini belum tersedia.</p>';
+                 checkoutMain.innerHTML = '<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>';
                  return;
             }
 
@@ -57,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
             checkoutMain.innerHTML = `<p class="error-message">Gagal memuat detail event. Pastikan konfigurasi Airtable sudah benar. Pesan error: ${error.message}</p>`;
         }
     };
+
+    // --- SISA KODE (renderLayout, attachEventListeners, dll.) TETAP SAMA ---
+    // Pastikan sisa file Anda sama dengan kode di bawah ini
 
     const renderLayout = () => {
         let ticketOptionsHTML = ticketTypes.map(record => `
