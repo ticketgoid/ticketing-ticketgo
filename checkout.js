@@ -10,34 +10,54 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
-    /**
-     * Menyisipkan CSS ke dalam <head> untuk menata elemen dinamis.
-     */
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
-            /* === PERBAIKAN UTAMA: Memaksa Header ke Rasio 4x5 === */
-            #checkout-main .event-header {
+            /* === STRUKTUR LAYOUT UTAMA DUA KOLOM === */
+            .checkout-body {
+                display: flex;
+                flex-wrap: wrap; /* Agar responsif di layar kecil */
+                gap: 32px; /* Jarak antara kolom kiri dan kanan */
+                align-items: flex-start;
+            }
+            .event-details-column {
+                flex: 1;
+                min-width: 320px; /* Lebar minimum untuk kolom kiri */
+            }
+            .purchase-form-column {
+                flex: 1;
+                min-width: 320px; /* Lebar minimum untuk kolom kanan */
+            }
+
+            /* === PERBAIKAN 1: STYLING POSTER 4x5 DI KOLOM KIRI === */
+            .event-poster-container {
                 width: 100%;
-                max-width: 480px; /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
-                margin-left: auto;   /* Pusatkan header */
-                margin-right: auto;  /* Pusatkan header */
-                aspect-ratio: 4 / 5; /* PENTING: Mengatur rasio lebar:tinggi */
-                border-radius: 16px; /* Sudut membulat di semua sisi */
+                aspect-ratio: 4 / 5;
+                border-radius: 16px;
                 overflow: hidden;
                 margin-bottom: 24px;
                 background-color: #f0f2f5;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Tambahan shadow halus */
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            }
+            .event-poster {
+                width: 100%; height: 100%; object-fit: cover; display: block;
             }
 
-            #checkout-main .event-poster {
+            /* === PERBAIKAN 4: Merapikan Tombol Pilihan === */
+            .ticket-option label {
+                display: flex;
+                align-items: center; /* Membuat radio button dan teks sejajar vertikal */
+                gap: 12px; /* Jarak antara radio button dan teks */
                 width: 100%;
-                height: 100%;
-                object-fit: cover; /* Mengisi kontainer, boleh memotong sisi gambar yang tidak pas */
-                display: block;
             }
-            /* ========================================================== */
+            .ticket-label-content {
+                display: flex;
+                justify-content: space-between; /* Mendorong harga ke kanan */
+                align-items: center;
+                width: 100%; /* Memastikan mengisi sisa ruang */
+            }
 
+            /* Style lainnya (tidak berubah) */
             .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
             .ticket-option input[type="radio"] + label::before { content: ''; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; display: grid; place-content: center; transition: all 0.2s ease; position: relative; flex-shrink: 0; }
             .ticket-option input[type="radio"]:checked + label::before { border-color: #00A97F; background-color: #fff; }
@@ -97,11 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderLayout = () => {
+        // PERBAIKAN 3: Mengembalikan logika Seat Map dan Pilihan Kursi
         let seatMapHTML = '';
         if (eventDetails['Seat_Map'] && eventDetails['Seat_Map'][0]?.url) {
             seatMapHTML = `<div class="form-section seat-map-container"><h3>Lihat Peta Kursi</h3><img src="${eventDetails['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>`;
         }
-
         let seatSelectionHTML = '';
         const seatOptions = eventDetails['Pilihan_Kursi'] ? eventDetails['Pilihan_Kursi'].split('\n').filter(opt => opt.trim() !== '') : [];
         if (seatOptions.length > 0) {
@@ -117,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const adminFee = record.fields['Admin_Fee'] || 0;
             return `<div class="ticket-option" data-ticket-id="${record.id}"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${adminFee}"><label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${record.fields.Name}</span><span class="ticket-price">Rp ${record.fields.Price.toLocaleString('id-ID')}</span></div></label></div>`;
         }).join('');
-
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
             const fieldLabel = field['Field_Label'];
@@ -132,25 +151,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
+        // PERBAIKAN 1 & 2: Mengubah struktur HTML menjadi dua kolom
         const layoutHTML = `
-            <div class="event-header">
-                <img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
-            </div>
-            <div class="purchase-container">
-                <div class="event-info">
-                    <h1>${eventDetails['Nama_Event'] || 'Nama Event'}</h1>
-                    <p class="event-description">${eventDetails.Deskripsi || 'Deskripsi tidak tersedia.'}</p>
+            <div class="checkout-body">
+                <div class="event-details-column">
+                    <div class="event-poster-container">
+                        <img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
+                    </div>
+                    <div class="event-info">
+                        <h1>${eventDetails['Nama_Event'] || 'Nama Event'}</h1>
+                        <p class="event-description">${eventDetails.Deskripsi || 'Deskripsi tidak tersedia.'}</p>
+                    </div>
                 </div>
-                <div class="purchase-form">
-                    ${seatMapHTML}
-                    <form id="customer-data-form" novalidate>
-                        ${seatSelectionHTML}
-                        <div class="form-section"><h3>2. Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div>
-                        <div class="form-section"><h3>3. Pilih Jumlah Beli</h3><div class="quantity-selector"><button type="button" id="decreaseQty" disabled>-</button><input type="number" id="ticketQuantity" value="1" min="1" readonly><button type="button" id="increaseQty" disabled>+</button></div></div>
-                        <div class="form-section"><h3>4. Isi Data Diri</h3>${formFieldsHTML}</div>
-                    </form>
-                    <div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih jenis tiket untuk melihat harga.</p></div></div>
-                    <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
+
+                <div class="purchase-form-column">
+                    <div class="purchase-form">
+                        ${seatMapHTML}
+                        <form id="customer-data-form" novalidate>
+                            ${seatSelectionHTML}
+                            <div class="form-section"><h3>2. Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div>
+                            <div class="form-section"><h3>3. Pilih Jumlah Beli</h3><div class="quantity-selector"><button type="button" id="decreaseQty" disabled>-</button><input type="number" id="ticketQuantity" value="1" min="1" readonly><button type="button" id="increaseQty" disabled>+</button></div></div>
+                            <div class="form-section"><h3>4. Isi Data Diri</h3>${formFieldsHTML}</div>
+                        </form>
+                        <div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih jenis tiket untuk melihat harga.</p></div></div>
+                        <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
+                    </div>
                 </div>
             </div>`;
         checkoutMain.innerHTML = layoutHTML;
