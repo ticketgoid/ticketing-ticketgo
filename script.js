@@ -154,64 +154,72 @@ function initializeApp() {
         }
     }
 
-    // ## FUNGSI FORMULIR DINAMIS BARU ##
-    async function generateFormFields(eventId, eventData) {
-        const formContainer = document.getElementById('registrationForm');
-        const ticketOptionsContainer = document.getElementById('ticketOptionsContainer');
-        formContainer.innerHTML = '<p>Memuat formulir...</p>';
-        ticketOptionsContainer.innerHTML = '';
-    
-        const eventName = eventData.fields['Nama Event'];
-        const adminFee = eventData.fields['Admin Fee'] || 0;
-    
-        try {
-            // 1. Ambil Field Form (Nama, Email, dll)
-            const formFieldsResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN(Event))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-            if (!formFieldsResponse.ok) throw new Error(`Error fetching form fields: ${formFieldsResponse.status}`);
-            const formFieldsData = await formFieldsResponse.json();
-            
-            // 2. Ambil Tipe Tiket untuk event ini
-            const ticketTypesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Nama Event}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-            if (!ticketTypesResponse.ok) throw new Error(`Error fetching ticket types: ${ticketTypesResponse.status}`);
-            const ticketTypesData = await ticketTypesResponse.json();
-    
-            // 3. Ambil Bundles untuk event ini
-            const bundlesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Bundles?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({Nama Event}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-            if (!bundlesResponse.ok) throw new Error(`Error fetching bundles: ${bundlesResponse.status}`);
-            const bundlesData = await bundlesResponse.json();
-    
-            // Render Opsi Tiket dan Bundle
-            ticketTypesData.records.forEach(ticket => {
-                const t = ticket.fields;
-                ticketOptionsContainer.innerHTML += `
-                    <div class="ticket-option">
-                        <input type="radio" id="${ticket.id}" name="ticket_choice" value="${ticket.id}" data-price="${t.Price}" data-name="${t.Name}" data-qty="1">
-                        <label for="${ticket.id}">${t.Name} - <strong>Rp ${t.Price.toLocaleString('id-ID')}</strong></label>
-                    </div>
-                `;
-            });
-            bundlesData.records.forEach(bundle => {
-                const b = bundle.fields;
-                // Asumsi harga normal tiket tunggal ada di record pertama Tipe Tiket
-                const singleTicketPrice = ticketTypesData.records.length > 0 ? ticketTypesData.records[0].fields.Price : 0;
-                const normalPrice = singleTicketPrice * b['Ticket Quantity'];
-                const savings = normalPrice - b['Bundle Price'];
-    
-                ticketOptionsContainer.innerHTML += `
-                    <div class="ticket-option">
-                        <input type="radio" id="${bundle.id}" name="ticket_choice" value="${bundle.id}" data-price="${b['Bundle Price']}" data-name="${b.Name}" data-qty="${b['Ticket Quantity']}" data-savings="${savings > 0 ? savings : 0}">
-                        <label for="${bundle.id}">${b.Name} (${b['Ticket Quantity']} Tiket) - <strong>Rp ${b['Bundle Price'].toLocaleString('id-ID')}</strong></label>
-                    </div>
-                `;
-            });
+    // GANTI SELURUH FUNGSI generateFormFields LAMA ANDA DENGAN YANG INI
+async function generateFormFields(eventId, eventData) {
+    const formContainer = document.getElementById('registrationForm');
+    const ticketOptionsContainer = document.getElementById('ticketOptionsContainer');
+    formContainer.innerHTML = '<p>Memuat formulir...</p>';
+    ticketOptionsContainer.innerHTML = '';
 
-            // Render Form Input Data Diri
-            let formHTML = '';
-            const fields = formFieldsData.records.filter(record => record.fields.Event && record.fields.Event.includes(eventId));
-            if (fields.length === 0) {
-                formContainer.innerHTML = '<p>Formulir pendaftaran untuk event ini belum dikonfigurasi.</p>';
-                return;
-            }
+    const eventName = eventData.fields['Nama Event'];
+    const adminFee = eventData.fields['Admin Fee'] || 0;
+
+    // KITA AKAN GUNAKAN NAMA FIELD 'Event' SECARA KONSISTEN
+    const linkFieldName = 'Event'; 
+
+    try {
+        // 1. Ambil Field Form
+        const formFieldsResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({${linkFieldName}}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+        if (!formFieldsResponse.ok) throw new Error(`Error fetching form fields: ${formFieldsResponse.status}`);
+        const formFieldsData = await formFieldsResponse.json();
+        
+        // 2. Ambil Tipe Tiket
+        const ticketTypesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({${linkFieldName}}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+        if (!ticketTypesResponse.ok) throw new Error(`Error fetching ticket types: ${ticketTypesResponse.status}`);
+        const ticketTypesData = await ticketTypesResponse.json();
+
+        // 3. Ambil Bundles
+        const bundlesResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Bundles?filterByFormula=FIND(%22${encodeURIComponent(eventName)}%22%2C+ARRAYJOIN({${linkFieldName}}))`, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+        if (!bundlesResponse.ok) throw new Error(`Error fetching bundles: ${bundlesResponse.status}`);
+        const bundlesData = await bundlesResponse.json();
+
+        // Cek jika tidak ada tiket sama sekali
+        if (ticketTypesData.records.length === 0 && bundlesData.records.length === 0) {
+            ticketOptionsContainer.innerHTML = '<p>Tiket untuk event ini belum tersedia.</p>';
+            formContainer.innerHTML = ''; // Kosongkan form isian
+            return; // Hentikan proses
+        }
+
+        // Render Opsi Tiket dan Bundle
+        ticketTypesData.records.forEach(ticket => {
+            const t = ticket.fields;
+            ticketOptionsContainer.innerHTML += `
+                <div class="ticket-option">
+                    <input type="radio" id="${ticket.id}" name="ticket_choice" value="${ticket.id}" data-price="${t.Price}" data-name="${t.Name}" data-qty="1">
+                    <label for="${ticket.id}">${t.Name} - <strong>Rp ${t.Price.toLocaleString('id-ID')}</strong></label>
+                </div>
+            `;
+        });
+        bundlesData.records.forEach(bundle => {
+            const b = bundle.fields;
+            const singleTicketPrice = ticketTypesData.records.length > 0 ? ticketTypesData.records[0].fields.Price : 0;
+            const normalPrice = singleTicketPrice * (b['Ticket Quantity'] || 1);
+            const savings = normalPrice - (b['Bundle Price'] || 0);
+
+            ticketOptionsContainer.innerHTML += `
+                <div class="ticket-option">
+                    <input type="radio" id="${bundle.id}" name="ticket_choice" value="${bundle.id}" data-price="${b['Bundle Price']}" data-name="${b.Name}" data-qty="${b['Ticket Quantity']}" data-savings="${savings > 0 ? savings : 0}">
+                    <label for="${bundle.id}">${b.Name} (${b['Ticket Quantity']} Tiket) - <strong>Rp ${b['Bundle Price'].toLocaleString('id-ID')}</strong></label>
+                </div>
+            `;
+        });
+
+        // Render Form Input Data Diri
+        let formHTML = '';
+        const fields = formFieldsData.records; // Tidak perlu filter lagi karena sudah dari API
+        if (fields.length === 0) {
+            formContainer.innerHTML = '<p>Formulir pendaftaran belum dikonfigurasi.</p>';
+        } else {
             fields.forEach(record => {
                 const field = record.fields;
                 const fieldId = field['Field Label'].replace(/[^a-zA-Z0-9]/g, ''); 
@@ -219,44 +227,28 @@ function initializeApp() {
                 const fieldType = field['Field Type'].toLowerCase();
                 const isRequired = field['Is Required'] ? 'required' : '';
                 if (fieldType === 'tel') {
-                    formHTML += `
-                    <div class="form-group">
-                        <label for="${fieldId}" class="static-label">${fieldLabel}</label>
-                        <div class="phone-input-group">
-                            <span class="phone-prefix">+62</span>
-                            <input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired}>
-                        </div>
-                        <span class="error-message"></span>
-                    </div>`;
+                    formHTML += `<div class="form-group"><label for="${fieldId}" class="static-label">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired}></div><span class="error-message"></span></div>`;
                 } else if (fieldType === 'email') {
-                    formHTML += `
-                    <div class="form-group floating-label">
-                        <input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
-                        <label for="${fieldId}">${fieldLabel}</label>
-                        <span class="error-message"></span>
-                    </div>`;
+                    formHTML += `<div class="form-group floating-label"><input type="email" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" "><label for="${fieldId}">${fieldLabel}</label><span class="error-message"></span></div>`;
                 } else {
-                    formHTML += `
-                    <div class="form-group floating-label">
-                        <input type="text" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" ">
-                        <label for="${fieldId}">${fieldLabel}</label>
-                    </div>`;
+                    formHTML += `<div class="form-group floating-label"><input type="text" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder=" "><label for="${fieldId}">${fieldLabel}</label></div>`;
                 }
             });
             formContainer.innerHTML = formHTML;
-    
-            // Tambahkan event listener untuk mengupdate ringkasan
-            document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
-                radio.addEventListener('change', () => updatePaymentOverview(adminFee));
-            });
-            updatePaymentOverview(adminFee); // Inisialisasi ringkasan
             attachDynamicValidators(formContainer);
-    
-        } catch (error) {
-            console.error("Gagal membangun formulir:", error);
-            formContainer.innerHTML = `<p>Gagal memuat formulir: ${error.message}. Coba lagi nanti.</p>`;
         }
+
+        document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
+            radio.addEventListener('change', () => updatePaymentOverview(adminFee));
+        });
+        updatePaymentOverview(adminFee);
+
+    } catch (error) {
+        console.error("Gagal membangun formulir:", error);
+        ticketOptionsContainer.innerHTML = `<p style="color: red; font-weight: bold;">Gagal memuat tiket: ${error.message}. Periksa kembali konfigurasi Airtable Anda.</p>`;
+        formContainer.innerHTML = '';
     }
+}
 
     // ## FUNGSI BARU UNTUK UPDATE RINGKASAN PEMBAYARAN ##
     function updatePaymentOverview(adminFee) {
@@ -552,4 +544,5 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
