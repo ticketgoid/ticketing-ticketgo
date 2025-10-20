@@ -358,17 +358,27 @@ nav {
     background-color: var(--white);
     border-radius: 12px;
     border: 1px solid #E5E7EB;
-    padding: 2rem;
+    /* Hapus padding dari sini */
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden; /* Tambahkan ini agar gambar tidak keluar dari border-radius */
+    display: flex; /* Tambahkan ini */
+    flex-direction: column; /* Tambahkan ini */
+}
+
+.offline-card-content {
+    padding: 2rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .offline-card img {
-    max-width: 100%;
-    height: 180px;
+    width: 100%; /* Ubah dari max-width ke width */
+    height: 200px; /* Anda bisa sesuaikan tinggi gambar */
     object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
+    /* Hapus border-radius dan margin-bottom dari sini */
 }
 
 .offline-card h3 {
@@ -786,6 +796,7 @@ input.input-error {
     background-color: #0F766E; /* Warna teal yang sedikit lebih gelap */
 
 }
+
 
 
 
