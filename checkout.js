@@ -1,9 +1,9 @@
 // GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
-    const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c40c7a7b38a305974867e3973993737d5ae8f5892e4498c3473f2774d3664c';
+    const AIRTABLE_API_KEY = 'patL6WezaL3PYo6wP.e1c4to_replace_this_part_with_your_real_key_e4498c3473f2774d3664c'; // Ganti dengan API Key Anda yang valid
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDevdyhUaABFeN0_T-bY_D_oi7bEg12H7azjh7KuQY1l6uXn6z7fyHeTYG0j_bnpshhg/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKf_replace_this_part_with_your_real_script_url_HeTYG0j_bnpshhg/exec'; // Ganti dengan URL Script Anda
 
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Langkah 1: Ambil data event utama
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
             eventDetails = eventData.fields;
 
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Langkah 2: Buat formula filter untuk mengambil record berdasarkan ID
             const createFilterFormula = (ids) => {
                 if (ids.length === 0) return "RECORD_ID()='INVALID_ID'";
                 const formulaParts = ids.map(id => `RECORD_ID()='${id}'`);
@@ -48,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
             const formFilter = encodeURIComponent(createFilterFormula(formFieldIds));
 
-            // Langkah 3: Ambil data tiket dan form secara spesifik
             const [ticketTypesData, formFieldsData] = await Promise.all([
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
@@ -57,19 +54,48 @@ document.addEventListener('DOMContentLoaded', () => {
             ticketTypes = ticketTypesData.records;
             formFields = formFieldsData.records;
 
-            // Lanjutkan proses render
             renderLayout();
             attachEventListeners();
             updatePrice();
 
         } catch (error) {
-            console.error('Gagal membangun halaman:', error); // Log error tetap ada di console browser untuk debugging
-            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records sudah diisi. Error: ${error.message}`;
+            console.error('Gagal membangun halaman:', error);
+            const errorMsg = `Gagal memuat detail event. Pastikan Event ID benar dan kolom linked records (ticket_types, form_fields) serta kolom 'Seat Map' & 'Pilihan Kursi' sudah diisi di Airtable. Error: ${error.message}`;
             checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
         }
     };
     
+    // FUNGSI INI DIMODIFIKASI SECARA SIGNIFIKAN
     const renderLayout = () => {
+        // Bagian untuk membuat Seat Map
+        let seatMapHTML = '';
+        if (eventDetails['Seat Map'] && eventDetails['Seat Map'][0]?.url) {
+            seatMapHTML = `
+                <div class="form-section seat-map-container">
+                    <h3>Lihat Peta Kursi</h3>
+                    <img src="${eventDetails['Seat Map'][0].url}" alt="Peta Kursi" class="seat-map-image">
+                </div>
+            `;
+        }
+
+        // Bagian untuk membuat dropdown Pilihan Kursi
+        let seatSelectionHTML = '';
+        const seatOptions = eventDetails['Pilihan Kursi'] ? eventDetails['Pilihan Kursi'].split('\n').filter(opt => opt.trim() !== '') : [];
+        if (seatOptions.length > 0) {
+            seatSelectionHTML = `
+                <div class="form-section">
+                    <h3>1. Pilih Kursi</h3>
+                    <div class="form-group">
+                        <select id="seatChoice" name="Pilihan Kursi" class="form-control" required>
+                            <option value="" disabled selected>-- Pilih Kategori Kursi --</option>
+                            ${seatOptions.map(option => `<option value="${option.trim()}">${option.trim()}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Bagian untuk membuat pilihan jenis tiket
         let ticketOptionsHTML = ticketTypes.map(record => `
             <div class="ticket-option" data-ticket-id="${record.id}">
                 <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${record.fields['Admin Fee'] || 0}">
@@ -82,15 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
+        // Bagian untuk membuat form data diri
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
             if (!field['Field Label'] || !field['Field Type']) return '';
-            
             const fieldId = `form_${field['Field Label'].replace(/[^a-zA-Z0-9]/g, '')}`;
             const fieldLabel = field['Field Label'];
             const fieldType = field['Field Type'].toLowerCase();
             const isRequired = field['Is Required'] ? 'required' : '';
-
             if (fieldType === 'tel') {
                 return `<div class="form-group"><label for="${fieldId}">${fieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${fieldLabel}" ${isRequired} placeholder="8123456789"></div></div>`;
             } else {
@@ -98,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
+        // Gabungkan semua bagian menjadi layout akhir
         const layoutHTML = `
             <div class="event-header">
                 <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
@@ -108,22 +134,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="event-description">${eventDetails.Deskripsi || 'Deskripsi tidak tersedia.'}</p>
                 </div>
                 <div class="purchase-form">
-                    <div class="form-section">
-                        <h3>1. Pilih Jenis Tiket</h3>
-                        <div id="ticketOptionsContainer">${ticketOptionsHTML}</div>
-                    </div>
-                    <div class="form-section">
-                        <h3>2. Pilih Jumlah Beli</h3>
-                        <div class="quantity-selector">
-                            <button type="button" id="decreaseQty" disabled>-</button>
-                            <input type="number" id="ticketQuantity" value="1" min="1" readonly>
-                            <button type="button" id="increaseQty" disabled>+</button>
+                    ${seatMapHTML}
+
+                    <form id="customer-data-form" novalidate>
+                        ${seatSelectionHTML}
+
+                        <div class="form-section">
+                            <h3>2. Pilih Jenis Tiket</h3>
+                            <div id="ticketOptionsContainer">${ticketOptionsHTML}</div>
                         </div>
-                    </div>
-                    <div class="form-section">
-                        <h3>3. Isi Data Diri</h3>
-                        <form id="customer-data-form" novalidate>${formFieldsHTML}</form>
-                    </div>
+
+                        <div class="form-section">
+                            <h3>3. Pilih Jumlah Beli</h3>
+                            <div class="quantity-selector">
+                                <button type="button" id="decreaseQty" disabled>-</button>
+                                <input type="number" id="ticketQuantity" value="1" min="1" readonly>
+                                <button type="button" id="increaseQty" disabled>+</button>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>4. Isi Data Diri</h3>
+                            ${formFieldsHTML}
+                        </div>
+                    </form>
+                    
                     <div class="form-section price-review-section">
                         <h3>Ringkasan Harga</h3>
                         <div id="price-review"><p>Pilih jenis tiket untuk melihat harga.</p></div>
@@ -175,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewContainer.innerHTML = `<div class="review-row"><span>${name} x ${quantity}</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
     };
 
+    // FUNGSI INI JUGA DIMODIFIKASI
     const showReviewModal = () => {
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
@@ -192,8 +228,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const formData = new FormData(form);
         let formDataHTML = '';
+        // Tangkap Pilihan Kursi dan tampilkan paling atas
+        const seatChoiceValue = formData.get('Pilihan Kursi');
+        if (seatChoiceValue) {
+            formDataHTML += `<div class="review-row"><span>Pilihan Kursi</span><span>${seatChoiceValue}</span></div>`;
+        }
+        
+        // Loop sisa data form
         for (let [key, value] of formData.entries()) {
-            formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
+            // Jangan tampilkan lagi Pilihan Kursi karena sudah di atas
+            if (key !== 'Pilihan Kursi') {
+                formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
+            }
         }
 
         const reviewDetailsContainer = document.getElementById('reviewDetails');
@@ -215,6 +261,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Langsung jalankan proses pembangunan halaman
     buildPage();
 });
