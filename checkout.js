@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
             eventDetails = eventData.fields;
             const ticketTypeIds = eventDetails.ticket_types || [];
-            const formFieldIds = eventDetails.form_fields || [];
+            const formFieldIds = eventDetails.formfields || [];
             
             if (ticketTypeIds.length === 0) {
                 checkoutMain.innerHTML = `<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>`;
@@ -137,8 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // === PERBAIKAN 1: Memastikan Form Fields ditampilkan ===
         let formFieldsHTML = formFields.map(record => {
             const field = record.fields;
-            const fieldLabel = field['Field_Label'];
-            const fieldType = field['Field_Type'];
+            const fieldLabel = field['FieldLabel'];
+            const fieldType = field['FieldType'];
             if (!fieldLabel || !fieldType) return '';
             const fieldId = `form_${fieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
             const isRequired = field['Is_Required'] ? 'required' : '';
@@ -246,3 +246,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
