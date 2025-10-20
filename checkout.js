@@ -40,62 +40,86 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // FUNGSI UNTUK PROSES PEMBAYARAN MIDTRANS
-    const initiatePayment = async () => {
-        const confirmButton = document.getElementById('confirmPaymentBtn');
-        confirmButton.disabled = true;
-        confirmButton.textContent = 'Memproses...';
+    // File: checkout.js
 
-        try {
-            const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-            const quantity = parseInt(document.getElementById('ticketQuantity').value);
-            const price = parseFloat(selectedTicket.dataset.price);
-            const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-            const finalTotal = (price + adminFee) * quantity;
-            
-            const form = document.getElementById('customer-data-form');
-            const formData = new FormData(form);
-            const customerData = Object.fromEntries(formData.entries());
+const initiatePayment = async () => {
+    const confirmButton = document.getElementById('confirmPaymentBtn');
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Memproses...';
 
-            let customerName = '', customerEmail = '', customerPhone = '';
-            for (const [key, value] of Object.entries(customerData)) {
-                const lowerKey = key.toLowerCase();
-                if (lowerKey.includes('nama')) customerName = value;
-                else if (lowerKey.includes('email')) customerEmail = value;
-                else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
-            }
+    try {
+        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+        const quantity = parseInt(document.getElementById('ticketQuantity').value);
+        const price = parseFloat(selectedTicket.dataset.price);
+        const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+        const finalTotal = (price + adminFee) * quantity;
+        
+        const form = document.getElementById('customer-data-form');
+        const formData = new FormData(form);
+        const customerData = Object.fromEntries(formData.entries());
 
-            if (!customerName || !customerEmail || !customerPhone) {
-                throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
-            }
-
-            const payload = {
-                order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
-                gross_amount: finalTotal,
-                item_details: [{ id: selectedTicket.value, price: price + adminFee, quantity: quantity, name: selectedTicket.dataset.name }],
-                customer_details: { first_name: customerName, email: customerEmail, phone: '+62' + customerPhone }
-            };
-            
-            const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
-            const result = await response.json();
-
-            if (result.error) throw new Error(result.error);
-
-            window.snap.pay(result.token, {
-                onSuccess: (result) => showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.'),
-                onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
-                onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
-                onClose: () => {
-                    confirmButton.disabled = false;
-                    confirmButton.textContent = 'Lanjutkan Pembayaran';
-                }
-            });
-        } catch (error) {
-            console.error('Payment initiation error:', error);
-            showFeedback('error', 'Terjadi Kesalahan', 'Gagal memproses pembayaran. Silakan coba lagi nanti.');
-            confirmButton.disabled = false;
-            confirmButton.textContent = 'Lanjutkan Pembayaran';
+        let customerName = '', customerEmail = '', customerPhone = '';
+        for (const [key, value] of Object.entries(customerData)) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('nama')) customerName = value;
+            else if (lowerKey.includes('email')) customerEmail = value;
+            else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
         }
-    };
+
+        if (!customerName || !customerEmail || !customerPhone) {
+            throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
+        }
+
+        const payload = {
+            order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
+            gross_amount: finalTotal,
+            item_details: [{ id: selectedTicket.value, price: price + adminFee, quantity: quantity, name: selectedTicket.dataset.name }],
+            customer_details: { first_name: customerName, email: customerEmail, phone: '+62' + customerPhone }
+        };
+        
+        // --- BAGIAN YANG DIPERBAIKI ---
+        const response = await fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'no-cors' // Hapus baris ini jika Anda menggunakan 'application/json'
+        });
+
+        // Cek jika responsenya tidak OK (misal: error 500 dari server)
+        if (!response.ok) {
+            throw new Error(`Network response was not ok. Status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        // --- AKHIR BAGIAN ---
+
+        if (result.error) {
+            // Menangkap pesan error spesifik dari Google Apps Script
+            throw new Error(result.error);
+        }
+
+        // Jika tidak ada token, berarti ada masalah lain
+        if (!result.token) {
+            throw new Error("Respons tidak valid dari server, token tidak ditemukan.");
+        }
+
+        window.snap.pay(result.token, {
+            onSuccess: (result) => showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.'),
+            onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
+            onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
+            onClose: () => {
+                confirmButton.disabled = false;
+                confirmButton.textContent = 'Lanjutkan Pembayaran';
+            }
+        });
+    } catch (error) {
+        console.error('Payment initiation error:', error);
+        // Menampilkan pesan error yang lebih detail kepada pengguna
+        showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Lanjutkan Pembayaran';
+    }
+};
 
     // FUNGSI UNTUK MENAMPILKAN MODAL FEEDBACK
     const showFeedback = (type, title, message) => {
@@ -304,3 +328,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
