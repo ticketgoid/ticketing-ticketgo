@@ -4,49 +4,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
     const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = '/api/create-transaction';
-    const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6ehc74DxV8vE76QYAjge0hBlbCc5A9XofZOrHnwiCF6rewRjkpHpZg7biACtjnZ9kzA/exec';
+    const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
+      try {
+    const payload = {
+      order_id: paymentResult.order_id,
+      transaction_status: paymentResult.transaction_status,
+      gross_amount: paymentResult.gross_amount,
+      customer_details: customerData,
+      item_details: itemDetails
+    };
 
-// Anda akan mengganti fungsi lama Anda dengan yang ini
-const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
-    // 1. CCTV #1: Memberi tahu kita bahwa fungsi ini sudah mulai berjalan.
-    console.log("Mencoba mengirim data ke Google Sheet...");
+    // Memanggil fungsi backend baru kita di Netlify
+    await fetch('/api/save-to-airtable', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-    try {
-        // 2. CCTV #2: Menyiapkan "paket" data yang akan dikirim.
-        const payload = {
-            order_id: paymentResult.order_id,
-            // ...data lainnya
-        };
+    console.log("Data berhasil dikirim ke Airtable.");
 
-        // 3. CCTV #3: Menampilkan isi paket data tersebut agar kita bisa periksa.
-        console.log("Payload yang akan dikirim:", JSON.stringify(payload, null, 2));
-
-        // 4. INTI PROSES: Mengirim data menggunakan 'fetch'.
-        // Kita tidak akan menggunakan 'mode: no-cors' karena Apps Script kita sudah mendukung CORS.
-        const response = await fetch(GOOGLE_SHEET_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        // 5. CCTV #4: Mengecek "surat balasan" dari server Apps Script.
-        console.log("Menerima respons dari Apps Script. Status:", response.status);
-        if (!response.ok) {
-           // Jika statusnya bukan "sukses" (bukan 200), kita lempar sebagai error.
-           throw new Error(`Server merespons dengan status ${response.status}`);
-        }
-        
-        // 6. CCTV #5: Membaca isi surat balasan dan menampilkannya.
-        const result = await response.json();
-        console.log("Respons dari Google Sheet:", result);
-        
-        console.log("Data berhasil diproses dan dikirim ke Google Sheet.");
-
-    } catch (error) {
-        // 7. CCTV PENTING: Jika ada masalah di langkah mana pun,
-        // CCTV ini akan menyala dan menampilkan pesan error berwarna MERAH.
-        console.error("!!! GAGAL MENGIRIM DATA KE GOOGLE SHEET:", error);
-    }
+  } catch (error) {
+    console.error("Gagal mengirim data ke Airtable:", error);
+  }
 };
     
     const checkoutMain = document.getElementById('checkout-main');
@@ -386,6 +365,7 @@ window.snap.pay(result.token, {
     
     buildPage();
 });
+
 
 
 
