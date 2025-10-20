@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
                     </div>
                     <div class="event-info">
-                        <h1>${eventDetails['Nama_Event'] || 'Nama Event'}</h1>
+                        <h1>${eventDetails['NamaEvent'] || 'Nama Event'}</h1>
                         <p class="event-description">${eventDetails.Deskripsi || 'Deskripsi tidak tersedia.'}</p>
                     </div>
                 </div>
@@ -224,3 +224,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
