@@ -10,6 +10,65 @@ document.addEventListener('DOMContentLoaded', () => {
     let ticketTypes = [];
     let formFields = [];
 
+    // --- PENAMBAHAN KODE LOGGING ---
+    /**
+     * Menampilkan pesan log langsung di halaman web.
+     * @param {string} message Pesan yang ingin ditampilkan.
+     * @param {string} type Tipe log ('info', 'success', 'error', 'warn').
+     */
+    const logToPage = (message, type = 'info') => {
+        const logContainer = document.getElementById('log-container');
+        if (!logContainer) return; // Pastikan container ada
+
+        const logEntry = document.createElement('p');
+        const timestamp = new Date().toLocaleTimeString('en-GB');
+        logEntry.innerHTML = `<span>[${timestamp}]</span> ${message}`;
+        logEntry.className = `log-entry log-${type}`;
+        
+        // Tambahkan log baru di atas
+        logContainer.prepend(logEntry);
+    };
+
+    /**
+     * Menyisipkan CSS untuk styling container log.
+     */
+    const injectLoggerCSS = () => {
+        const style = document.createElement('style');
+        style.textContent = `
+            #log-container {
+                position: fixed;
+                bottom: 15px;
+                right: 15px;
+                width: 350px;
+                max-height: 250px;
+                overflow-y: auto;
+                background-color: rgba(0, 0, 0, 0.8);
+                color: #fff;
+                padding: 10px;
+                border-radius: 8px;
+                font-family: 'Consolas', 'Menlo', monospace;
+                font-size: 12px;
+                z-index: 9999;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                border: 1px solid #444;
+            }
+            .log-entry {
+                margin: 0 0 8px 0;
+                padding: 4px 6px;
+                border-radius: 3px;
+                border-left: 4px solid;
+                line-height: 1.4;
+            }
+            .log-entry span { opacity: 0.7; margin-right: 5px; }
+            .log-info { border-color: #3498db; }
+            .log-success { border-color: #2ecc71; color: #a6ffda; }
+            .log-error { border-color: #e74c3c; color: #ffacac; font-weight: bold; }
+            .log-warn { border-color: #f1c40f; color: #fff1b5;}
+        `;
+        document.head.appendChild(style);
+    };
+    // --- AKHIR PENAMBAHAN KODE LOGGING ---
+
     const fetchData = async (url) => {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
         if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
@@ -17,20 +76,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildPage = async () => {
+        logToPage('Memulai proses pembangunan halaman...');
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('eventId');
+
         if (!eventId) {
-            checkoutMain.innerHTML = '<p class="error-message">Error: Event ID tidak ditemukan di URL.</p>';
+            const errorMsg = 'Error: Event ID tidak ditemukan di URL.';
+            checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+            logToPage(errorMsg, 'error');
             return;
         }
+        logToPage(`Event ID ditemukan: <strong>${eventId}</strong>`, 'success');
 
         try {
-            // Langkah 1: Ambil detail event utama.
+            logToPage('Mengambil data detail event utama...');
             const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
             eventDetails = eventData.fields;
+            logToPage('Data event utama berhasil diambil.', 'success');
 
-            // Langkah 2: Gunakan filter yang sudah benar dengan field EventID_Text.
             const filterFormula = `?filterByFormula={EventID_Text}%3D'${eventId}'`;
+            logToPage('Mengambil data jenis tiket dan form...');
 
             const [ticketTypesData, formFieldsData] = await Promise.all([
                 fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types${filterFormula}`),
@@ -39,24 +104,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             ticketTypes = ticketTypesData.records;
             formFields = formFieldsData.records;
+            logToPage(`Ditemukan <strong>${ticketTypes.length}</strong> jenis tiket dan <strong>${formFields.length}</strong> kolom form.`, 'success');
 
             if (ticketTypes.length === 0) {
-                 checkoutMain.innerHTML = '<p class="error-message">Tiket untuk event ini belum tersedia atau sudah habis.</p>';
-                 return;
+                const warnMsg = 'Tiket untuk event ini belum tersedia atau sudah habis.';
+                checkoutMain.innerHTML = `<p class="error-message">${warnMsg}</p>`;
+                logToPage(warnMsg, 'warn');
+                return;
             }
 
+            logToPage('Memulai render layout HTML...');
             renderLayout();
+            logToPage('Layout berhasil dirender.', 'success');
+            
+            logToPage('Menambahkan event listeners...');
             attachEventListeners();
+            logToPage('Event listeners berhasil ditambahkan.', 'success');
+
             updatePrice();
 
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
-            checkoutMain.innerHTML = `<p class="error-message">Gagal memuat detail event. Pastikan field 'EventID_Text' sudah dibuat di Airtable. Error: ${error.message}</p>`;
+            const errorMsg = `Gagal memuat detail event. Pastikan field 'EventID_Text' sudah dibuat di Airtable. Error: ${error.message}`;
+            checkoutMain.innerHTML = `<p class="error-message">${errorMsg}</p>`;
+            logToPage(errorMsg, 'error');
         }
     };
     
-    // --- SISA KODE (renderLayout, dll) TETAP SAMA ---
-
     const renderLayout = () => {
         let ticketOptionsHTML = ticketTypes.map(record => `
             <div class="ticket-option" data-ticket-id="${record.id}">
@@ -86,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
+        // MODIFIKASI: Menambahkan <div id="log-container"></div>
         const layoutHTML = `
             <div class="event-header">
                 <img src="${eventDetails['Gambar Event']?.[0]?.url || ''}" alt="Poster Event" class="event-poster">
@@ -118,16 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
                 </div>
-            </div>`;
+            </div>
+            <div id="log-container"></div>`;
         checkoutMain.innerHTML = layoutHTML;
     };
 
     const attachEventListeners = () => {
         document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
-            radio.addEventListener('change', () => {
+            radio.addEventListener('change', (e) => {
                 document.getElementById('increaseQty').disabled = false;
                 document.getElementById('buyButton').disabled = false;
                 updatePrice();
+                logToPage(`Tiket dipilih: <strong>${e.target.dataset.name}</strong>`);
             });
         });
         document.getElementById('increaseQty').addEventListener('click', () => {
@@ -147,12 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePrice();
         });
         document.getElementById('buyButton').addEventListener('click', showReviewModal);
-        document.querySelector('#reviewModal .close-button')?.addEventListener('click', () => {
-            document.getElementById('reviewModal').style.display = 'none';
-        });
-        document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => {
-            document.getElementById('feedbackModal').style.display = 'none';
-        });
+        // Event listener untuk modal sudah berada di file HTML utama, jadi tidak perlu ditambahkan di sini.
     };
 
     const updatePrice = () => {
@@ -173,8 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('customer-data-form');
         if (!form.checkValidity()) {
             form.reportValidity();
+            logToPage('Validasi form gagal. Mohon lengkapi data diri.', 'warn');
             return;
         }
+        logToPage('Validasi form berhasil, menampilkan modal review.', 'success');
+
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
         const price = parseFloat(selectedTicket.dataset.price);
@@ -182,23 +257,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = price * quantity;
         const totalAdminFee = adminFee * quantity;
         const finalTotal = subtotal + totalAdminFee;
+        
         const formData = new FormData(form);
         let formDataHTML = '';
         for (let [key, value] of formData.entries()) {
             formDataHTML += `<div class="review-row"><span>${key}</span><span>${value}</span></div>`;
         }
+
         const reviewDetailsContainer = document.getElementById('reviewDetails');
-        reviewDetailsContainer.innerHTML = `
-            <h4>Detail Pesanan:</h4>
-            <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
-            <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
-            <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
-            <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
-            <hr>
-            <h4>Data Pemesan:</h4>
-            ${formDataHTML}`;
-        document.getElementById('reviewModal').style.display = 'flex';
+        if(reviewDetailsContainer) {
+            reviewDetailsContainer.innerHTML = `
+                <h4>Detail Pesanan:</h4>
+                <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
+                <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
+                <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
+                <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
+                <hr>
+                <h4>Data Pemesan:</h4>
+                ${formDataHTML}`;
+        }
+        
+        const reviewModal = document.getElementById('reviewModal');
+        if (reviewModal) {
+           reviewModal.style.display = 'flex';
+        }
     };
     
+    // Panggil fungsi utama untuk memulai semuanya
+    injectLoggerCSS();
     buildPage();
 });
