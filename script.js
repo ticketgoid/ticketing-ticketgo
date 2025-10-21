@@ -102,15 +102,17 @@ function initializeApp() {
     
     // --- FUNGSI PENGATUR EVENT LISTENERS ---
     function setupEventListeners() {
-        // Logika untuk klik tombol "Beli Tiket" pada kartu event
-        eventGrid.addEventListener('click', function(e) {
-            if (e.target && e.target.matches('button.btn-buy:not(:disabled)')) {
-                const eventId = e.target.closest('.event-card').dataset.eventId;
-                if (eventId) {
-                    window.location.href = `checkout.html?eventId=${eventId}`;
-                }
-            }
-        });
+       // Mengarahkan ke halaman checkout.html dari seluruh kartu event
+eventGrid.addEventListener('click', function(e) {
+    // Cari elemen kartu event terdekat dari target klik
+    const card = e.target.closest('.event-card');
+    if (card) {
+        const eventId = card.dataset.eventId;
+        if (eventId) {
+            window.location.href = `checkout.html?eventId=${eventId}`;
+        }
+    }
+});
         
         // Logika untuk tombol scroll carousel
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
@@ -188,3 +190,4 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
