@@ -1319,6 +1319,62 @@ footer .logo img {
     flex-wrap: wrap;
 }
 
+/* ========================================= */
+/* ==      HEADER & SEARCH BAR BARU       == */
+/* ========================================= */
 
+/* 1. Atur layout <nav> utama dengan Flexbox */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
 
+/* 2. Buat wadah pencarian di tengah */
+.search-container {
+    flex-grow: 1; /* Biarkan elemen ini mengisi ruang kosong */
+    max-width: 600px; /* Batasi lebar maksimum */
+    position: relative;
+}
 
+/* 3. Atur gaya untuk bilah pencarian */
+.search-input {
+    width: 100%; /* Lebar penuh sesuai wadahnya */
+    padding: 0.9rem 1.2rem 0.9rem 3rem; /* Beri ruang untuk ikon di kiri */
+    border: 1px solid #E5E7EB;
+    border-radius: 50px; /* Membuatnya bulat */
+    font-size: 1rem;
+    background-color: #f8f9fa;
+    transition: all 0.2s;
+
+    /* Hapus gaya lama yang menyembunyikan search bar */
+    opacity: 1;
+    visibility: visible;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--orange);
+    background-color: var(--white);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+/* 4. Atur posisi ikon search di dalam input */
+.search-icon-inside {
+    position: absolute;
+    left: 1.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-text);
+}
+
+/* 5. Hapus gaya ikon search lama */
+.search-icon {
+    display: none;
+}
+
+/* 6. Pastikan elemen kanan tidak memakan banyak tempat */
+.nav-right {
+    flex-shrink: 0;
+}
