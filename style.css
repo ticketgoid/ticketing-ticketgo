@@ -37,7 +37,7 @@
 }
 
 .preloader-logo {
-    height: 300px; /* Sesuaikan ukuran logo */
+    height: 200px; /* Sesuaikan ukuran logo */
     margin-bottom: 2rem;
 }
 
@@ -1318,5 +1318,6 @@ footer .logo img {
     gap: 4rem; /* Jarak antara kolom 'Bantuan' dan 'Ikuti Kami' */
     flex-wrap: wrap;
 }
+
 
 
