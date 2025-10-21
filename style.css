@@ -1075,6 +1075,126 @@ body.checkout-page {
     }
 }
 
+/* ========================================= */
+/* ==   HALAMAN SYARAT & KETENTUAN (SK)   == */
+/* ========================================= */
+
+.sk-main-content {
+    padding: 2rem 5%;
+    background-color: var(--white);
+}
+
+.sk-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 3rem;
+}
+
+/* Kolom Kiri: Table of Contents (TOC) */
+.sk-toc {
+    flex: 0 0 280px; /* Lebar tetap untuk TOC */
+    position: sticky;
+    top: 100px; /* Jarak dari atas agar tidak tertutup header sticky */
+}
+
+.sk-toc h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.sk-toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sk-toc ul li a {
+    display: block;
+    padding: 0.6rem 1rem;
+    color: var(--gray-text);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 600;
+}
+
+.sk-toc ul li a:hover {
+    background-color: #f0fdfa; /* Warna teal muda */
+    color: var(--teal);
+}
+
+/* Kolom Kanan: Konten Utama */
+.sk-content {
+    flex: 1; /* Mengambil sisa ruang */
+    min-width: 0;
+}
+
+.sk-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sk-content section {
+    margin-bottom: 2.5rem;
+}
+
+.sk-content h3 {
+    font-size: 1.75rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    color: var(--black);
+}
+
+.sk-content h4 {
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--black);
+}
+
+.sk-content p, .sk-content ul li {
+    color: var(--gray-text);
+    line-height: 1.8;
+    margin-bottom: 0.75rem;
+}
+
+.sk-content ul {
+    padding-left: 20px;
+}
+
+.sk-content strong {
+    color: var(--black);
+    font-weight: 600;
+}
+
+.sk-content .disclaimer {
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    font-style: italic;
+    color: #b45309;
+}
+
+/* Penyesuaian untuk Tampilan Mobile */
+@media (max-width: 992px) {
+    .sk-container {
+        flex-direction: column;
+    }
+
+    .sk-toc {
+        position: static;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+}
+
 
 
 
