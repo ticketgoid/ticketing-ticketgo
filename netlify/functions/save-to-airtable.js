@@ -16,7 +16,9 @@ exports.handler = async function (event, context) {
       "NoHP": data.customer_details.phone,
       "JenisTiket": data.item_details.name,
       "JumlahTiket": data.item_details.quantity,
-      "TotalBayar": data.gross_amount,
+      // ============ INI BAGIAN YANG DIPERBAIKI ============
+      "TotalBayar": parseFloat(data.gross_amount),
+      // ===================================================
       "StatusPembayaran": data.transaction_status,
     },
   };
