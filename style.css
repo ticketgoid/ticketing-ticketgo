@@ -1196,6 +1196,101 @@ body.checkout-page {
     }
 }
 
+/* ========================================= */
+/* ==         HALAMAN FAQ BARU            == */
+/* ========================================= */
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.faq-container h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--black);
+}
+
+.faq-intro {
+    text-align: center;
+    color: var(--gray-text);
+    margin-bottom: 3rem;
+    font-size: 1.1rem;
+}
+
+.faq-section {
+    margin-bottom: 2.5rem;
+}
+
+.faq-section h3 {
+    font-size: 1.75rem;
+    color: var(--black);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.faq-item {
+    margin-bottom: 1.5rem;
+}
+
+.faq-item h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--black);
+}
+
+.faq-item p {
+    color: var(--gray-text);
+    line-height: 1.8;
+}
+
+.faq-contact {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background-color: var(--gray-light);
+    border-radius: 12px;
+}
+
+.faq-contact p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    color: var(--black);
+}
+
+.contact-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--white);
+    transition: transform 0.2s;
+}
+
+.contact-btn:hover {
+    transform: translateY(-2px);
+}
+
+.email-btn {
+    background-color: #5a67d8; /* Warna Indigo */
+}
+
+.wa-btn {
+    background-color: #25D366; /* Warna WhatsApp */
+}
 
 
 
