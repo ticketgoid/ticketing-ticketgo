@@ -71,7 +71,7 @@ function initializeApp() {
                     const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
                     const buttonHTML = isRegistrationOpen
                         ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
-                        : `<button class="btn-buy disabled" disabled>Ditutup</button>`;
+                        : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
 
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
@@ -190,4 +190,5 @@ eventGrid.addEventListener('click', function(e) {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
 
