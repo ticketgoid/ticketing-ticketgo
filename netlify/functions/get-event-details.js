@@ -2,7 +2,7 @@
 const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
-  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID } = process.env;
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
   const { eventId } = event.queryStringParameters;
 
   if (!eventId) {
@@ -17,17 +17,17 @@ exports.handler = async function (event, context) {
 
   try {
     // 1. Ambil detail event utama
-    const eventDetails = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
+    const eventDetails = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events/${eventId}`);
     
     // 2. Ambil jenis tiket berdasarkan relasi
     const ticketTypeIds = eventDetails.fields.ticket_types || [];
     const ticketFilter = `OR(${ticketTypeIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-    const ticketTypes = ticketTypeIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}`) : { records: [] };
+    const ticketTypes = ticketTypeIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}`) : { records: [] };
 
     // 3. Ambil form fields berdasarkan relasi
     const formFieldIds = eventDetails.fields.formfields || [];
     const formFilter = `OR(${formFieldIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-    const formFields = formFieldIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`) : { records: [] };
+    const formFields = formFieldIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`) : { records: [] };
 
     return {
       statusCode: 200,
