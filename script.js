@@ -130,26 +130,7 @@ function initializeApp() {
         }
     }
 
-    // --- LOGIKA SEARCH ICON & SCROLL ---
-    const searchIcon = document.getElementById('searchIcon');
-    const searchInput = document.getElementById('searchInput');
-    const eventsSection = document.getElementById('events');
-    let hasScrolledOnInput = false;
-    if (searchIcon && searchInput) {
-        searchIcon.addEventListener('click', (event) => {
-            event.preventDefault();
-            searchInput.classList.toggle('active');
-            searchInput.focus();
-            if (!searchInput.classList.contains('active')) hasScrolledOnInput = false;
-        });
-        searchInput.addEventListener('input', () => {
-            if (!hasScrolledOnInput && eventsSection) {
-                eventsSection.scrollIntoView({ behavior: 'smooth' });
-                hasScrolledOnInput = true;
-            }
-        });
-    }
-
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
+
