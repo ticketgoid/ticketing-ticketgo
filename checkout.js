@@ -184,6 +184,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             renderLayout();
+    // Periksa apakah pendaftaran event ditutup
+    if (eventDetails['Pendaftaran Dibuka'] !== true) {
+        const buyButton = document.getElementById('buyButton');
+        if (buyButton) {
+            buyButton.textContent = 'Sold Out';
+            buyButton.disabled = true;
+        }
+    }
             attachEventListeners();
             updatePrice();
         } catch (error) {
@@ -334,3 +342,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
