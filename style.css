@@ -1303,13 +1303,13 @@ body.checkout-page {
 
 /* 2. Perbesar ukuran logo gambar di header */
 header .logo img {
-    height: 50px; /* Anda bisa sesuaikan ukurannya dari 40px */
+    height: 70px; /* Anda bisa sesuaikan ukurannya dari 40px */
     margin-right: 0; /* Hapus margin karena teks sudah hilang */
 }
 
 /* 3. Perbesar ukuran logo gambar di footer */
 footer .logo img {
-    height: 50px; /* Samakan ukurannya dengan header */
+    height: 70px; /* Samakan ukurannya dengan header */
 }
 
 /* 4. Pengaturan untuk mengelompokkan menu footer di kanan */
@@ -1318,3 +1318,4 @@ footer .logo img {
     gap: 4rem; /* Jarak antara kolom 'Bantuan' dan 'Ikuti Kami' */
     flex-wrap: wrap;
 }
+
