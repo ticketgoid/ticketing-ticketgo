@@ -1,32 +1,30 @@
 // GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
     // --- KONFIGURASI PENTING ---
-    const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
-    const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
     const SCRIPT_URL = '/api/create-transaction';
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
-    const payload = {
-      order_id: paymentResult.order_id,
-      transaction_status: paymentResult.transaction_status,
-      gross_amount: paymentResult.gross_amount,
-      customer_details: customerData,
-      item_details: itemDetails
+        const payload = {
+          order_id: paymentResult.order_id,
+          transaction_status: paymentResult.transaction_status,
+          gross_amount: paymentResult.gross_amount,
+          customer_details: customerData,
+          item_details: itemDetails
+        };
+
+        // Memanggil fungsi backend baru kita di Netlify
+        await fetch('/api/save-to-airtable', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        console.log("Data berhasil dikirim ke Airtable.");
+
+      } catch (error) {
+        console.error("Gagal mengirim data ke Airtable:", error);
+      }
     };
-
-    // Memanggil fungsi backend baru kita di Netlify
-    await fetch('/api/save-to-airtable', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    console.log("Data berhasil dikirim ke Airtable.");
-
-  } catch (error) {
-    console.error("Gagal mengirim data ke Airtable:", error);
-  }
-};
     
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {};
@@ -56,109 +54,87 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(style);
     };
 
-    const fetchData = async (url) => {
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
-        if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
-        return await response.json();
-    };
-    
-    // FUNGSI UNTUK PROSES PEMBAYARAN MIDTRANS
-    // File: checkout.js
+    const initiatePayment = async () => {
+        const confirmButton = document.getElementById('confirmPaymentBtn');
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Memproses...';
 
-// File: checkout.js
-
-const initiatePayment = async () => {
-    const confirmButton = document.getElementById('confirmPaymentBtn');
-    confirmButton.disabled = true;
-    confirmButton.textContent = 'Memproses...';
-
-    try {
-        // ... (kode untuk mengambil data form tidak perlu diubah)
-        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-        const quantity = parseInt(document.getElementById('ticketQuantity').value);
-        const price = parseFloat(selectedTicket.dataset.price);
-        const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-        const finalTotal = (price + adminFee) * quantity;
-        const form = document.getElementById('customer-data-form');
-        const formData = new FormData(form);
-        const customerData = Object.fromEntries(formData.entries());
-        let customerName = '', customerEmail = '', customerPhone = '';
-        for (const [key, value] of Object.entries(customerData)) {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('nama')) customerName = value;
-            else if (lowerKey.includes('email')) customerEmail = value;
-            else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
-        }
-        if (!customerName || !customerEmail || !customerPhone) {
-            throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
-        }
-        const payload = {
-            order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
-            gross_amount: finalTotal,
-            item_details: [{ id: selectedTicket.value, price: price + adminFee, quantity: quantity, name: selectedTicket.dataset.name }],
-            customer_details: { first_name: customerName, email: customerEmail, phone: '+62' + customerPhone }
-        };
-        // --- INI BAGIAN PENTING ---
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: {
-                'Content-Type': 'application/json',
+        try {
+            const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+            const quantity = parseInt(document.getElementById('ticketQuantity').value);
+            const price = parseFloat(selectedTicket.dataset.price);
+            const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+            const finalTotal = (price + adminFee) * quantity;
+            const form = document.getElementById('customer-data-form');
+            const formData = new FormData(form);
+            const customerData = Object.fromEntries(formData.entries());
+            let customerName = '', customerEmail = '', customerPhone = '';
+            for (const [key, value] of Object.entries(customerData)) {
+                const lowerKey = key.toLowerCase();
+                if (lowerKey.includes('nama')) customerName = value;
+                else if (lowerKey.includes('email')) customerEmail = value;
+                else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
             }
-            // Pastikan tidak ada 'mode: 'no-cors'' di sini
-        });
-        // --- AKHIR BAGIAN PENTING ---
+            if (!customerName || !customerEmail || !customerPhone) {
+                throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
+            }
+            const payload = {
+                order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
+                gross_amount: finalTotal,
+                item_details: [{ id: selectedTicket.value, price: price + adminFee, quantity: quantity, name: selectedTicket.dataset.name }],
+                customer_details: { first_name: customerName, email: customerEmail, phone: '+62' + customerPhone }
+            };
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
 
-        if (!response.ok) {
-            throw new Error(`Server merespons dengan status error: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Server merespons dengan status error: ${response.status}`);
+            }
+            
+            const result = await response.json();
+
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            if (!result.token) {
+                throw new Error("Token pembayaran tidak diterima dari server.");
+            }
+
+            window.snap.pay(result.token, {
+                onSuccess: (paymentResult) => {
+                    showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
+                    const customerDetailsForSheet = {
+                        first_name: customerName,
+                        email: customerEmail,
+                        phone: '+62' + customerPhone
+                    };
+                    const itemDetailsForSheet = {
+                        name: selectedTicket.dataset.name,
+                        quantity: quantity
+                    };
+                    saveDataToSheet(paymentResult, customerDetailsForSheet, itemDetailsForSheet);
+                },
+                onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
+                onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
+                onClose: () => {
+                    confirmButton.disabled = false;
+                    confirmButton.textContent = 'Lanjutkan Pembayaran';
+                }
+            });
+
+        } catch (error) {
+            console.error('Payment initiation error:', error);
+            showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
+            confirmButton.disabled = false;
+            confirmButton.textContent = 'Lanjutkan Pembayaran';
         }
-        
-        const result = await response.json();
+    };
 
-        if (result.error) {
-            throw new Error(result.error);
-        }
-        if (!result.token) {
-            throw new Error("Token pembayaran tidak diterima dari server.");
-        }
-
-        // Di dalam fungsi initiatePayment, cari bagian window.snap.pay
-
-window.snap.pay(result.token, {
-    onSuccess: (paymentResult) => {
-        // Tampilkan notifikasi sukses ke pengguna
-        showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
-        
-        // Siapkan data yang rapi untuk dikirim ke Google Sheet
-        const customerDetailsForSheet = {
-            first_name: customerName,
-            email: customerEmail,
-            phone: '+62' + customerPhone
-        };
-        const itemDetailsForSheet = {
-            name: selectedTicket.dataset.name,
-            quantity: quantity
-        };
-
-        // Panggil fungsi untuk menyimpan data ke spreadsheet
-        saveDataToSheet(paymentResult, customerDetailsForSheet, itemDetailsForSheet);
-    },
-    onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
-    onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
-    onClose: () => {
-        confirmButton.disabled = false;
-        confirmButton.textContent = 'Lanjutkan Pembayaran';
-    }
-});
-
-    } catch (error) {
-        console.error('Payment initiation error:', error);
-        showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
-        confirmButton.disabled = false;
-        confirmButton.textContent = 'Lanjutkan Pembayaran';
-    }
-};
-    // FUNGSI UNTUK MENAMPILKAN MODAL FEEDBACK
     const showFeedback = (type, title, message) => {
         document.getElementById('reviewModal').style.display = 'none';
         const feedbackModal = document.getElementById('feedbackModal');
@@ -192,27 +168,20 @@ window.snap.pay(result.token, {
             return;
         }
         try {
-            const eventData = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events/${eventId}`);
-            eventDetails = eventData.fields;
-            const ticketTypeIds = eventDetails.ticket_types || [];
-            const formFieldIds = eventDetails.formfields || [];
+            // Panggil Netlify Function untuk mendapatkan semua data sekaligus
+            const response = await fetch(`/api/get-event-details?eventId=${eventId}`);
+            if (!response.ok) throw new Error(`Gagal memuat data event: ${response.statusText}`);
             
-            if (ticketTypeIds.length === 0) {
-                checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia.</p>`;
+            const data = await response.json();
+            
+            eventDetails = data.eventDetails.fields;
+            ticketTypes = data.ticketTypes.records;
+            formFields = data.formFields.records;
+            
+            if (ticketTypes.length === 0) {
+                checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
                 return;
             }
-            
-            const createFilterFormula = (ids) => `OR(${ids.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-            const ticketFilter = encodeURIComponent(createFilterFormula(ticketTypeIds));
-            const formFilter = formFieldIds.length > 0 ? encodeURIComponent(createFilterFormula(formFieldIds)) : "RECORD_ID()='INVALID_ID'";
-
-            const [ticketTypesData, formFieldsData] = await Promise.all([
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Ticket%20Types?filterByFormula=${ticketFilter}`),
-                fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Form%20Fields?filterByFormula=${formFilter}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`)
-            ]);
-            
-            ticketTypes = ticketTypesData.records;
-            formFields = formFieldsData.records;
             
             renderLayout();
             attachEventListeners();
@@ -365,11 +334,3 @@ window.snap.pay(result.token, {
     
     buildPage();
 });
-
-
-
-
-
-
-
-
