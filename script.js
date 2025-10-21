@@ -12,10 +12,6 @@ window.addEventListener('load', () => {
 });
 
 function initializeApp() {
-    // --- KONFIGURASI PENTING ---
-    const AIRTABLE_API_KEY = 'patdmPZ9j4DxbBQNr.c669e61f997029a31a9fd32db8076ce7aff931ab897359ad5b4fe8c68192868c';
-    const AIRTABLE_BASE_ID = 'appXLPTB00V3gUH2e';
-
     // --- Variabel Global & Elemen DOM ---
     const eventGrid = document.getElementById('eventGrid');
     
@@ -45,13 +41,14 @@ function initializeApp() {
         }
     }
     
-    // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT DARI AIRTABLE ---
+    // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT DARI NETLIFY FUNCTION ---
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
+        // Panggil Netlify Function, bukan Airtable API langsung
+        const url = '/api/get-events'; 
         try {
-            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+            const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
             const data = await response.json();
             const allEvents = data.records;
@@ -96,8 +93,8 @@ function initializeApp() {
             }
             setupEventListeners();
         } catch (error) {
-            console.error("Gagal mengambil event dari Airtable:", error);
-            eventGrid.innerHTML = '<p>Gagal memuat event. Cek kembali konfigurasi Anda.</p>';
+            console.error("Gagal mengambil event dari backend:", error);
+            eventGrid.innerHTML = '<p>Gagal memuat event. Silakan coba lagi nanti.</p>';
         }
     }
     
@@ -156,5 +153,3 @@ function initializeApp() {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
-
-
