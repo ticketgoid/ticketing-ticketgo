@@ -1292,14 +1292,29 @@ body.checkout-page {
     background-color: #25D366; /* Warna WhatsApp */
 }
 
+/* ========================================= */
+/* ==   PERUBAHAN HEADER & FOOTER BARU    == */
+/* ========================================= */
 
+/* 1. Sembunyikan tulisan "TicketGo" di header dan footer */
+.logo span {
+    display: none;
+}
 
+/* 2. Perbesar ukuran logo gambar di header */
+header .logo img {
+    height: 50px; /* Anda bisa sesuaikan ukurannya dari 40px */
+    margin-right: 0; /* Hapus margin karena teks sudah hilang */
+}
 
+/* 3. Perbesar ukuran logo gambar di footer */
+footer .logo img {
+    height: 50px; /* Samakan ukurannya dengan header */
+}
 
-
-
-
-
-
-
-
+/* 4. Pengaturan untuk mengelompokkan menu footer di kanan */
+.footer-right-cluster {
+    display: flex;
+    gap: 4rem; /* Jarak antara kolom 'Bantuan' dan 'Ikuti Kami' */
+    flex-wrap: wrap;
+}
