@@ -1,4 +1,4 @@
-// GANTI SELURUH ISI FILE script.js DENGAN KODE BERSIH INI
+// GANTI SELURUH ISI FILE script.js DENGAN KODE BARU INI
 window.addEventListener('load', () => {
     const preloader = document.getElementById('preloader');
     const mainContent = document.getElementById('main-content');
@@ -14,7 +14,8 @@ window.addEventListener('load', () => {
 function initializeApp() {
     // --- Variabel Global & Elemen DOM ---
     const eventGrid = document.getElementById('eventGrid');
-    
+    let allEventsData = []; // Variabel untuk menyimpan semua data event
+
     // --- Logika Carousel Hero ---
     const slides = document.querySelectorAll('.slide');
     if (slides.length > 0) {
@@ -45,19 +46,20 @@ function initializeApp() {
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        // Panggil Netlify Function, bukan Airtable API langsung
         const url = '/api/get-events'; 
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
             const data = await response.json();
-            const allEvents = data.records;
+            
+            allEventsData = data.records; // Simpan data event untuk digunakan di pencarian
+            
             eventGrid.innerHTML = ''; 
 
-            if (allEvents.length === 0) {
+            if (allEventsData.length === 0) {
                 eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
             } else {
-                allEvents.forEach(record => {
+                allEventsData.forEach(record => {
                     const fields = record.fields;
                     if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
 
@@ -100,18 +102,7 @@ function initializeApp() {
     
     // --- FUNGSI PENGATUR EVENT LISTENERS ---
     function setupEventListeners() {
-        const searchInput = document.getElementById('searchInput');
-        if(searchInput) {
-            searchInput.addEventListener('input', () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                document.querySelectorAll('.event-card').forEach(card => {
-                    const eventTitle = card.querySelector('.event-title').textContent.toLowerCase();
-                    card.style.display = eventTitle.includes(searchTerm) ? 'flex' : 'none';
-                });
-            });
-        }
-        
-        // Mengarahkan ke halaman checkout.html menggunakan event delegation
+        // Logika untuk klik tombol "Beli Tiket" pada kartu event
         eventGrid.addEventListener('click', function(e) {
             if (e.target && e.target.matches('button.btn-buy:not(:disabled)')) {
                 const eventId = e.target.closest('.event-card').dataset.eventId;
@@ -121,6 +112,7 @@ function initializeApp() {
             }
         });
         
+        // Logika untuk tombol scroll carousel
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
         const scrollLeftBtn = document.getElementById('scrollLeftBtn');
         const scrollRightBtn = document.getElementById('scrollRightBtn');
@@ -128,9 +120,71 @@ function initializeApp() {
             scrollLeftBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: -scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
             scrollRightBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
         }
+        
+        // Inisialisasi logika live search baru
+        initializeLiveSearch();
+    }
+    
+    // --- FUNGSI BARU UNTUK LOGIKA LIVE SEARCH ---
+    function initializeLiveSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('searchResultsContainer');
+
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+
+            if (searchTerm.length === 0) {
+                resultsContainer.classList.remove('visible');
+                return;
+            }
+
+            const filteredEvents = allEventsData.filter(record => 
+                record.fields.NamaEvent.toLowerCase().includes(searchTerm)
+            );
+
+            displaySearchResults(filteredEvents);
+        });
+        
+        // Sembunyikan hasil pencarian jika klik di luar area pencarian
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                resultsContainer.classList.remove('visible');
+            }
+        });
+    }
+
+    function displaySearchResults(events) {
+        const resultsContainer = document.getElementById('searchResultsContainer');
+        resultsContainer.innerHTML = '';
+
+        if (events.length === 0) {
+            resultsContainer.classList.remove('visible');
+            return;
+        }
+
+        events.forEach(record => {
+            const fields = record.fields;
+            const eventDate = new Date(fields.Waktu);
+            const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.',':');
+
+            const item = document.createElement('a');
+            item.href = `checkout.html?eventId=${record.id}`;
+            item.className = 'search-result-item';
+            
+            item.innerHTML = `
+                <img src="${fields.GambarEvent[0].thumbnails.small.url}" alt="${fields.NamaEvent}" class="result-image">
+                <div class="result-info">
+                    <div class="result-title">${fields.NamaEvent}</div>
+                    <div class="result-date">${formattedDate}, ${formattedTime} WIB</div>
+                </div>
+            `;
+            resultsContainer.appendChild(item);
+        });
+
+        resultsContainer.classList.add('visible');
     }
 
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
-
