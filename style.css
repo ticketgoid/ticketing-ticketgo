@@ -1140,6 +1140,7 @@ body.checkout-page {
 
 .sk-content section {
     margin-bottom: 2.5rem;
+    scroll-margin-top: 100px; 
 }
 
 .sk-content h3 {
@@ -1194,6 +1195,7 @@ body.checkout-page {
         margin-bottom: 2rem;
     }
 }
+
 
 
 
