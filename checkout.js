@@ -369,6 +369,23 @@ const updatePrice = async () => {
     const quantity = parseInt(document.getElementById('ticketQuantity').value);
     const reviewContainer = document.getElementById('price-review');
 
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+    const fields = selectedTicketRecord?.fields || {};
+
+    const priceField = fields.Price || 0;
+    const hasDiscount = fields.Discount === true;
+    const discountValue = fields.Discount_Value || 0;
+
+    const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+    const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
+    const discountedPrice = 0;
+
+    if (hasDiscount) {
+        const discountedPrice = seatData.price - discountPrice
+    } else {
+        const discountedPrice = seatData.price
+    }
+
     if (!selectedTicket) {
         reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
         return;
@@ -394,7 +411,7 @@ const updatePrice = async () => {
     // Clean up "Rp 85,000" → 85000
     const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, '')) || 0;
     const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-    const subtotal = price * quantity;
+    const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
 
@@ -423,16 +440,13 @@ const showReviewModal = async () => {
         return;
     }
 
-    // Cari record tiket berdasarkan ID dari ticketTypes
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
     const fields = selectedTicketRecord?.fields || {};
 
-    // --- Extract data langsung dari Airtable fields ---
     const name = fields.Name || 'Tiket Tanpa Nama';
     const priceField = fields.Price || 0;
     const adminFeeField = fields.Admin_Fee || 0;
     const hasDiscount = fields.Discount === true;
-    const discountValue = fields.Discount_Value || 0;
 
     let seatData = { price: 0 };
     if (seatName) {
@@ -451,14 +465,14 @@ const showReviewModal = async () => {
     // --- Convert numeric fields ---
     const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
     const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
-
+    const discountedPrice = 0;
+    
     if (hasDiscount) {
         const discountedPrice = seatData.price - discountPrice
     } else {
         const discountedPrice = seatData.price
     }
 
-    const discountedPrice = seatData.price - discountPrice
     const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
@@ -494,6 +508,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
