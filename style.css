@@ -526,21 +526,6 @@ footer hr {
     color: black;
 }
 
-#formView h2 {
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-#formView .event-context {
-    text-align: left;
-    margin-bottom: 2rem;
-}
-
-#registrationForm {
-    display: flex;
-    flex-direction: column;
-}
-
 .form-group {
     margin-bottom: 1rem;
     position: relative;
@@ -558,59 +543,6 @@ footer hr {
     border-right: none;
     border-radius: 8px 0 0 8px;
     color: #495057;
-}
-.error-message {
-    color: #e53e3e !important;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-    display: none;
-}
-
-.error-message.visible {
-    display: block;
-}
-
-input.input-error {
-    border-color: #e53e3e !important;
-    box-shadow: 0 0 0 1px #e53e3e;
-}
-
-#registrationForm input {
-    padding: 0.8rem;
-    border: 1px solid #D1D5DB;
-    border-radius: 8px;
-    font-size: 1rem;
-}
-
-#registrationForm button,
-#showFormButton {
-    width: 100%;
-    margin-top: 1rem;
-    background-color: var(--teal);
-    color: var(--white);
-    padding: 1rem;
-    border-radius: 50px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-}
-
-#detailView {
-    text-align: center;
-}
-
-#modalEventImage {
-    width: 100%;
-    max-width: 400px;
-    margin: 15px auto;
-    display: block;
-    border-radius: 8px;
-}
-
-#modalEventDescription {
-    color: var(--gray-text);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
 }
 
 .event-carousel-container {
@@ -901,25 +833,10 @@ body.checkout-page {
     color: var(--gray-text);
 }
 
-.event-header {
-    width: 100%;
-    height: 350px;
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 2rem;
-    background-color: var(--gray-light);
-}
-
 .event-poster {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.purchase-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
 }
 
 .event-info h1 {
@@ -959,19 +876,6 @@ body.checkout-page {
     gap: 0.5rem;
 }
 
-.quantity-selector button {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid #e5e7eb;
-    background-color: var(--white);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--gray-text);
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
 .quantity-selector button:hover:not(:disabled) {
     background-color: var(--teal);
     border-color: var(--teal);
@@ -983,32 +887,6 @@ body.checkout-page {
     cursor: not-allowed;
 }
 
-.quantity-selector input {
-    width: 60px;
-    height: 40px;
-    text-align: center;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 1.2rem;
-    font-weight: 600;
-    -moz-appearance: textfield; /* Firefox */
-}
-.quantity-selector input::-webkit-outer-spin-button,
-.quantity-selector input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Customer Data Form */
-#customer-data-form .form-group {
-    margin-bottom: 1rem;
-}
-
-#customer-data-form label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
 
 #customer-data-form input {
     width: 100%;
@@ -1019,13 +897,6 @@ body.checkout-page {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-#customer-data-form input:focus {
-    outline: none;
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
-}
-
-/* Price Review Section */
 .price-review-section {
     background-color: #f9fafb;
     padding: 1rem;
@@ -1042,7 +913,6 @@ body.checkout-page {
     font-weight: 600;
 }
 
-/* Review Modal */
 .review-modal-content {
     max-width: 550px;
 }
@@ -1085,16 +955,11 @@ body.checkout-page {
     margin-top: 2rem;
 }
 
-/* Responsive */
 @media (max-width: 900px) {
     .purchase-container {
         grid-template-columns: 1fr;
     }
 }
-
-/* ========================================= */
-/* ==   HALAMAN SYARAT & KETENTUAN (SK)   == */
-/* ========================================= */
 
 .sk-main-content {
     padding: 2rem 5%;
@@ -1109,11 +974,11 @@ body.checkout-page {
     gap: 3rem;
 }
 
-/* Kolom Kiri: Table of Contents (TOC) */
+
 .sk-toc {
-    flex: 0 0 280px; /* Lebar tetap untuk TOC */
+    flex: 0 0 280px; 
     position: sticky;
-    top: 100px; /* Jarak dari atas agar tidak tertutup header sticky */
+    top: 100px; 
 }
 
 .sk-toc h3 {
@@ -1140,13 +1005,12 @@ body.checkout-page {
 }
 
 .sk-toc ul li a:hover {
-    background-color: #f0fdfa; /* Warna teal muda */
+    background-color: #f0fdfa; 
     color: var(--teal);
 }
 
-/* Kolom Kanan: Konten Utama */
 .sk-content {
-    flex: 1; /* Mengambil sisa ruang */
+    flex: 1; 
     min-width: 0;
 }
 
@@ -1200,7 +1064,6 @@ body.checkout-page {
     color: #b45309;
 }
 
-/* Penyesuaian untuk Tampilan Mobile */
 @media (max-width: 992px) {
     .sk-container {
         flex-direction: column;
@@ -1212,10 +1075,6 @@ body.checkout-page {
         margin-bottom: 2rem;
     }
 }
-
-/* ========================================= */
-/* ==         HALAMAN FAQ BARU            == */
-/* ========================================= */
 
 .faq-container {
     max-width: 800px;
@@ -1302,45 +1161,32 @@ body.checkout-page {
 }
 
 .email-btn {
-    background-color: #5a67d8; /* Warna Indigo */
+    background-color: #5a67d8; 
 }
 
 .wa-btn {
-    background-color: #25D366; /* Warna WhatsApp */
+    background-color: #25D366; 
 }
 
-/* ========================================= */
-/* ==   PERUBAHAN HEADER & FOOTER BARU    == */
-/* ========================================= */
-
-/* 1. Sembunyikan tulisan "TicketGo" di header dan footer */
 .logo span {
     display: none;
 }
 
-/* 2. Perbesar ukuran logo gambar di header */
 header .logo img {
-    height: 50px; /* Anda bisa sesuaikan ukurannya dari 40px */
-    margin-right: 0; /* Hapus margin karena teks sudah hilang */
+    height: 50px; 
+    margin-right: 0; 
 }
 
-/* 3. Perbesar ukuran logo gambar di footer */
 footer .logo img {
-    height: 50px; /* Samakan ukurannya dengan header */
+    height: 50px;
 }
 
-/* 4. Pengaturan untuk mengelompokkan menu footer di kanan */
 .footer-right-cluster {
     display: flex;
-    gap: 4rem; /* Jarak antara kolom 'Bantuan' dan 'Ikuti Kami' */
+    gap: 4rem; 
     flex-wrap: wrap;
 }
 
-/* ========================================= */
-/* ==      HEADER & SEARCH BAR BARU       == */
-/* ========================================= */
-
-/* 1. Atur layout <nav> utama dengan Flexbox */
 nav {
     display: flex;
     justify-content: space-between;
@@ -1348,24 +1194,20 @@ nav {
     gap: 2rem;
 }
 
-/* 2. Buat wadah pencarian di tengah */
 .search-container {
-    flex-grow: 1; /* Biarkan elemen ini mengisi ruang kosong */
-    max-width: 600px; /* Batasi lebar maksimum */
+    flex-grow: 1; 
+    max-width: 600px; 
     position: relative;
 }
 
-/* 3. Atur gaya untuk bilah pencarian */
 .search-input {
-    width: 100%; /* Lebar penuh sesuai wadahnya */
-    padding: 0.9rem 1.2rem 0.9rem 3rem; /* Beri ruang untuk ikon di kiri */
+    width: 100%; 
+    padding: 0.9rem 1.2rem 0.9rem 3rem; 
     border: 1px solid #E5E7EB;
-    border-radius: 50px; /* Membuatnya bulat */
+    border-radius: 50px; 
     font-size: 1rem;
     background-color: #f8f9fa;
     transition: all 0.2s;
-
-    /* Hapus gaya lama yang menyembunyikan search bar */
     opacity: 1;
     visibility: visible;
 }
@@ -1377,7 +1219,6 @@ nav {
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
 }
 
-/* 4. Atur posisi ikon search di dalam input */
 .search-icon-inside {
     position: absolute;
     left: 1.2rem;
@@ -1386,22 +1227,16 @@ nav {
     color: var(--gray-text);
 }
 
-/* 5. Hapus gaya ikon search lama */
 .search-icon {
     display: none;
 }
 
-/* 6. Pastikan elemen kanan tidak memakan banyak tempat */
 .nav-right {
     flex-shrink: 0;
 }
 
-/* ========================================= */
-/* ==       LIVE SEARCH RESULTS           == */
-/* ========================================= */
-
 .search-results {
-    display: none; /* Hidden by default */
+    display: none; 
     position: absolute;
     top: 100%;
     left: 0;
@@ -1417,7 +1252,7 @@ nav {
 }
 
 .search-results.visible {
-    display: block; /* Show the container */
+    display: block; 
 }
 
 .search-result-item {
@@ -1461,4 +1296,5 @@ nav {
     font-size: 0.85rem;
     color: var(--gray-text);
 }
+
 
