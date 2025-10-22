@@ -384,7 +384,8 @@ const updatePrice = async () => {
     }
 
 
-    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket);
+    const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
     const fields = selectedTicketRecord?.fields || {};
 
     const discountPrice = fields.Price || 0;
@@ -503,6 +504,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
