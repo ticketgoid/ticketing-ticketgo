@@ -184,14 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             dataSeats = dataSeat.seats;
 
-            const matchedSeats = mySeatNames.map(name => {
-            const found = dataSeats.find(seat => seat.nama === name);
-            return {
-               name,
-                 price: found ? found.price : 'Not Found'
-               };
-            });
-
             console.log(matchedSeats);
 
             if (ticketTypes.length === 0) {
@@ -326,11 +318,15 @@ document.addEventListener('DOMContentLoaded', () => {
             form.reportValidity();
             return;
         }
+
+        
+        const hargaSeat = seats.find(seat => seat.nama === targetName);
+        
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
         const price = parseFloat(selectedTicket.dataset.price);
         const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-        const subtotal = price * quantity;
+        const subtotal = ${match.price} * quantity;
         const totalAdminFee = adminFee * quantity;
         const finalTotal = subtotal + totalAdminFee;
 
@@ -360,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
