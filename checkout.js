@@ -184,8 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             dataSeats = dataSeat.seats;
 
-            console.log(matchedSeats);
-
             if (ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
                 return;
@@ -356,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
