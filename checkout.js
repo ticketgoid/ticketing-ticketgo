@@ -4,20 +4,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const checkoutMain = document.getElementById('checkout-main');
   let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {};
 
-  const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
+const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
     try {
       const payload = {
+        // Data yang sudah ada
         order_id: paymentResult.order_id,
         transaction_status: paymentResult.transaction_status,
         gross_amount: paymentResult.gross_amount,
         customer_details: customerData,
-        item_details: itemDetails
+        item_details: itemDetails,
+
+        // --- DATA BARU YANG WAJIB DIKIRIM ---
+        eventId: eventDetails.id, // ID dari event yang sedang dibuka
+        rekapTableName: eventDetails.fields['Tabel Penjualan'] // Nama tabel rekap (misal: 'rona')
       };
+
       await fetch('/api/save-to-airtable', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
       });
+
       console.log("✅ Data berhasil dikirim ke Airtable.");
     } catch (error) {
       console.error("❌ Gagal mengirim data ke Airtable:", error);
@@ -289,3 +296,4 @@ document.addEventListener('DOMContentLoaded', () => {
   
   buildPage();
 });
+
