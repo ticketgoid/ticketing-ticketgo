@@ -393,11 +393,11 @@ const updatePrice = async () => {
 
     const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
     const discountedPrice = 0;
-
+    
     if (hasDiscount) {
-        const discountedPrice = seatData.price - discountPrice
+        discountedPrice = seatData.price - discountPrice
     } else {
-        const discountedPrice = seatData.price
+        discountedPrice = seatData.price
     }
 
     if (!selectedTicket) {
@@ -465,9 +465,9 @@ const showReviewModal = async () => {
     const discountedPrice = 0;
     
     if (hasDiscount) {
-        const discountedPrice = seatData.price - discountPrice
+        discountedPrice = seatData.price - discountPrice
     } else {
-        const discountedPrice = seatData.price
+        discountedPrice = seatData.price
     }
 
     const subtotal = discountedPrice * quantity;
@@ -505,6 +505,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
