@@ -408,7 +408,7 @@ const updatePrice = async () => {
     // Clean up "Rp 85,000" → 85000
     const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, '')) || 0;
     const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-    const subtotal = discountedPrice * quantity;
+    const subtotal = discountedPrice;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
 
@@ -505,6 +505,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
