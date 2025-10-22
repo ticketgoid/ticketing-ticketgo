@@ -12,13 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
         customer_details: customerData,
         item_details: itemDetails
       };
-
       await fetch('/api/save-to-airtable', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
       });
-
       console.log("✅ Data berhasil dikirim ke Airtable.");
     } catch (error) {
       console.error("❌ Gagal mengirim data ke Airtable:", error);
@@ -35,19 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     style.textContent = `
       .ticket-option label { flex-wrap: wrap; cursor: pointer; }
       .quantity-selector-wrapper { 
-        display: none;
-        width: 100%; 
-        padding-top: 1rem; 
-        margin-top: 0.75rem; 
+        display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; 
         border-top: 1px solid #f0f0f0;
       }
       .quantity-selector-wrapper.visible { display: block; }
-      .quantity-selector {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        justify-content: flex-end;
-      }
+      .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; }
       .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; }
       .quantity-selector button {
         width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb;
@@ -81,6 +71,19 @@ document.addEventListener('DOMContentLoaded', () => {
       #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; }
       #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); }
       #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; }
+      .modal {
+        display: flex; align-items: center; justify-content: center; position: fixed;
+        z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+        overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem;
+        opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      .modal.visible { opacity: 1; visibility: visible; }
+      .feedback-modal {
+        display: none; align-items: center; justify-content: center; position: fixed;
+        z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.6);
+      }
+      .feedback-modal.visible { display: flex; }
     `;
     document.head.appendChild(style);
   };
@@ -95,20 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         if (!selectedTicketInput || !seatSelected) throw new Error("Kursi atau tiket belum dipilih.");
 
-        const quantity = getCurrentQuantity();
-        const seatName = seatSelected.value;
-        const selectedTicketId = selectedTicketInput.value;
-        const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+        const { finalTotal, pricePerTicket, quantity } = await calculatePrice();
+        const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
         const fields = selectedTicketRecord?.fields || {};
         const name = fields.Name || 'Tiket Tanpa Nama';
         
-        const { finalTotal, pricePerTicket } = await calculatePrice();
-
         const form = document.getElementById('customer-data-form');
-        const formData = new FormData(form);
-        const customerData = Object.fromEntries(formData.entries());
         let customerName = '', customerEmail = '', customerPhone = '';
-        for (const [key, value] of Object.entries(customerData)) {
+        for (let [key, value] of new FormData(form).entries()) {
             const lowerKey = key.toLowerCase();
             if (lowerKey.includes('nama')) customerName = value;
             else if (lowerKey.includes('email')) customerEmail = value;
@@ -119,12 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const adminFee = parseInt(fields.Admin_Fee?.toString().replace(/[^0-9]/g, '') || '0');
-
         const payload = {
             order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
             gross_amount: finalTotal,
             item_details: [{
-                id: selectedTicketId,
+                id: selectedTicketInput.value,
                 price: pricePerTicket + adminFee,
                 quantity: quantity,
                 name: name
@@ -137,9 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'application/json' }
+            method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -149,9 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!result.token) throw new Error("Token pembayaran tidak diterima dari server.");
 
         window.snap.pay(result.token, {
-            onSuccess: (paymentResult) => {
+            onSuccess: (res) => {
                 showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
-                saveDataToSheet(paymentResult, payload.customer_details, { name, quantity });
+                saveDataToSheet(res, payload.customer_details, { name, quantity });
             },
             onPending: (res) => showFeedback('pending', 'Menunggu Pembayaran', `Status: ${res.transaction_status}`),
             onError: () => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.'),
@@ -170,25 +164,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const showFeedback = (type, title, message) => {
-    const reviewModal = document.getElementById('reviewModal');
-    if (reviewModal) reviewModal.classList.remove('visible');
-    
+    document.getElementById('reviewModal')?.classList.remove('visible');
     const feedbackModal = document.getElementById('feedbackModal');
     const icon = feedbackModal.querySelector('.fas');
     const content = feedbackModal.querySelector('.feedback-content');
     icon.className = 'fas';
     content.className = 'feedback-content';
 
-    if (type === 'success') {
-      icon.classList.add('fa-check-circle');
-      content.classList.add('success');
-    } else if (type === 'pending') {
-      icon.classList.add('fa-hourglass-half');
-      content.classList.add('pending');
-    } else {
-      icon.classList.add('fa-times-circle');
-      content.classList.add('error');
-    }
+    if (type === 'success') { icon.classList.add('fa-check-circle'); content.classList.add('success'); } 
+    else if (type === 'pending') { icon.classList.add('fa-hourglass-half'); content.classList.add('pending'); } 
+    else { icon.classList.add('fa-times-circle'); content.classList.add('error'); }
+
     document.getElementById('feedbackTitle').textContent = title;
     document.getElementById('feedbackMessage').textContent = message;
     feedbackModal.classList.add('visible');
@@ -200,34 +186,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get('eventId');
     if (!eventId) {
-      checkoutMain.innerHTML = `<p class="error-message">Error: Event ID tidak ditemukan.</p>`;
+      checkoutMain.innerHTML = `<p>Error: Event ID tidak ditemukan.</p>`;
       return;
     }
     try {
       const response = await fetch(`/api/get-event-details?eventId=${eventId}`);
-      if (!response.ok) throw new Error(`Gagal memuat data event: ${response.statusText}`);
+      if (!response.ok) throw new Error(`Gagal memuat data: ${response.statusText}`);
       const data = await response.json();
       eventDetails = data.eventDetails.fields;
       ticketTypes = data.ticketTypes.records;
       formFields = data.formFields.records;
 
-      if (ticketTypes.length === 0) {
-        checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
+      if (!ticketTypes || ticketTypes.length === 0) {
+        checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
         return;
       }
       renderLayout();
-      if (eventDetails['Pendaftaran Dibuka'] !== true) {
-        const buyButton = document.getElementById('buyButton');
-        if (buyButton) {
-          buyButton.textContent = 'Sold Out';
-          buyButton.disabled = true;
-        }
-      }
-      attachEventListeners();
-      updatePrice();
     } catch (error) {
       console.error('Gagal membangun halaman:', error);
-      checkoutMain.innerHTML = `<p class="error-message">Gagal memuat detail event. Error: ${error.message}</p>`;
+      checkoutMain.innerHTML = `<p>Gagal memuat detail event. Error: ${error.message}</p>`;
     }
   };
 
@@ -250,35 +227,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
 
       let priceHTML = '&nbsp;';
-      const numericPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
       if (showPrice) {
+          const numericPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
           priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
       }
       
-      const quantitySelectorHTML = canChooseQuantity ? `
-        <div class="quantity-selector-wrapper" data-ticket-id="${record.id}">
-          <div class="quantity-selector">
-            <p>Jumlah Beli:</p>
-            <button type="button" class="decrease-qty-btn" disabled>-</button>
-            <input type="number" class="ticket-quantity-input" value="1" min="1" readonly>
-            <button type="button" class="increase-qty-btn">+</button>
-          </div>
-        </div>` : '';
+      const quantitySelectorHTML = canChooseQuantity ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
 
       return `
         <div class="ticket-option">
-          <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" 
-            data-name="${name}" 
-            data-admin-fee="${parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0}"
-            data-can-choose-quantity="${canChooseQuantity}"
-            data-bundle-quantity="${bundleQty}">
-          <label for="${record.id}">
-            <div class="ticket-label-content">
-              <span class="ticket-name">${name}</span>
-              <span class="ticket-price">${priceHTML}</span>
-            </div>
-            ${quantitySelectorHTML}
-          </label>
+          <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${canChooseQuantity}" data-bundle-quantity="${bundleQty}">
+          <label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${name}</span><span class="ticket-price">${priceHTML}</span></div>${quantitySelectorHTML}</label>
         </div>`;
     }).join('');
 
@@ -286,9 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const { FieldLabel, FieldType, Is_Required } = record.fields;
       if (!FieldLabel || !FieldType) return '';
       const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-      let placeholder = FieldLabel;
-      if (FieldLabel.toLowerCase().includes('nama')) placeholder = 'Sesuai Identitas (KTP, SIM, dsb)';
-      else if (FieldType.toLowerCase() === 'email') placeholder = 'contoh@gmail.com';
+      let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
 
       if (FieldType.toLowerCase() === 'tel') {
         return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div></div>`;
@@ -311,10 +268,17 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="form-section"><h3>3. Isi Data Diri</h3>${formFieldsHTML}</div>
             </form>
             <div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div>
-            <button id="buyButton" class="btn-primary">Beli Tiket</button>
+            <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
           </div>
         </div>
       </div>`;
+      
+      const buyButton = document.getElementById('buyButton');
+      if (eventDetails['Pendaftaran Dibuka'] !== true) {
+          buyButton.textContent = 'Sold Out';
+      }
+      buyButton.disabled = true; // Selalu nonaktif di awal
+      attachEventListeners();
   };
   
   const getCurrentQuantity = () => {
@@ -322,14 +286,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!selectedTicket) return 1;
 
     const bundleQty = parseInt(selectedTicket.dataset.bundleQuantity);
-    if (bundleQty > 1) {
-        return bundleQty;
-    }
+    if (bundleQty > 1) return bundleQty;
     
     if (selectedTicket.dataset.canChooseQuantity === 'true') {
         const wrapper = selectedTicket.closest('.ticket-option').querySelector('.quantity-selector-wrapper');
-        const qtyInput = wrapper.querySelector('.ticket-quantity-input');
-        return parseInt(qtyInput.value);
+        return parseInt(wrapper.querySelector('.ticket-quantity-input').value);
     }
     return 1;
   };
@@ -343,41 +304,32 @@ document.addEventListener('DOMContentLoaded', () => {
       buyButton.disabled = !seatSelected || !ticketSelected || !isEventOpen;
     };
 
-    document.body.addEventListener('change', (e) => {
+    document.getElementById('checkout-main').addEventListener('change', (e) => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
+            if (e.target.name === 'ticket_choice') {
+                document.querySelectorAll('.quantity-selector-wrapper').forEach(w => w.classList.remove('visible'));
+                if (e.target.dataset.canChooseQuantity === 'true') {
+                    e.target.closest('.ticket-option').querySelector('.quantity-selector-wrapper')?.classList.add('visible');
+                }
+            }
             checkButtonState();
             updatePrice();
         }
     });
 
-    document.querySelectorAll('input[name="ticket_choice"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
-            const selectedRadio = e.target;
-            if (selectedRadio.dataset.canChooseQuantity === 'true') {
-                const wrapper = selectedRadio.closest('.ticket-option').querySelector('.quantity-selector-wrapper');
-                if (wrapper) wrapper.classList.add('visible');
-            }
-        });
-    });
-
-    const ticketOptionsContainer = document.getElementById('ticketOptionsContainer');
-    ticketOptionsContainer.addEventListener('click', e => {
+    document.getElementById('ticketOptionsContainer').addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
         if (!qtyInput) return;
 
         const currentVal = parseInt(qtyInput.value);
-        const decreaseBtn = e.target.closest('.decrease-qty-btn');
-        const increaseBtn = e.target.closest('.increase-qty-btn');
-        
-        if (increaseBtn) qtyInput.value = currentVal + 1;
-        else if (decreaseBtn && currentVal > 1) qtyInput.value = currentVal - 1;
+        if (e.target.closest('.increase-qty-btn')) qtyInput.value = currentVal + 1;
+        else if (e.target.closest('.decrease-qty-btn') && currentVal > 1) qtyInput.value = currentVal - 1;
 
         qtyInput.parentElement.querySelector('.decrease-qty-btn').disabled = parseInt(qtyInput.value) <= 1;
         updatePrice();
     });
 
-    document.getElementById('buyButton').addEventListener('click', showReviewModal);
+    buyButton.addEventListener('click', showReviewModal);
 
     const emailInput = document.querySelector('input[type="email"]');
     if (emailInput) {
@@ -386,9 +338,8 @@ document.addEventListener('DOMContentLoaded', () => {
       emailInput.parentElement.appendChild(errorEl);
       emailInput.addEventListener('input', () => {
         const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value);
-        emailInput.style.borderColor = (emailInput.value && !isValid) ? '#e53e3e' : '';
-        errorEl.textContent = (emailInput.value && !isValid) ? 'Format email tidak valid.' : '';
         errorEl.style.display = (emailInput.value && !isValid) ? 'block' : 'none';
+        errorEl.textContent = (emailInput.value && !isValid) ? 'Format email tidak valid.' : '';
         checkButtonState();
       });
     }
@@ -407,10 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const calculatePrice = async () => {
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-
-    if (!selectedTicket || !seatSelected) {
-        return { subtotal: 0, totalAdminFee: 0, finalTotal: 0, pricePerTicket: 0, quantity: 1 };
-    }
+    if (!selectedTicket || !seatSelected) return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
 
     const quantity = getCurrentQuantity();
     const seatName = seatSelected.value;
@@ -420,14 +368,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const isDiscountTicket = fields.Discount === true;
     const isBundleTicket = (fields.BundleQuantity || 1) > 1;
 
-    let subtotal = 0;
-    let pricePerTicket = 0;
-
     const seatResponse = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=1`);
     const seatData = seatResponse.ok ? await seatResponse.json() : { price: 0 };
     const baseSeatPrice = seatData.price || 0;
-
     const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
+    
+    let subtotal = 0, pricePerTicket = 0;
 
     if (isBundleTicket) {
         pricePerTicket = ticketPriceField / quantity;
@@ -450,21 +396,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const updatePrice = async () => {
     const reviewContainer = document.getElementById('price-review');
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-    const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-    
-    if (!selectedTicket || !seatSelected) {
+    if (!selectedTicket || !document.querySelector('input[name="Pilihan_Kursi"]:checked')) {
         reviewContainer.innerHTML = '<p>Pilih kursi dan jenis tiket untuk melihat harga.</p>';
         return;
     }
 
     const { subtotal, totalAdminFee, finalTotal, quantity } = await calculatePrice();
-    
     reviewContainer.innerHTML = `
         <div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
-        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
-        <hr>
-        <div class="review-row total"><span><strong>Total</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
-    `;
+        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr>
+        <div class="review-row total"><span><strong>Total</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>`;
   };
 
   const showReviewModal = async () => {
@@ -479,18 +420,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const { subtotal, totalAdminFee, finalTotal, pricePerTicket, quantity } = await calculatePrice();
     const name = selectedTicketInput.dataset.name;
+    const isBundleTicket = quantity > 1 && selectedTicketInput.dataset.canChooseQuantity !== 'true';
 
     let formDataHTML = '';
     for (let [key, value] of new FormData(form).entries()) {
         let label = key;
-        if (key === 'ticket_choice') {
-            label = 'Jenis Tiket';
-            value = name;
-        } else if (key.toLowerCase().includes('nomor')) {
-            value = `+62${value.replace(/^0/, '')}`;
-        } else if (key === 'Pilihan_Kursi') {
-            label = 'Pilihan Kursi';
-        }
+        if (key === 'ticket_choice') { label = 'Jenis Tiket'; value = name; } 
+        else if (key.toLowerCase().includes('nomor')) { value = `+62${value.replace(/^0/, '')}`; } 
+        else if (key === 'Pilihan_Kursi') { label = 'Pilihan Kursi'; }
         formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
     }
 
@@ -499,11 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="review-row"><span>Tiket</span><span>${name} x ${quantity}</span></div>
         <div class="review-row"><span>${isBundleTicket ? 'Harga Paket' : 'Harga per Tiket'}</span><span>Rp ${isBundleTicket ? subtotal.toLocaleString('id-ID') : pricePerTicket.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
-        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
-        <hr>
+        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr>
         <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
-        <hr><h4>Data Pemesan:</h4>${formDataHTML}
-    `;
+        <hr><h4>Data Pemesan:</h4>${formDataHTML}`;
     document.getElementById('reviewModal').classList.add('visible');
   };
   
