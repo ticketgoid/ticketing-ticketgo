@@ -158,7 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
+        let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
         let seatSelectionHTML = '';
+
         if (eventType === 'Dengan Pilihan Kursi') {
             const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
             const seatOptionsContent = seatOptions.map((option, index) => {
@@ -240,12 +242,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
+      const form = document.getElementById('customer-data-form');
+
       const checkButtonState = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
         const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
         const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
-        buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected));
+        const isFormValid = form.checkValidity();
+        
+        buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid);
       };
   
       document.getElementById('checkout-main').addEventListener('change', e => {
@@ -257,6 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
           updatePrice();
         }
       });
+      
+      // Event listener baru untuk form input
+      form.addEventListener('input', checkButtonState);
   
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
@@ -365,4 +374,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     buildPage();
-});
+  });
