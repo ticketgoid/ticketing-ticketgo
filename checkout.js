@@ -389,7 +389,6 @@ const updatePrice = async () => {
 
     const discountPrice = fields.Price || 0;
     const hasDiscount = fields.Discount === true;
-    const discountValue = fields.Discount_Value || 0;
 
     let discountedPrice = 0;
     
@@ -504,6 +503,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
