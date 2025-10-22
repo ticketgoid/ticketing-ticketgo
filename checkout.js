@@ -43,7 +43,7 @@ const injectStyles = () => {
     .ticket-option input[type="radio"] { display: none; }
     .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
 
-    /* === BUTTONS === */
+    /* === BUTTON FIX === */
     #buyButton.btn-primary, #confirmPaymentBtn {
       width: 100%;
       background-color: #007bff;
@@ -52,20 +52,11 @@ const injectStyles = () => {
       padding: 15px 20px;
       font-size: 16px;
       font-weight: bold;
+      border-radius: 0 0 12px 12px; /* match modal bottom corners */
       cursor: pointer;
       text-align: center;
       transition: background-color 0.3s ease, transform 0.1s ease;
-    }
-
-    #buyButton.btn-primary {
-      border-radius: 12px;
-      margin-top: 20px;
-    }
-
-    /* === FIX ALIGNMENT FOR CONFIRM MODAL BUTTON === */
-    #confirmPaymentBtn {
-      border-radius: 0 0 16px 16px;
-      margin-top: 0;
+      margin-top: 0; /* remove gap between white and blue */
       display: block;
     }
 
@@ -73,23 +64,13 @@ const injectStyles = () => {
     #buyButton.btn-primary:active, #confirmPaymentBtn:active { transform: scale(0.98); }
     #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
 
-    /* === MODAL CONTENT ALIGNMENT FIX === */
+    /* === ensure modal body matches button width === */
     #reviewModal .modal-content {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 32px 24px 0 24px;
+      border-radius: 12px;
+      overflow: hidden;
       width: 100%;
       max-width: 480px;
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    #reviewModal .modal-footer {
-      width: 100%;
-      padding: 0;
-      margin: 0;
     }
   `;
   document.head.appendChild(style);
@@ -590,6 +571,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
