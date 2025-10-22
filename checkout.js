@@ -369,7 +369,7 @@ const updatePrice = async () => {
     const quantity = parseInt(document.getElementById('ticketQuantity').value);
     const reviewContainer = document.getElementById('price-review');
 
-    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket);
     const fields = selectedTicketRecord?.fields || {};
 
     const priceField = fields.Price || 0;
@@ -507,6 +507,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
