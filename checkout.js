@@ -493,8 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reviewModal = document.getElementById('reviewModal');
     if (reviewModal) {
-      reviewModal.querySelector('.close-button')?.addEventListener('click', () => reviewModal.style.display = 'none');
-      window.addEventListener('click', e => { if (e.target == reviewModal) reviewModal.style.display = 'none'; });
+    reviewModal.querySelector('.close-button')?.addEventListener('click', () => reviewModal.classList.remove('visible'));
+    window.addEventListener('click', e => { if (e.target == reviewModal) reviewModal.classList.remove('visible'); });
     }
     document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
   };
@@ -625,8 +625,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
         <hr><h4>Data Pemesan:</h4>${formDataHTML}
     `;
-    document.getElementById('reviewModal').style.display = 'flex';
+    document.getElementById('reviewModal').classList.add('visible');
   };
   
   buildPage();
 });
+
