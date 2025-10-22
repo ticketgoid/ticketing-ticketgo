@@ -1,63 +1,57 @@
+// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
 const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_SEAT } = process.env;
   const tableName = 'rona';
+  const targetName = event.queryStringParameters?.seat;
 
-  // Dynamic query example: ?seat=Gold&qty=2
-  const targetName = event.queryStringParameters?.seat || 'Gold';
-  const quantity = parseInt(event.queryStringParameters?.qty || '1');
+  if (!targetName) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Seat name parameter is required.' }),
+    };
+  }
 
-  const fetchData = async (url) => {
+  // FORMULA BARU: Langsung filter di Airtable untuk efisiensi maksimal
+  const formula = `LOWER({nama}) = LOWER("${targetName.replace(/"/g, '\\"')}")`;
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=1`;
+
+  try {
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
     });
-    if (!response.ok) throw new Error(`Airtable API Error: ${response.status}`);
-    return await response.json();
-  };
 
-  try {
-    // Fetch all seat rows
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(tableName)}`;
-    const data = await fetchData(url);
+    if (!response.ok) {
+      throw new Error(`Airtable API Error: ${response.status}`);
+    }
 
-    // Extract name and price fields
-    const seats = data.records.map(record => ({
-      nama: record.fields.nama || null,
-      price: record.fields.harga_seat || null,
-    }));
+    const data = await response.json();
 
-    // Find seat by name
-    const match = seats.find(
-      seat => seat.nama?.toLowerCase() === targetName.toLowerCase()
-    );
-
-    if (!match) {
+    if (!data.records || data.records.length === 0) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: `Seat "${targetName}" not found.` }),
       };
     }
 
-    const subtotal = match.price * quantity;
+    const record = data.records[0];
+    const price = record.fields.harga_seat || 0;
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        seat: targetName,
-        price: match.price,
-        quantity,
-        subtotal: `Rp ${subtotal.toLocaleString('id-ID')}`,
+        seat: record.fields.nama,
+        price: price,
+        // Quantity tidak lagi dihitung di sini
       }),
     };
+
   } catch (error) {
     console.error('Error fetching seat data:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: 'Failed to fetch seat data',
-        details: error.message,
-      }),
+      body: JSON.stringify({ error: 'Failed to fetch seat data', details: error.message }),
     };
   }
 };
