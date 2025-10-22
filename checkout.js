@@ -210,41 +210,40 @@ document.addEventListener('DOMContentLoaded', () => {
             seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
         }
 
-let ticketOptionsHTML = ticketTypes
-  .filter(record => record.fields.Show_Price) // only show tickets with Show_Price checked
-  .map(record => {
-    const name = record.fields.Name || 'Tiket Tanpa Nama';
-    const priceField = record.fields.Price || '';
-    const adminFeeField = record.fields.Admin_Fee || 0;
+let ticketOptionsHTML = ticketTypes.map(record => {
+  const name = record.fields.Name || 'Tiket Tanpa Nama';
+  const priceField = record.fields.Price || '';
+  const adminFeeField = record.fields.Admin_Fee || 0;
+  const showPrice = record.fields.Show_Price === true;
 
-    // Convert "Rp10,000" → number (10000)
-    const numericPrice = priceField
-      ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
-      : 0;
+  // Convert "Rp10,000" → number
+  const numericPrice = priceField
+    ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
+    : 0;
 
-    const formattedPrice = numericPrice
-      ? `Rp ${numericPrice.toLocaleString('id-ID')}`
-      : 'Harga belum tersedia';
+  // Only show formatted price if Show_Price is true
+  const formattedPrice = showPrice && numericPrice
+    ? `Rp ${numericPrice.toLocaleString('id-ID')}`
+    : '&nbsp;'; // blank space (preserves layout)
 
-    return `
-      <div class="ticket-option">
-        <input
-          type="radio"
-          id="${record.id}"
-          name="ticket_choice"
-          value="${record.id}"
-          data-price="${numericPrice}"
-          data-name="${name}"
-          data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
-        <label for="${record.id}">
-          <div class="ticket-label-content">
-            <span class="ticket-name">${name}</span>
-            <span class="ticket-price">${formattedPrice}</span>
-          </div>
-        </label>
-      </div>`;
-  })
-  .join('');
+  return `
+    <div class="ticket-option">
+      <input 
+        type="radio"
+        id="${record.id}"
+        name="ticket_choice"
+        value="${record.id}"
+        data-price="${numericPrice}"
+        data-name="${name}"
+        data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
+      <label for="${record.id}">
+        <div class="ticket-label-content">
+          <span class="ticket-name">${name}</span>
+          <span class="ticket-price">${formattedPrice}</span>
+        </div>
+      </label>
+    </div>`;
+}).join('');
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -431,6 +430,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
