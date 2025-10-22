@@ -443,10 +443,6 @@ const showReviewModal = async () => {
         formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
     }
 
-    const discountRow = hasDiscount && numericDiscount > 0
-        ? `<div class="review-row"><span>Diskon</span><span>- Rp ${numericDiscount.toLocaleString('id-ID')}</span></div>`
-        : '';
-
     // --- Build modal content ---
     document.getElementById('reviewDetails').innerHTML = `
         <h4>Detail Pesanan:</h4>
@@ -467,6 +463,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
