@@ -182,8 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
 
-            dataNamaSeat = data.nama.records;
-            dataHargaSeat = dataSeat.harga_seat.records;
+            dataNamaSeat = data.namaSeat.records;
+            dataHargaSeat = dataSeat.hargaSeat.records;
 
             if (ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
@@ -351,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
