@@ -11,8 +11,10 @@ exports.handler = async function (event, context) {
   };
 
   try {
-    // 1. Ambil detail event utama
     const seatEvent = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/rona`);
+    
+    const namaSeat = seatEvent.fields.nama || [];
+    const hargaSeat = seatEvent.fields.harga_seat || [];
     
     // 2. Ambil jenis tiket berdasarkan relasi
     // const ticketTypeIds = eventDetails.fields.ticket_types || [];
@@ -27,7 +29,9 @@ exports.handler = async function (event, context) {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        seatEvent
+        seatEvent,
+        namaSeat,
+        hargaSeat
       }),
     };
   } catch (error) {
