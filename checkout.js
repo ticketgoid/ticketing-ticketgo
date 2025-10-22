@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Panggil Netlify Function untuk mendapatkan semua data sekaligus
             const response = await fetch(`/api/get-event-details?eventId=${eventId}`);
-            const dataSeat = await fetch(`/api/get-event-price/seatEvent`);
+            const dataSeat = await fetch(`/api/get-event-price`);
             
             if (!response.ok) throw new Error(`Gagal memuat data event: ${response.statusText}`);
             if (!dataSeat.ok) throw new Error(`Gagal memuat seat event: ${dataSeat.statusText}`);
@@ -350,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
