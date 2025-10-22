@@ -72,12 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
       #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); }
       #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; }
       .modal {
-        display: flex; align-items: center; justify-content: center; position: fixed;
+        display: none; align-items: center; justify-content: center; position: fixed;
         z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
         overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem;
         opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
       }
-      .modal.visible { opacity: 1; visibility: visible; }
+      .modal.visible { display: flex; opacity: 1; visibility: visible; }
       .feedback-modal {
         display: none; align-items: center; justify-content: center; position: fixed;
         z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(style);
   };
-
+  
   const initiatePayment = async () => {
     const confirmButton = document.getElementById('confirmPaymentBtn');
     confirmButton.disabled = true;
@@ -284,10 +284,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const getCurrentQuantity = () => {
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
     if (!selectedTicket) return 1;
-
     const bundleQty = parseInt(selectedTicket.dataset.bundleQuantity);
     if (bundleQty > 1) return bundleQty;
-    
     if (selectedTicket.dataset.canChooseQuantity === 'true') {
         const wrapper = selectedTicket.closest('.ticket-option').querySelector('.quantity-selector-wrapper');
         return parseInt(wrapper.querySelector('.ticket-quantity-input').value);
@@ -355,10 +353,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
   };
   
+  // ### FUNGSI UTAMA YANG DIPERBARUI ###
   const calculatePrice = async () => {
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-    if (!selectedTicket || !seatSelected) return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
+    if (!selectedTicket || !seatSelected) {
+        return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
+    }
 
     const quantity = getCurrentQuantity();
     const seatName = seatSelected.value;
@@ -368,20 +369,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const isDiscountTicket = fields.Discount === true;
     const isBundleTicket = (fields.BundleQuantity || 1) > 1;
 
+    // Ambil harga dasar per SATU kursi dari API 'rona'
     const seatResponse = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=1`);
     const seatData = seatResponse.ok ? await seatResponse.json() : { price: 0 };
     const baseSeatPrice = seatData.price || 0;
+    
+    // Ambil nilai dari kolom 'Price' di Ticket Types
     const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
     
-    let subtotal = 0, pricePerTicket = 0;
+    let subtotal = 0;
+    let pricePerTicket = 0;
 
-    if (isBundleTicket) {
-        pricePerTicket = ticketPriceField / quantity;
-        subtotal = ticketPriceField;
+    if (isBundleTicket && isDiscountTicket) {
+        // --- LOGIKA BARU UNTUK BUNDLING ---
+        // 'ticketPriceField' adalah TOTAL POTONGAN HARGA untuk paket
+        const totalBasePrice = baseSeatPrice * quantity;
+        subtotal = totalBasePrice - ticketPriceField;
+        pricePerTicket = subtotal / quantity;
     } else if (isDiscountTicket) {
+        // --- LOGIKA UNTUK TIKET DISKON SATUAN ---
+        // 'ticketPriceField' adalah POTONGAN HARGA per tiket
         pricePerTicket = baseSeatPrice - ticketPriceField;
         subtotal = pricePerTicket * quantity;
     } else {
+        // --- LOGIKA UNTUK TIKET HARGA NORMAL (NON-DISKON) ---
         pricePerTicket = baseSeatPrice;
         subtotal = pricePerTicket * quantity;
     }
@@ -392,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return { subtotal, totalAdminFee, finalTotal, pricePerTicket, quantity };
   }
-
   const updatePrice = async () => {
     const reviewContainer = document.getElementById('price-review');
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
@@ -444,3 +454,4 @@ document.addEventListener('DOMContentLoaded', () => {
   
   buildPage();
 });
+
