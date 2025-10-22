@@ -180,10 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  injectStyles();
-});
-
-
     const showFeedback = (type, title, message) => {
         document.getElementById('reviewModal').style.display = 'none';
         const feedbackModal = document.getElementById('feedbackModal');
@@ -553,6 +549,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
