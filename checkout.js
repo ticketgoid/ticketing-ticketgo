@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         
-        const hargaSeat = seats.find(seat => seat.nama === targetName);
+        const hargaSeat = dataSeats.find(seat => seat.nama === targetName);
         
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
@@ -354,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
