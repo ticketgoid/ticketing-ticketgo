@@ -1,7 +1,6 @@
 // GANTI SELURUH ISI FILE DENGAN KODE BARU INI
 const fetch = require('node-fetch');
 
-// Helper function untuk memanggil API Airtable dengan penanganan error
 const airtableFetch = async (apiKey, url) => {
     const response = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}` } });
     if (!response.ok) {
@@ -27,10 +26,8 @@ exports.handler = async function (event, context) {
   }
 
   try {
-    // 1. Ambil detail event utama dari Base Event List
     const eventDetails = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events/${eventId}`);
     
-    // 2. Ambil jenis tiket (sudah termasuk Sisa Kuota dari Rollup)
     const ticketTypeIds = eventDetails.fields.ticket_types || [];
     let ticketTypes = { records: [] };
     if (ticketTypeIds.length > 0) {
@@ -38,7 +35,6 @@ exports.handler = async function (event, context) {
         ticketTypes = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
-    // 3. Ambil form fields
     const formFieldIds = eventDetails.fields.formfields || [];
     let formFields = { records: [] };
     if (formFieldIds.length > 0) {
@@ -46,27 +42,22 @@ exports.handler = async function (event, context) {
         formFields = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
-    // 4. (BARU) Logika untuk menghitung Sisa Kuota Kursi
     let seatQuotas = {};
     const eventType = eventDetails.fields['Tipe Event'];
     const seatPriceTableName = eventDetails.fields['Tabel Harga Kursi'];
 
     if (eventType === 'Dengan Pilihan Kursi' && seatPriceTableName) {
-        // Ambil SEMUA data penjualan dari tabel 'Penjualan' di Base Event List yang terkait dengan event ini
-        const salesFilter = `{Link ke Event} = '${eventDetails.fields.Name}'`; // Asumsi ada field Name di tabel Event
+        // ### PERBAIKAN FILTER ###
+        // Menggunakan kolom Lookup 'EventNameText' untuk perbandingan teks yang andal
+        const salesFilter = `{EventNameText} = '${eventDetails.fields.Name}'`; 
         const allSales = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Penjualan?filterByFormula=${encodeURIComponent(salesFilter)}`);
         
-        // Ambil SEMUA data kursi dari Base Harga Seating
         const allSeats = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(seatPriceTableName)}`);
 
-        // Hitung sisa kuota untuk setiap kursi di dalam kode
         allSeats.records.forEach(seat => {
             const seatName = seat.fields.nama;
             if (!seatName) return;
-
             const totalQuota = seat.fields['Total Kuota'] || 0;
-            
-            // Jumlahkan tiket terjual untuk kursi spesifik ini
             const soldCount = allSales.records
                 .filter(sale => sale.fields['Kursi yg Dibeli'] === seatName)
                 .reduce((sum, sale) => sum + (sale.fields['Jumlah Tiket'] || 0), 0);
@@ -81,7 +72,7 @@ exports.handler = async function (event, context) {
         eventDetails,
         ticketTypes,
         formFields,
-        seatQuotas // Kirim data sisa kuota kursi yang sudah dihitung ke frontend
+        seatQuotas
       }),
     };
   } catch (error) {
