@@ -460,27 +460,44 @@ footer hr {
 }
 
 .modal {
-    display: none;
+    display: flex; /* Diubah dari 'none' menjadi 'flex' untuk centering */
+    align-items: center; /* BARU: Untuk menengahkan secara vertikal */
+    justify-content: center; /* BARU: Untuk menengahkan secara horizontal */
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow-y: auto; /* Diubah agar hanya scroll vertikal jika perlu */
     background-color: rgba(0, 0, 0, 0.6);
+    padding: 1rem; /* BARU: Memberi jarak agar tidak menempel di tepi layar kecil */
+
+    /* BARU: Untuk transisi fade-in/out yang halus */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* BARU: Kelas untuk menampilkan modal */
+.modal.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
 .modal-content {
     background-color: #fefefe;
     color: #333;
-    margin: 10% auto;
+    /* DIHAPUS: margin: 10% auto; (karena sudah diatur oleh flexbox) */
+    margin: auto; /* BARU: Memastikan posisi tetap baik */
     padding: 2rem;
     border-radius: 10px;
-    width: 90%;
+    width: 100%; /* Diubah dari 90% */
     max-width: 500px;
     position: relative;
     animation: fadeIn 0.5s;
+    max-height: 90vh; /* BARU: Batas tinggi maksimal */
+    overflow-y: auto; /* BARU: Jika konten di dalam kotak putih terlalu panjang, ia akan scroll */
 }
 
 @keyframes fadeIn {
@@ -1444,3 +1461,4 @@ nav {
     font-size: 0.85rem;
     color: var(--gray-text);
 }
+
