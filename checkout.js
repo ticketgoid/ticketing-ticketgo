@@ -189,8 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            checkoutMain.innerHTML = `<p class="error-message">` + dataHargaSeat + `</p>`;
-            
             renderLayout();
     // Periksa apakah pendaftaran event ditutup
     if (eventDetails['Pendaftaran Dibuka'] !== true) {
@@ -353,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
