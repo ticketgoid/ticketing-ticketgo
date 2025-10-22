@@ -369,6 +369,23 @@ const updatePrice = async () => {
     const quantity = parseInt(document.getElementById('ticketQuantity').value);
     const reviewContainer = document.getElementById('price-review');
 
+        // Default fallback if seat not chosen yet
+    let seatData = { price: selectedTicket.dataset.price };
+
+    // Fetch seat price dynamically if seatName is available
+    if (seatName) {
+        try {
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price:', response.status);
+            }
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
+        }
+    }
+
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket);
     const fields = selectedTicketRecord?.fields || {};
 
@@ -388,23 +405,6 @@ const updatePrice = async () => {
     if (!selectedTicket) {
         reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
         return;
-    }
-
-    // Default fallback if seat not chosen yet
-    let seatData = { price: selectedTicket.dataset.price };
-
-    // Fetch seat price dynamically if seatName is available
-    if (seatName) {
-        try {
-            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
-            if (response.ok) {
-                seatData = await response.json();
-            } else {
-                console.warn('Failed to fetch seat price:', response.status);
-            }
-        } catch (err) {
-            console.error('Error fetching seat price:', err);
-        }
     }
 
     // Clean up "Rp 85,000" → 85000
@@ -507,6 +507,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
