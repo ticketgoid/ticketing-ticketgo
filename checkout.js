@@ -210,7 +210,30 @@ document.addEventListener('DOMContentLoaded', () => {
             seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
         }
 
-        let ticketOptionsHTML = ticketTypes.map(record => `<div class="ticket-option"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-price="${record.fields.Price}" data-name="${record.fields.Name}" data-admin-fee="${record.fields.Admin_Fee || 0}"><label for="${record.id}"><div class="ticket-label-content"><span class="ticket-name">${record.fields.Name}</span><span class="ticket-price">Rp ${record.fields.Price.toLocaleString('id-ID')}</span></div></label></div>`).join('');
+let ticketOptionsHTML = ticketTypes.map(record => {
+  const priceValue = record.fields.Price || 0; // fallback if empty
+  const formattedPrice = priceValue
+    ? `Rp ${Number(priceValue).toLocaleString('id-ID')}`
+    : ''; // show fallback text instead
+  
+  return `
+    <div class="ticket-option">
+      <input 
+        type="radio" 
+        id="${record.id}" 
+        name="ticket_choice" 
+        value="${record.id}" 
+        data-price="${priceValue}" 
+        data-name="${record.fields.Name}" 
+        data-admin-fee="${record.fields.Admin_Fee || 0}">
+      <label for="${record.id}">
+        <div class="ticket-label-content">
+          <span class="ticket-name">${record.fields.Name}</span>
+          <span class="ticket-price">${formattedPrice}</span>
+        </div>
+      </label>
+    </div>`;
+}).join('');
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -397,6 +420,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
