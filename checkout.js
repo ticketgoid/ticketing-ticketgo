@@ -1,7 +1,8 @@
-// GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
+// GANTI SELURUH ISI FILE DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
-  // --- KONFIGURASI PENTING ---
   const SCRIPT_URL = '/api/create-transaction';
+  let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {}; // Variabel baru untuk menyimpan harga kursi
+  const checkoutMain = document.getElementById('checkout-main');
 
   const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
     try {
@@ -181,6 +182,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeFeedbackBtn').onclick = () => feedbackModal.classList.remove('visible');
   };
 
+  // ### FUNGSI BARU: Mengambil semua harga kursi di awal ###
+  const fetchAllSeatPrices = async () => {
+      const seatOptions = eventDetails['Pilihan_Kursi'] ? eventDetails['Pilihan_Kursi'].split('\n').filter(opt => opt.trim() !== '') : [];
+      if (seatOptions.length === 0) return;
+
+      // Kita bisa membuat API baru getAllEventPrices atau tetap menggunakan yang lama
+      // Untuk simple, kita panggil satu per satu, ini hanya terjadi sekali saat load
+      for (const seatName of seatOptions) {
+          try {
+              const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}`);
+              if (response.ok) {
+                  const data = await response.json();
+                  seatPrices[seatName.toLowerCase()] = data.price || 0;
+              }
+          } catch (error) {
+              console.error(`Gagal mengambil harga untuk kursi ${seatName}:`, error);
+          }
+      }
+      console.log("Harga semua kursi berhasil dimuat:", seatPrices);
+  };
+
   const buildPage = async () => {
     injectStyles();
     const params = new URLSearchParams(window.location.search);
@@ -201,13 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
         return;
       }
+      
+      await fetchAllSeatPrices(); // Panggil fungsi baru untuk memuat harga
       renderLayout();
+
     } catch (error) {
       console.error('Gagal membangun halaman:', error);
       checkoutMain.innerHTML = `<p>Gagal memuat detail event. Error: ${error.message}</p>`;
     }
   };
-
+  
   const renderLayout = () => {
     let seatMapHTML = eventDetails['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
     let seatSelectionHTML = '';
@@ -354,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   
   // ### FUNGSI UTAMA YANG DIPERBARUI ###
-  const calculatePrice = async () => {
+  const calculatePrice = () => { // Dibuat menjadi sinkron, tidak perlu async/await lagi
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
     if (!selectedTicket || !seatSelected) {
@@ -362,37 +387,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const quantity = getCurrentQuantity();
-    const seatName = seatSelected.value;
+    const seatName = seatSelected.value.toLowerCase(); // Gunakan lowercase untuk key
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket.value);
     const fields = selectedTicketRecord?.fields || {};
     
     const isDiscountTicket = fields.Discount === true;
     const isBundleTicket = (fields.BundleQuantity || 1) > 1;
 
-    // Ambil harga dasar per SATU kursi dari API 'rona'
-    const seatResponse = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=1`);
-    const seatData = seatResponse.ok ? await seatResponse.json() : { price: 0 };
-    const baseSeatPrice = seatData.price || 0;
+    // Ambil harga dasar dari variabel 'seatPrices' yang sudah disimpan
+    const baseSeatPrice = seatPrices[seatName] || 0;
     
-    // Ambil nilai dari kolom 'Price' di Ticket Types
     const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
     
     let subtotal = 0;
     let pricePerTicket = 0;
 
     if (isBundleTicket && isDiscountTicket) {
-        // --- LOGIKA BARU UNTUK BUNDLING ---
-        // 'ticketPriceField' adalah TOTAL POTONGAN HARGA untuk paket
         const totalBasePrice = baseSeatPrice * quantity;
         subtotal = totalBasePrice - ticketPriceField;
         pricePerTicket = subtotal / quantity;
     } else if (isDiscountTicket) {
-        // --- LOGIKA UNTUK TIKET DISKON SATUAN ---
-        // 'ticketPriceField' adalah POTONGAN HARGA per tiket
         pricePerTicket = baseSeatPrice - ticketPriceField;
         subtotal = pricePerTicket * quantity;
     } else {
-        // --- LOGIKA UNTUK TIKET HARGA NORMAL (NON-DISKON) ---
         pricePerTicket = baseSeatPrice;
         subtotal = pricePerTicket * quantity;
     }
@@ -403,7 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return { subtotal, totalAdminFee, finalTotal, pricePerTicket, quantity };
   }
-  const updatePrice = async () => {
+
+  const updatePrice = () => { // Dibuat menjadi sinkron
     const reviewContainer = document.getElementById('price-review');
     const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
     if (!selectedTicket || !document.querySelector('input[name="Pilihan_Kursi"]:checked')) {
@@ -411,26 +429,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const { subtotal, totalAdminFee, finalTotal, quantity } = await calculatePrice();
+    const { subtotal, totalAdminFee, finalTotal, quantity } = calculatePrice(); // Panggil versi sinkron
     reviewContainer.innerHTML = `
         <div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr>
         <div class="review-row total"><span><strong>Total</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>`;
   };
 
-  const showReviewModal = async () => {
+  const showReviewModal = () => { // Dibuat menjadi sinkron
     const form = document.getElementById('customer-data-form');
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
-
-    const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
+    
+  const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
     if (!selectedTicketInput) return;
     
-    const { subtotal, totalAdminFee, finalTotal, pricePerTicket, quantity } = await calculatePrice();
-    const name = selectedTicketInput.dataset.name;
+    // ### PERBAIKAN: isBundleTicket didefinisikan di sini agar bisa diakses ###
+    const quantity = getCurrentQuantity();
     const isBundleTicket = quantity > 1 && selectedTicketInput.dataset.canChooseQuantity !== 'true';
+
+    const { subtotal, totalAdminFee, finalTotal, pricePerTicket } = calculatePrice();
+    const name = selectedTicketInput.dataset.name;
 
     let formDataHTML = '';
     for (let [key, value] of new FormData(form).entries()) {
@@ -447,11 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="review-row"><span>${isBundleTicket ? 'Harga Paket' : 'Harga per Tiket'}</span><span>Rp ${isBundleTicket ? subtotal.toLocaleString('id-ID') : pricePerTicket.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr>
-        <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
+        <div class.review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
         <hr><h4>Data Pemesan:</h4>${formDataHTML}`;
     document.getElementById('reviewModal').classList.add('visible');
   };
   
   buildPage();
 });
-
