@@ -319,7 +319,7 @@ const showReviewModal = async () => {
     let seatData = { price: 0 };
     if (seatName) {
         try {
-            const response = await fetch(`/.netlify/functions/get-event-details?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            const response = await fetch(`/api/get-event-details?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
             if (response.ok) {
                 seatData = await response.json();
             } else {
@@ -330,7 +330,7 @@ const showReviewModal = async () => {
         }
     }
 
-    const price = seatData.price ? parseInt(seatData.price.toString().replace(/[^0-9]/g, '')) : parseFloat(selectedTicket.dataset.price);
+    const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, ''));
     const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
     const subtotal = price * quantity;
     const totalAdminFee = adminFee * quantity;
@@ -364,6 +364,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
