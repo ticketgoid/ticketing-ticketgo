@@ -210,30 +210,41 @@ document.addEventListener('DOMContentLoaded', () => {
             seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
         }
 
-let ticketOptionsHTML = ticketTypes.map(record => {
-  const priceValue = record.fields.Price || 0; // fallback if empty
-  const formattedPrice = priceValue
-    ? `Rp ${Number(priceValue).toLocaleString('id-ID')}`
-    : ''; // show fallback text instead
-  
-  return `
-    <div class="ticket-option">
-      <input 
-        type="radio" 
-        id="${record.id}" 
-        name="ticket_choice" 
-        value="${record.id}" 
-        data-price="${priceValue}" 
-        data-name="${record.fields.Name}" 
-        data-admin-fee="${record.fields.Admin_Fee || 0}">
-      <label for="${record.id}">
-        <div class="ticket-label-content">
-          <span class="ticket-name">${record.fields.Name}</span>
-          <span class="ticket-price">${formattedPrice}</span>
-        </div>
-      </label>
-    </div>`;
-}).join('');
+let ticketOptionsHTML = ticketTypes
+  .filter(record => record.fields.Show_Price) // only show tickets with Show_Price checked
+  .map(record => {
+    const name = record.fields.Name || 'Tiket Tanpa Nama';
+    const priceField = record.fields.Price || '';
+    const adminFeeField = record.fields.Admin_Fee || 0;
+
+    // Convert "Rp10,000" → number (10000)
+    const numericPrice = priceField
+      ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
+      : 0;
+
+    const formattedPrice = numericPrice
+      ? `Rp ${numericPrice.toLocaleString('id-ID')}`
+      : 'Harga belum tersedia';
+
+    return `
+      <div class="ticket-option">
+        <input
+          type="radio"
+          id="${record.id}"
+          name="ticket_choice"
+          value="${record.id}"
+          data-price="${numericPrice}"
+          data-name="${name}"
+          data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
+        <label for="${record.id}">
+          <div class="ticket-label-content">
+            <span class="ticket-name">${name}</span>
+            <span class="ticket-price">${formattedPrice}</span>
+          </div>
+        </label>
+      </div>`;
+  })
+  .join('');
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -420,6 +431,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
