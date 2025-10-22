@@ -16,7 +16,7 @@ exports.handler = async function (event, context) {
   try {
     const payload = JSON.parse(event.body);
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
-    const isProduction = true;
+    const isProduction = false;
 
     console.log("Payload yang diterima dari frontend:", JSON.stringify(payload, null, 2));
     console.log("Membaca MIDTRANS_SERVER_KEY:", serverKey ? `***${serverKey.slice(-4)}` : "TIDAK DITEMUKAN!");
@@ -77,4 +77,5 @@ exports.handler = async function (event, context) {
     };
   }
 };
+
 
