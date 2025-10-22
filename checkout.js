@@ -217,11 +217,6 @@ let ticketOptionsHTML = ticketTypes.map(record => {
   const showPrice = record.fields.Show_Price === true;
   const hasDiscount = record.fields.Discount === true;
 
-  // Convert "Rp10,000" → number
-  const numericPrice = priceField
-    ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
-    : 0;
-
   const finalPrice = hasDiscount ? numericPrice - discountPriceField : numericPrice;
 
   // Format display
@@ -437,6 +432,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
