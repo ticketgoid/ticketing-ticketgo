@@ -319,11 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
         const hargaSeat = dataSeats.find(seat => seat.nama === selectedTicket);
-        const price = parseFloat(selectedTicket.dataset.price);
+        // const price = parseFloat(selectedTicket.dataset.price);
         const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
         const subtotal = hargaSeat.price * quantity;
         const totalAdminFee = adminFee * quantity;
         const finalTotal = subtotal + totalAdminFee;
+
+        console.log("Seat: " + selectedTicket + "Harga: " + hargaSeat);
 
         let formDataHTML = '';
         for (let [key, value] of new FormData(form).entries()) {
@@ -351,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
