@@ -382,55 +382,53 @@ const showReviewModal = async () => {
         return;
     }
 
-    const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+    const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
     const quantity = parseInt(document.getElementById('ticketQuantity').value);
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
     const seatName = seatSelected ? seatSelected.value : null;
 
-    // Fetch seat-based price if applicable
-    let seatData = { price: 0 };
-    if (seatName) {
-        try {
-            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
-            if (response.ok) {
-                seatData = await response.json();
-            } else {
-                console.warn('Failed to fetch seat price from Airtable:', response.status);
-            }
-        } catch (err) {
-            console.error('Error fetching seat price:', err);
-        }
+    if (!selectedTicketId) {
+        alert("Pilih tiket terlebih dahulu ya~ 💫");
+        return;
     }
 
-    // --- DISCOUNT LOGIC (enhanced) ---
-    const priceField = seatData.price || selectedTicket.dataset.price || 0;
-    const price = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+    // Cari record tiket berdasarkan ID dari ticketTypes
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+    const fields = selectedTicketRecord?.fields || {};
 
-    // Optional dataset support for discount (in case ticket dataset has these)
-    const discountActive = selectedTicket.dataset.Discount === "true" || false;
-    const discountValue = selectedTicket.dataset.Price || 0;
+    // --- Extract data langsung dari Airtable fields ---
+    const name = fields.Name || 'Tiket Tanpa Nama';
+    const priceField = fields.Price || 0;
+    const adminFeeField = fields.Admin_Fee || 0;
+    const hasDiscount = fields.Discount === true;
+    const discountValue = fields.Discount_Value || 0;
 
+    // --- Convert numeric fields ---
+    const basePrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+    const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
+
+    // --- Discount logic ---
     let numericDiscount = 0;
-    if (discountActive && discountValue) {
-            numericDiscount = price - discountValue
+    if (hasDiscount && discountValue) {
+        const discountStr = discountValue.toString();
+        if (discountStr.includes('%')) {
+            const percent = parseFloat(discountStr.replace('%', ''));
+            numericDiscount = Math.round(basePrice * (percent / 100));
         } else {
-            numericDiscount = parseInt(discountValue.toString().replace(/[^0-9]/g, '')) || 0;
+            numericDiscount = parseInt(discountStr.replace(/[^0-9]/g, '')) || 0;
         }
     }
 
-    const discountedPrice = Math.max(0, price - numericDiscount);
-    const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+    const discountedPrice = Math.max(0, basePrice - numericDiscount);
     const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
 
-    // --- BUILD REVIEW MODAL ---
+    // --- Form data display ---
     let formDataHTML = '';
     for (let [key, value] of new FormData(form).entries()) {
         let label = key;
-        if (key === 'ticket_choice') {
-            label = 'Jenis Tiket'; value = selectedTicket.dataset.name;
-        } else if (key.toLowerCase().includes('nomor')) {
+        if (key.toLowerCase().includes('nomor')) {
             value = `+62${value}`;
         } else if (key === 'Pilihan_Kursi') {
             label = 'Pilihan Kursi';
@@ -438,15 +436,15 @@ const showReviewModal = async () => {
         formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
     }
 
-    // Include discount line only if active
-    const discountRow = discountActive && numericDiscount > 0
+    const discountRow = hasDiscount && numericDiscount > 0
         ? `<div class="review-row"><span>Diskon</span><span>- Rp ${numericDiscount.toLocaleString('id-ID')}</span></div>`
         : '';
 
+    // --- Build modal content ---
     document.getElementById('reviewDetails').innerHTML = `
         <h4>Detail Pesanan:</h4>
-        <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
-        <div class="review-row"><span>Harga per Tiket</span><span>Rp ${price.toLocaleString('id-ID')}</span></div>
+        <div class="review-row"><span>Tiket</span><span>${name} x ${quantity}</span></div>
+        <div class="review-row"><span>Harga per Tiket</span><span>Rp ${basePrice.toLocaleString('id-ID')}</span></div>
         ${discountRow}
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
@@ -454,13 +452,15 @@ const showReviewModal = async () => {
         <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
         <hr><h4>Data Pemesan:</h4>${formDataHTML}
     `;
-    
+
     document.getElementById('reviewModal').style.display = 'flex';
 };
+
 
     
     buildPage();
 });
+
 
 
 
