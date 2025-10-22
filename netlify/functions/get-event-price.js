@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_SEAT } = process.env;
-  const tableName = 'Harga Seating';
+  const tableName = 'rona';
 
   // Dynamic query example: ?seat=Gold&qty=2
   const targetName = event.queryStringParameters?.seat || 'Gold';
