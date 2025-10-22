@@ -553,24 +553,28 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   };
 
-  const showReviewModal = async () => {
+  // GANTIKAN SELURUH FUNGSI showReviewModal YANG LAMA DENGAN INI
+
+const showReviewModal = async () => {
     const form = document.getElementById('customer-data-form');
     if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
+        form.reportValidity();
+        return;
     }
 
-    const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
+    const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
+    if (!selectedTicketInput) {
+        return;
+    }
+    
     const quantity = getCurrentQuantity();
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
     const seatName = seatSelected ? seatSelected.value : null;
-
-    if (!selectedTicketId) {
-      return;
-    }
+    const selectedTicketId = selectedTicketInput.value;
 
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
     const fields = selectedTicketRecord?.fields || {};
+
     const name = fields.Name || 'Tiket Tanpa Nama';
     const priceField = fields.Price || 0;
     const adminFeeField = fields.Admin_Fee || 0;
@@ -578,16 +582,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let seatData = { price: 0 };
     if (seatName) {
-      try {
-        const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
-        if (response.ok) {
-          seatData = await response.json();
-        } else {
-          console.warn('Failed to fetch seat price from Airtable:', response.status);
+        try {
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
+            }
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
         }
-      } catch (err) {
-        console.error('Error fetching seat price:', err);
-      }
     }
 
     const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
@@ -604,16 +608,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
 
+    // ### PERUBAHAN UTAMA ADA DI SINI ###
     let formDataHTML = '';
+    const ticketName = selectedTicketInput.dataset.name || 'Tidak Dipilih';
+
     for (let [key, value] of new FormData(form).entries()) {
-      let label = key;
-      if (key.toLowerCase().includes('nomor')) {
-        value = `+62${value}`;
-      } else if (key === 'Pilihan_Kursi') {
-        label = 'Pilihan Kursi';
-      }
-      formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
+        let label = key;
+
+        if (key === 'ticket_choice') {
+            label = 'Jenis Tiket'; // Mengganti label
+            value = ticketName;    // Mengganti value dari ID menjadi nama tiket
+        } else if (key.toLowerCase().includes('nomor')) {
+            value = `+62${value}`;
+        } else if (key === 'Pilihan_Kursi') {
+            label = 'Pilihan Kursi';
+        }
+        
+        formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
     }
+    // ### AKHIR DARI PERUBAHAN ###
 
     document.getElementById('reviewDetails').innerHTML = `
         <h4>Detail Pesanan:</h4>
@@ -625,9 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
         <hr><h4>Data Pemesan:</h4>${formDataHTML}
     `;
+
     document.getElementById('reviewModal').classList.add('visible');
-  };
+};
   
   buildPage();
 });
+
 
