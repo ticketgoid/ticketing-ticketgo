@@ -291,33 +291,50 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
     };
 
-    let seatData = { price: 0 };
+const updatePrice = async () => {
+    const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+    const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+    const seatName = seatSelected ? seatSelected.value : null;
+    const quantity = parseInt(document.getElementById('ticketQuantity').value);
+    const reviewContainer = document.getElementById('price-review');
+
+    if (!selectedTicket) {
+        reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
+        return;
+    }
+
+    // Default fallback if seat not chosen yet
+    let seatData = { price: selectedTicket.dataset.price };
+
+    // Fetch seat price dynamically if seatName is available
     if (seatName) {
         try {
-            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(selectedTicket)}&qty=${quantity}`);
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
             if (response.ok) {
                 seatData = await response.json();
             } else {
-                console.warn('Failed to fetch seat price from Airtable:', response.status);
+                console.warn('Failed to fetch seat price:', response.status);
             }
         } catch (err) {
             console.error('Error fetching seat price:', err);
         }
     }
 
-    const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, ''));
+    // Clean up "Rp 85,000" → 85000
+    const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, '')) || 0;
+    const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+    const subtotal = price * quantity;
+    const totalAdminFee = adminFee * quantity;
+    const finalTotal = subtotal + totalAdminFee;
 
-    const updatePrice = () => {
-        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-        const quantity = parseInt(document.getElementById('ticketQuantity').value);
-        const reviewContainer = document.getElementById('price-review');
-        if (!selectedTicket) {
-            reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
-            return;
-        }
-        const total = price * quantity;
-        reviewContainer.innerHTML = `<div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
-    };
+    reviewContainer.innerHTML = `
+        <div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
+        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
+        <hr>
+        <div class="review-row total"><span><strong>Total</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
+    `;
+};
+
 
 const showReviewModal = async () => {
     const form = document.getElementById('customer-data-form');
@@ -380,6 +397,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
