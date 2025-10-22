@@ -212,12 +212,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let ticketOptionsHTML = ticketTypes.map(record => {
   const name = record.fields.Name || 'Tiket Tanpa Nama';
-  const discountPriceField = record.fields.Price || '';
+  const priceField = record.fields.Price || '';
   const adminFeeField = record.fields.Admin_Fee || 0;
   const showPrice = record.fields.Show_Price === true;
   const hasDiscount = record.fields.Discount === true;
 
-  const finalPrice = hasDiscount ? numericPrice - discountPriceField : numericPrice;
+  // Convert "Rp10,000" → number
+  const numericPrice = priceField
+    ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
+    : 0;
+
+  const finalPrice = hasDiscount ? 0 : numericPrice;
 
   // Format display
   const formattedPrice = showPrice && numericPrice
@@ -245,7 +250,6 @@ let ticketOptionsHTML = ticketTypes.map(record => {
       </label>
     </div>`;
 }).join('');
-
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -432,6 +436,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
