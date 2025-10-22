@@ -387,11 +387,10 @@ const updatePrice = async () => {
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket);
     const fields = selectedTicketRecord?.fields || {};
 
-    const priceField = fields.Price || 0;
+    const discountPrice = fields.Price || 0;
     const hasDiscount = fields.Discount === true;
     const discountValue = fields.Discount_Value || 0;
 
-    const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
     let discountedPrice = 0;
     
     if (hasDiscount) {
@@ -505,6 +504,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
