@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!dataSeat.ok) throw new Error(`Gagal memuat seat event: ${dataSeat.statusText}`);
             
             const data = await response.json();
-            const dataSeat = await response.json();
             
             eventDetails = data.eventDetails.fields;
             ticketTypes = data.ticketTypes.records;
@@ -351,5 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
