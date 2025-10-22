@@ -211,40 +211,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 let ticketOptionsHTML = ticketTypes.map(record => {
-  const fields = record.fields || {};
-  const name = fields.Name || 'Tiket Tanpa Nama';
-  const priceField = fields.Price || 0;
-  const adminFeeField = fields.Admin_Fee || 0;
-  const showPrice = fields.Show_Price === true;
-  const hasDiscount = fields.Discount === true;
-  const discountValue = fields.Discount_Value || 0;
+  const name = record.fields.Name || 'Tiket Tanpa Nama';
+  const priceField = record.fields.Price || '';
+  const adminFeeField = record.fields.Admin_Fee || 0;
+  const showPrice = record.fields.Show_Price === true;
+  const hasDiscount = record.fields.Discount === true;
 
-  // --- Convert numeric values ---
-  const numericPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
-  const numericDiscount = parseInt(discountValue.toString().replace(/[^0-9]/g, '')) || 0;
-  const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
+  // Convert "Rp10,000" → number
+  const numericPrice = priceField ? parseInt(priceField.toString().replace(/[^0-9]/g, '')) : 0;
+  const finalPrice = hasDiscount ? 0 : numericPrice;
 
-  // --- Apply discount logic (similar to showReviewModal) ---
-  const finalPrice = hasDiscount ? Math.max(0, numericPrice - numericDiscount) : numericPrice;
-
-  // --- Format display text ---
+  // Format display
   const formattedPrice = showPrice && numericPrice
     ? hasDiscount
-      ? `
-        <span style="text-decoration: line-through; color: #888;">Rp ${numericPrice.toLocaleString('id-ID')}</span>
-        <span style="color: #e53935; font-weight: bold;">Rp ${finalPrice.toLocaleString('id-ID')}</span>
-      `
+      ? `<span style="text-decoration: line-through; color: #888;">Rp ${numericPrice.toLocaleString('id-ID')}</span>
+         <span style="color: #e53935; font-weight: bold;">Rp ${finalPrice.toLocaleString('id-ID')}</span>`
       : `Rp ${numericPrice.toLocaleString('id-ID')}`
-    : '&nbsp;'; // blank for layout balance
+    : '&nbsp;'; // blank space (preserve layout)
 
-  // --- Build each ticket option ---
   return `
     <div class="ticket-option">
       <input 
-        type="radio"
-        id="${record.id}"
-        name="ticket_choice"
-        value="${record.id}">
+        type="radio" 
+        id="${record.id}" 
+        name="ticket_choice" 
+        value="${record.id}" 
+        data-price="${finalPrice}" 
+        data-name="${name}" 
+        data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
       <label for="${record.id}">
         <div class="ticket-label-content">
           <span class="ticket-name">${name}</span>
@@ -254,42 +248,76 @@ let ticketOptionsHTML = ticketTypes.map(record => {
     </div>`;
 }).join('');
 
+let formFieldsHTML = formFields.map(record => {
+  const { FieldLabel, FieldType, Is_Required } = record.fields;
+  if (!FieldLabel || !FieldType) return '';
+  const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
+  let placeholder = FieldLabel;
+  if (FieldLabel.toLowerCase().includes('nama')) placeholder = 'Sesuai Identitas (KTP, SIM, dsb)';
+  else if (FieldType.toLowerCase() === 'email') placeholder = 'contoh@gmail.com';
 
-        let formFieldsHTML = formFields.map(record => {
-            const { FieldLabel, FieldType, Is_Required } = record.fields;
-            if (!FieldLabel || !FieldType) return '';
-            const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-            let placeholder = FieldLabel;
-            if (FieldLabel.toLowerCase().includes('nama')) placeholder = 'Sesuai Identitas (KTP, SIM, dsb)';
-            else if (FieldType.toLowerCase() === 'email') placeholder = 'contoh@gmail.com';
+  if (FieldType.toLowerCase() === 'tel') {
+    return `
+      <div class="form-group">
+        <label for="${fieldId}">${FieldLabel}</label>
+        <div class="phone-input-group">
+          <span class="phone-prefix">+62</span>
+          <input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789">
+        </div>
+      </div>`;
+  }
 
-            if (FieldType.toLowerCase() === 'tel') {
-                return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div></div>`;
-            }
-            return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}"></div>`;
-        }).join('');
+  return `
+    <div class="form-group">
+      <label for="${fieldId}">${FieldLabel}</label>
+      <input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}">
+    </div>`;
+}).join('');
 
-        const layoutHTML = `
-            <div class="checkout-body">
-                <div class="event-details-column">
-                    <div class="event-poster-container"><img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster"></div>
-                    <div class="event-info"><h1>${eventDetails['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.Deskripsi || ''}</p></div>
-                </div>
-                <div class="purchase-form-column">
-                    <div class="purchase-form">
-                        ${seatMapHTML}
-                        <form id="customer-data-form" novalidate>
-                            ${seatSelectionHTML}
-                            <div class="form-section"><h3>2. Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div>
-                            <div class="form-section"><h3>3. Pilih Jumlah Beli</h3><div class="quantity-selector"><button type="button" id="decreaseQty" disabled>-</button><input type="number" id="ticketQuantity" value="1" min="1" readonly><button type="button" id="increaseQty" disabled>+</button></div></div>
-                            <div class="form-section"><h3>4. Isi Data Diri</h3>${formFieldsHTML}</div>
-                        </form>
-                        <div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div>
-                        <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
-                    </div>
-                </div>
-            </div>`;
-        checkoutMain.innerHTML = layoutHTML;
+const layoutHTML = `
+  <div class="checkout-body">
+    <div class="event-details-column">
+      <div class="event-poster-container">
+        <img src="${eventDetails['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster">
+      </div>
+      <div class="event-info">
+        <h1>${eventDetails['NamaEvent'] || ''}</h1>
+        <p class="event-description">${eventDetails.Deskripsi || ''}</p>
+      </div>
+    </div>
+    <div class="purchase-form-column">
+      <div class="purchase-form">
+        ${seatMapHTML}
+        <form id="customer-data-form" novalidate>
+          ${seatSelectionHTML}
+          <div class="form-section">
+            <h3>2. Pilih Jenis Tiket</h3>
+            <div id="ticketOptionsContainer">${ticketOptionsHTML}</div>
+          </div>
+          <div class="form-section">
+            <h3>3. Pilih Jumlah Beli</h3>
+            <div class="quantity-selector">
+              <button type="button" id="decreaseQty" disabled>-</button>
+              <input type="number" id="ticketQuantity" value="1" min="1" readonly>
+              <button type="button" id="increaseQty" disabled>+</button>
+            </div>
+          </div>
+          <div class="form-section">
+            <h3>4. Isi Data Diri</h3>
+            ${formFieldsHTML}
+          </div>
+        </form>
+        <div class="form-section price-review-section">
+          <h3>Ringkasan Harga</h3>
+          <div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div>
+        </div>
+        <button id="buyButton" class="btn-primary" disabled>Beli Tiket</button>
+      </div>
+    </div>
+  </div>`;
+
+checkoutMain.innerHTML = layoutHTML;
+
     };
 
     const attachEventListeners = () => {
@@ -466,6 +494,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
