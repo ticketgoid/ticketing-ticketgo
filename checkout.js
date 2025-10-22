@@ -377,7 +377,6 @@ const updatePrice = async () => {
     const discountValue = fields.Discount_Value || 0;
 
     const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
-    const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
     const discountedPrice = 0;
 
     if (hasDiscount) {
@@ -508,6 +507,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
