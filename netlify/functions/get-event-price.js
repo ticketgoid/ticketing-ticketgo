@@ -25,9 +25,15 @@ exports.handler = async function (event, context) {
       price: record.fields.harga_seat || null, 
     }));
 
+    const nama_seat = record.fields.nama || [];
+    const harga_seat = record.fields.harga_seat || [];
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ seats }),
+      body: JSON.stringify({
+        nama_seat,
+        harga_seat
+      }),
     };
   } catch (error) {
     console.error('Error fetching seat data from Airtable:', error);
