@@ -96,11 +96,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const feedbackModal = document.getElementById('feedbackModal');
       const icon = feedbackModal.querySelector('.fas');
       const content = feedbackModal.querySelector('.feedback-content');
+      
+      // DIPERBAIKI: Reset kelas ikon dan konten dengan benar
+      const iconWrapper = feedbackModal.querySelector('.feedback-icon');
+      iconWrapper.className = 'feedback-icon';
       icon.className = 'fas';
-      content.className = 'feedback-content';
-      if (type === 'success') { icon.classList.add('fa-check-circle'); content.classList.add('success'); }
-      else if (type === 'pending') { icon.classList.add('fa-hourglass-half'); content.classList.add('pending'); }
-      else { icon.classList.add('fa-times-circle'); content.classList.add('error'); }
+      
+      if (type === 'success') { 
+          icon.classList.add('fa-check-circle'); 
+          iconWrapper.classList.add('success'); 
+      } else if (type === 'pending') { 
+          icon.classList.add('fa-hourglass-half'); 
+          iconWrapper.classList.add('pending'); 
+      } else { 
+          icon.classList.add('fa-times-circle'); 
+          iconWrapper.classList.add('error'); 
+      }
+      
       document.getElementById('feedbackTitle').textContent = title;
       document.getElementById('feedbackMessage').textContent = message;
       feedbackModal.classList.add('visible');
@@ -112,6 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
         style.textContent = `
           .ticket-option label { flex-wrap: wrap; cursor: pointer; } .quantity-selector-wrapper { display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; border-top: 1px solid #f0f0f0; } .quantity-selector-wrapper.visible { display: block; } .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; } .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; } .quantity-selector button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; background-color: var(--white); font-size: 1.2rem; font-weight: 600; color: var(--gray-text); cursor: pointer; transition: all 0.2s; } .quantity-selector button:hover:not(:disabled) { background-color: var(--teal); border-color: var(--teal); color: var(--white); } .quantity-selector button:disabled { opacity: 0.5; cursor: not-allowed; } .quantity-selector input { width: 40px; height: 32px; text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; } .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; } .event-details-column, .purchase-form-column { flex: 1; min-width: 320px; } .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); } .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; } .ticket-option .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; } .ticket-option input[type="radio"] { display: none; } .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; } #buyButton, #confirmPaymentBtn { width: 100%; background-color: var(--orange); color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease; margin-top: 20px; } #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; } #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); } #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; } .modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } .modal.visible { display: flex; opacity: 1; visibility: visible; } .feedback-modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); } .feedback-modal.visible { display: flex; }
           .ticket-option label.disabled { cursor: not-allowed; background-color: #f1f5f9; color: #94a3b8; } .ticket-option label.disabled:hover { border-color: #e5e7eb; box-shadow: none; } .sold-out-tag { font-weight: 700; color: #ef4444; margin-left: auto; white-space: nowrap; }
+          /* BARU: Style untuk pesan error validasi */
+          .form-group .validation-error { color: #ef4444; font-size: 0.8rem; margin-top: 4px; display: none; }
+          .form-group input:invalid:not(:placeholder-shown) + .validation-error { display: block; }
         `;
         document.head.appendChild(style);
     };
@@ -190,8 +205,20 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!FieldLabel || !FieldType) return '';
           const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
           let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
-          if (FieldType.toLowerCase() === 'tel') return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div></div>`;
-          return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}"></div>`;
+          
+          // DIPERBAIKI: Tambahkan pesan error validasi kustom
+          const requiredAttr = Is_Required ? 'required' : '';
+          let validationMessage = '';
+          if (FieldType.toLowerCase() === 'email') {
+              validationMessage = 'Format email tidak valid.';
+          } else {
+              validationMessage = `${FieldLabel} wajib diisi.`;
+          }
+
+          if (FieldType.toLowerCase() === 'tel') {
+              return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${requiredAttr} placeholder="8123456789" pattern="[0-9]{9,15}"></div><div class="validation-error">Nomor telepon tidak valid.</div></div>`;
+          }
+          return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${requiredAttr} placeholder="${placeholder}"><div class="validation-error">${validationMessage}</div></div>`;
         }).join('');
     
         checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
@@ -249,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
         const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
         const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
+        
+        // DIPERBAIKI: Pengecekan validitas form yang lebih konsisten
         const isFormValid = form.checkValidity();
         
         buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid);
@@ -264,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       
-      // Event listener baru untuk form input
       form.addEventListener('input', checkButtonState);
   
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
@@ -275,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (e.target.closest('.decrease-qty-btn') && currentVal > 1) qtyInput.value = currentVal - 1;
         qtyInput.parentElement.querySelector('.decrease-qty-btn').disabled = parseInt(qtyInput.value) <= 1;
         updatePrice();
+        checkButtonState(); // BARU: Cek ulang status tombol setelah ganti jumlah
       });
   
       buyButton.addEventListener('click', showReviewModal);
@@ -348,12 +377,19 @@ document.addEventListener('DOMContentLoaded', () => {
   
     const showReviewModal = () => {
       const form = document.getElementById('customer-data-form');
+      // DIPERBAIKI: Memberi feedback lebih jelas jika form tidak valid
       if (!form.checkValidity()) {
+        // Memicu validasi browser dan scroll ke field yang error pertama
+        const firstInvalidField = form.querySelector(':invalid');
+        firstInvalidField?.focus();
         form.reportValidity();
+        console.error("Validasi Gagal. Modal review tidak ditampilkan.");
         return;
       }
+      
       const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
       if (!selectedTicketInput) return;
+      
       const quantity = getCurrentQuantity();
       const isBundleTicket = quantity > 1 && selectedTicketInput.dataset.canChooseQuantity !== 'true';
       const { subtotal, totalAdminFee, finalTotal, pricePerTicket } = calculatePrice();
@@ -364,11 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
       let formDataHTML = '';
       for (const [key, value] of new FormData(form).entries()) {
         let label = key;
-        if (key === 'ticket_choice') { label = 'Jenis Tiket'; value = name; } 
+        if (key === 'ticket_choice') { continue; } // Jangan tampilkan radio button tiket di review
+        if (key === 'Pilihan_Kursi') { label = 'Pilihan Kursi'; }
         else if (key.toLowerCase().includes('nomor')) { value = `+62${value.replace(/^0/, '')}`; } 
-        else if (key === 'Pilihan_Kursi') { label = 'Pilihan Kursi'; }
-        formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
+
+        formDataHTML += `<div class="review-row"><span>${label}</span><span>${value || '-'}</span></div>`;
       }
+      
       document.getElementById('reviewDetails').innerHTML = `<h4>Detail Pesanan:</h4><div class="review-row"><span>Tiket</span><span>${displayText}</span></div><div class="review-row"><span>${isBundleTicket ? 'Harga Paket' : 'Harga per Tiket'}</span><span>Rp ${isBundleTicket ? subtotal.toLocaleString('id-ID') : pricePerTicket.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr><div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div><hr><h4>Data Pemesan:</h4>${formDataHTML}`;
       document.getElementById('reviewModal').classList.add('visible');
     };
