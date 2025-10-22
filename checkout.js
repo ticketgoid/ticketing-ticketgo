@@ -319,7 +319,7 @@ const showReviewModal = async () => {
     let seatData = { price: 0 };
     if (seatName) {
         try {
-            const response = await fetch(`/api/get-event-details?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
             if (response.ok) {
                 seatData = await response.json();
             } else {
@@ -364,6 +364,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
