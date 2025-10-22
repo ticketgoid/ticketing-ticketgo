@@ -387,7 +387,7 @@ const showReviewModal = async () => {
     const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
     const seatName = seatSelected ? seatSelected.value : null;
 
-    // Fetch price from your Netlify function
+    // Fetch seat-based price if applicable
     let seatData = { price: 0 };
     if (seatName) {
         try {
@@ -402,13 +402,32 @@ const showReviewModal = async () => {
         }
     }
 
-    const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, ''));
+    // --- DISCOUNT LOGIC (enhanced) ---
+    const priceField = seatData.price || selectedTicket.dataset.price || 0;
+    const price = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+
+    // Optional dataset support for discount (in case ticket dataset has these)
+    const discountActive = selectedTicket.dataset.discount === "true" || false;
+    const discountValue = selectedTicket.dataset.discountValue || 0;
+
+    let numericDiscount = 0;
+    if (discountActive && discountValue) {
+        // Support both percentage (e.g. "10%") or flat (e.g. "10000")
+        if (discountValue.toString().includes('%')) {
+            const percent = parseFloat(discountValue.replace('%', ''));
+            numericDiscount = Math.round(price * (percent / 100));
+        } else {
+            numericDiscount = parseInt(discountValue.toString().replace(/[^0-9]/g, '')) || 0;
+        }
+    }
+
+    const discountedPrice = Math.max(0, price - numericDiscount);
     const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-    const subtotal = price * quantity;
+    const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
 
-    // Build the review modal content
+    // --- BUILD REVIEW MODAL ---
     let formDataHTML = '';
     for (let [key, value] of new FormData(form).entries()) {
         let label = key;
@@ -422,13 +441,22 @@ const showReviewModal = async () => {
         formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
     }
 
+    // Include discount line only if active
+    const discountRow = discountActive && numericDiscount > 0
+        ? `<div class="review-row"><span>Diskon</span><span>- Rp ${numericDiscount.toLocaleString('id-ID')}</span></div>`
+        : '';
+
     document.getElementById('reviewDetails').innerHTML = `
         <h4>Detail Pesanan:</h4>
         <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
+        <div class="review-row"><span>Harga per Tiket</span><span>Rp ${price.toLocaleString('id-ID')}</span></div>
+        ${discountRow}
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
-        <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
-        <hr><h4>Data Pemesan:</h4>${formDataHTML}`;
+        <hr>
+        <div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>
+        <hr><h4>Data Pemesan:</h4>${formDataHTML}
+    `;
     
     document.getElementById('reviewModal').style.display = 'flex';
 };
@@ -436,6 +464,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
