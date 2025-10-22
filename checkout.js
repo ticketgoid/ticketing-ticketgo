@@ -291,6 +291,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confirmPaymentBtn').addEventListener('click', initiatePayment);
     };
 
+    let seatData = { price: 0 };
+    if (seatName) {
+        try {
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(selectedTicket)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
+            }
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
+        }
+    }
+
+    const price = parseInt(seatData.price.toString().replace(/[^0-9]/g, ''));
+
     const updatePrice = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         const quantity = parseInt(document.getElementById('ticketQuantity').value);
@@ -299,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
             return;
         }
-        const total = parseFloat(selectedTicket.dataset.price) * quantity;
+        const total = price * quantity;
         reviewContainer.innerHTML = `<div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
     };
 
@@ -364,6 +380,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
