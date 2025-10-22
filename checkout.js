@@ -211,37 +211,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 let ticketOptionsHTML = ticketTypes.map(record => {
-  const name = record.fields.Name || 'Tiket Tanpa Nama';
-  const priceField = record.fields.Price || '';
-  const adminFeeField = record.fields.Admin_Fee || 0;
-  const showPrice = record.fields.Show_Price === true;
-  const hasDiscount = record.fields.Discount === true;
+  const fields = record.fields || {};
+  const name = fields.Name || 'Tiket Tanpa Nama';
+  const priceField = fields.Price || 0;
+  const adminFeeField = fields.Admin_Fee || 0;
+  const showPrice = fields.Show_Price === true;
+  const hasDiscount = fields.Discount === true;
+  const discountValue = fields.Discount_Value || 0;
 
-  // Convert "Rp10,000" → number
-  const numericPrice = priceField
-    ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
-    : 0;
+  // --- Convert numeric values ---
+  const numericPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+  const numericDiscount = parseInt(discountValue.toString().replace(/[^0-9]/g, '')) || 0;
+  const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
 
-  const finalPrice = hasDiscount ? 0 : numericPrice;
+  // --- Apply discount logic (similar to showReviewModal) ---
+  const finalPrice = hasDiscount ? Math.max(0, numericPrice - numericDiscount) : numericPrice;
 
-  // Format display
+  // --- Format display text ---
   const formattedPrice = showPrice && numericPrice
     ? hasDiscount
-      ? `<span style="text-decoration: line-through; color: #888;">Rp ${numericPrice.toLocaleString('id-ID')}</span>
-         <span style="color: #e53935; font-weight: bold;">Rp ${finalPrice.toLocaleString('id-ID')}</span>`
+      ? `
+        <span style="text-decoration: line-through; color: #888;">Rp ${numericPrice.toLocaleString('id-ID')}</span>
+        <span style="color: #e53935; font-weight: bold;">Rp ${finalPrice.toLocaleString('id-ID')}</span>
+      `
       : `Rp ${numericPrice.toLocaleString('id-ID')}`
-    : '&nbsp;'; // blank space (preserve layout)
+    : '&nbsp;'; // blank for layout balance
 
+  // --- Build each ticket option ---
   return `
     <div class="ticket-option">
       <input 
         type="radio"
         id="${record.id}"
         name="ticket_choice"
-        value="${record.id}"
-        data-price="${finalPrice}"
-        data-name="${name}"
-        data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
+        value="${record.id}">
       <label for="${record.id}">
         <div class="ticket-label-content">
           <span class="ticket-name">${name}</span>
@@ -250,6 +253,7 @@ let ticketOptionsHTML = ticketTypes.map(record => {
       </label>
     </div>`;
 }).join('');
+
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -417,16 +421,16 @@ const showReviewModal = async () => {
     }
 
     // --- Convert numeric fields ---
-    const basePrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+    const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
     const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
 
     if (hasDiscount) {
-        const discountedPrice = seatData.price - basePrice
+        const discountedPrice = seatData.price - discountPrice
     } else {
         const discountedPrice = seatData.price
     }
 
-    const discountedPrice = seatData.price - basePrice
+    const discountedPrice = seatData.price - discountPrice
     const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
@@ -447,7 +451,7 @@ const showReviewModal = async () => {
     document.getElementById('reviewDetails').innerHTML = `
         <h4>Detail Pesanan:</h4>
         <div class="review-row"><span>Tiket</span><span>${name} x ${quantity}</span></div>
-        <div class="review-row"><span>Harga per Tiket</span><span>Rp ${basePrice.toLocaleString('id-ID')}</span></div>
+        <div class="review-row"><span>Harga per Tiket</span><span>Rp ${seatData.price.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
         <hr>
@@ -462,6 +466,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
