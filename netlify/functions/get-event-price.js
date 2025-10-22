@@ -2,7 +2,7 @@
 const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
-  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_SEAT } = process.env;
 
   const fetchData = async (url) => {
     const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
