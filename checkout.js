@@ -182,11 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
 
-            dataNamaSeat = data.namaSeat.records;
-            dataHargaSeat = dataSeat.hargaSeat;
+            dataSeats = dataSeat.seats;
 
             const matchedSeats = mySeatNames.map(name => {
-            const found = seats.find(seat => seat.nama === name);
+            const found = dataSeats.find(seat => seat.nama === name);
             return {
                name,
                  price: found ? found.price : 'Not Found'
@@ -361,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
