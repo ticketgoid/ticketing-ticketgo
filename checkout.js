@@ -407,15 +407,12 @@ const showReviewModal = async () => {
     const price = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
 
     // Optional dataset support for discount (in case ticket dataset has these)
-    const discountActive = selectedTicket.dataset.discount === "true" || false;
-    const discountValue = selectedTicket.dataset.discountValue || 0;
+    const discountActive = selectedTicket.dataset.Discount === "true" || false;
+    const discountValue = selectedTicket.dataset.Price || 0;
 
     let numericDiscount = 0;
     if (discountActive && discountValue) {
-        // Support both percentage (e.g. "10%") or flat (e.g. "10000")
-        if (discountValue.toString().includes('%')) {
-            const percent = parseFloat(discountValue.replace('%', ''));
-            numericDiscount = Math.round(price * (percent / 100));
+            numericDiscount = price - discountValue
         } else {
             numericDiscount = parseInt(discountValue.toString().replace(/[^0-9]/g, '')) || 0;
         }
@@ -464,6 +461,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
