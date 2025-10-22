@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = parseFloat(selectedTicket.dataset.price);
             const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
             const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
-            const quantity = parseInt(document.getElementById('ticketQuantity').value);
             const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
             const seatName = seatSelected ? seatSelected.value : null;
 
@@ -548,6 +547,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
