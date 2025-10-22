@@ -25,8 +25,8 @@ exports.handler = async function (event, context) {
       price: record.fields.harga_seat || null, 
     }));
 
-    const nama_seat = record.fields.nama || null;
-    const harga_seat = record.fields.harga_seat || null;
+    const nama_seat = url.fields.nama || null;
+    const harga_seat = url.fields.harga_seat || null;
 
     return {
       statusCode: 200,
