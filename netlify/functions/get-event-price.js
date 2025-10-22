@@ -3,11 +3,6 @@ const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
-  const { eventId } = event.queryStringParameters;
-
-  if (!eventId) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Event ID is required' }) };
-  }
 
   const fetchData = async (url) => {
     const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
@@ -32,9 +27,7 @@ exports.handler = async function (event, context) {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        eventDetails,
-        ticketTypes,
-        formFields
+        seatEvent
       }),
     };
   } catch (error) {
