@@ -448,7 +448,6 @@ const showReviewModal = async () => {
         <h4>Detail Pesanan:</h4>
         <div class="review-row"><span>Tiket</span><span>${name} x ${quantity}</span></div>
         <div class="review-row"><span>Harga per Tiket</span><span>Rp ${basePrice.toLocaleString('id-ID')}</span></div>
-        ${discountRow}
         <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
         <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
         <hr>
@@ -463,6 +462,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
