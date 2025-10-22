@@ -420,19 +420,13 @@ const showReviewModal = async () => {
     const basePrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
     const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
 
-    // --- Discount logic ---
-    let numericDiscount = 0;
-    if (hasDiscount && discountValue) {
-        const discountStr = discountValue.toString();
-        if (discountStr.includes('%')) {
-            const percent = parseFloat(discountStr.replace('%', ''));
-            numericDiscount = Math.round(basePrice * (percent / 100));
-        } else {
-            numericDiscount = parseInt(discountStr.replace(/[^0-9]/g, '')) || 0;
-        }
+    if (hasDiscount) {
+        const discountedPrice = seatData.price - basePrice
+    } else {
+        const discountedPrice = seatData.price
     }
 
-    const discountedPrice = seatData - basePrice
+    const discountedPrice = seatData.price - basePrice
     const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
@@ -473,6 +467,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
