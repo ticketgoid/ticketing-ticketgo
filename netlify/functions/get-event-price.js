@@ -39,12 +39,7 @@ exports.handler = async function (event, context) {
       };
     }
 
-    // Clean up “Rp 85,000” → 85000
-    const numericPrice = parseInt(
-      match.price.replace(/[^0-9]/g, '')
-    );
-
-    const subtotal = numericPrice * quantity;
+    const subtotal = match.price * quantity;
 
     return {
       statusCode: 200,
