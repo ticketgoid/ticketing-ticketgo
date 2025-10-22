@@ -170,18 +170,27 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Panggil Netlify Function untuk mendapatkan semua data sekaligus
             const response = await fetch(`/api/get-event-details?eventId=${eventId}`);
+            const dataSeat = await fetch(`/api/get-event-price/seatEvent`);
+            
             if (!response.ok) throw new Error(`Gagal memuat data event: ${response.statusText}`);
+            if (!dataSeat.ok) throw new Error(`Gagal memuat seat event: ${dataSeat.statusText}`);
             
             const data = await response.json();
+            const dataSeat = await response.json();
             
             eventDetails = data.eventDetails.fields;
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
-            
+
+            dataNamaSeat = data.nama.records;
+            dataHargaSeat = data.harga_seat.records;
+
             if (ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
                 return;
             }
+
+            checkoutMain.innerHTML = `<p class="error-message">` + dataHargaSeat + `</p>`;
             
             renderLayout();
     // Periksa apakah pendaftaran event ditutup
@@ -342,4 +351,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
