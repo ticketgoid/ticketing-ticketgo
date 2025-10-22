@@ -369,22 +369,20 @@ const updatePrice = async () => {
     const quantity = parseInt(document.getElementById('ticketQuantity').value);
     const reviewContainer = document.getElementById('price-review');
 
-        // Default fallback if seat not chosen yet
-    let seatData = { price: selectedTicket.dataset.price };
-
-    // Fetch seat price dynamically if seatName is available
+    let seatData = { price: 0 };
     if (seatName) {
         try {
             const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
             if (response.ok) {
                 seatData = await response.json();
             } else {
-                console.warn('Failed to fetch seat price:', response.status);
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
             }
         } catch (err) {
             console.error('Error fetching seat price:', err);
         }
     }
+
 
     const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket);
     const fields = selectedTicketRecord?.fields || {};
@@ -507,6 +505,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
