@@ -183,7 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
             formFields = data.formFields.records;
 
             dataNamaSeat = data.namaSeat.records;
-            dataHargaSeat = dataSeat.hargaSeat.records;
+            dataHargaSeat = dataSeat.hargaSeat;
+
+            const matchedSeats = mySeatNames.map(name => {
+            const found = seats.find(seat => seat.nama === name);
+            return {
+               name,
+                 price: found ? found.price : 'Not Found'
+               };
+            });
+
+            console.log(matchedSeats);
 
             if (ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p class="error-message">Tiket belum tersedia untuk event ini.</p>`;
@@ -351,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
 
 
 
