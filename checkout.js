@@ -303,49 +303,68 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewContainer.innerHTML = `<div class="review-row"><span>${selectedTicket.dataset.name} x ${quantity}</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
     };
 
-    const showReviewModal = () => {
-        const form = document.getElementById('customer-data-form');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+const showReviewModal = async () => {
+    const form = document.getElementById('customer-data-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
 
-        
-        const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-        const quantity = parseInt(document.getElementById('ticketQuantity').value);
-        // const price = parseFloat(selectedTicket.dataset.price);
-        const priceSeat = await fetch(`/get-event-details?seat=` + selectedTicket + `&qty=` + quantity);
-        const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-        const subtotal = hargaSeat.price * quantity;
-        const totalAdminFee = adminFee * quantity;
-        const finalTotal = subtotal + totalAdminFee;
+    const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+    const quantity = parseInt(document.getElementById('ticketQuantity').value);
+    const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+    const seatName = seatSelected ? seatSelected.value : null;
 
-        let formDataHTML = '';
-        for (let [key, value] of new FormData(form).entries()) {
-            let label = key;
-            if (key === 'ticket_choice') {
-                label = 'Jenis Tiket'; value = selectedTicket.dataset.name;
-            } else if (key.toLowerCase().includes('nomor')) {
-                value = `+62${value}`;
-            } else if (key === 'Pilihan_Kursi') {
-                label = 'Pilihan Kursi';
+    // Fetch price from your Netlify function
+    let seatData = { price: 0 };
+    if (seatName) {
+        try {
+            const response = await fetch(`/.netlify/functions/get-event-details?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
             }
-            formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
         }
+    }
 
-        document.getElementById('reviewDetails').innerHTML = `
-            <h4>Detail Pesanan:</h4>
-            <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
-            <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
-            <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
-            <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
-            <hr><h4>Data Pemesan:</h4>${formDataHTML}`;
-        
-        document.getElementById('reviewModal').style.display = 'flex';
-    };
+    const price = seatData.price ? parseInt(seatData.price.toString().replace(/[^0-9]/g, '')) : parseFloat(selectedTicket.dataset.price);
+    const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
+    const subtotal = price * quantity;
+    const totalAdminFee = adminFee * quantity;
+    const finalTotal = subtotal + totalAdminFee;
+
+    // Build the review modal content
+    let formDataHTML = '';
+    for (let [key, value] of new FormData(form).entries()) {
+        let label = key;
+        if (key === 'ticket_choice') {
+            label = 'Jenis Tiket'; value = selectedTicket.dataset.name;
+        } else if (key.toLowerCase().includes('nomor')) {
+            value = `+62${value}`;
+        } else if (key === 'Pilihan_Kursi') {
+            label = 'Pilihan Kursi';
+        }
+        formDataHTML += `<div class="review-row"><span>${label}</span><span>${value}</span></div>`;
+    }
+
+    document.getElementById('reviewDetails').innerHTML = `
+        <h4>Detail Pesanan:</h4>
+        <div class="review-row"><span>Tiket</span><span>${selectedTicket.dataset.name} x ${quantity}</span></div>
+        <div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
+        <div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div>
+        <div class="review-row total"><span>Total Pembayaran</span><span>Rp ${finalTotal.toLocaleString('id-ID')}</span></div>
+        <hr><h4>Data Pemesan:</h4>${formDataHTML}`;
+    
+    document.getElementById('reviewModal').style.display = 'flex';
+};
+
     
     buildPage();
 });
+
 
 
 
