@@ -388,7 +388,6 @@ const showReviewModal = async () => {
     const seatName = seatSelected ? seatSelected.value : null;
 
     if (!selectedTicketId) {
-        alert("Pilih tiket terlebih dahulu ya~ 💫");
         return;
     }
 
@@ -402,6 +401,20 @@ const showReviewModal = async () => {
     const adminFeeField = fields.Admin_Fee || 0;
     const hasDiscount = fields.Discount === true;
     const discountValue = fields.Discount_Value || 0;
+
+    let seatData = { price: 0 };
+    if (seatName) {
+        try {
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
+            }
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
+        }
+    }
 
     // --- Convert numeric fields ---
     const basePrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
@@ -419,7 +432,7 @@ const showReviewModal = async () => {
         }
     }
 
-    const discountedPrice = Math.max(0, basePrice - numericDiscount);
+    const discountedPrice = seatData - basePrice
     const subtotal = discountedPrice * quantity;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
@@ -460,6 +473,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
