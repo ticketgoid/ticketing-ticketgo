@@ -30,30 +30,71 @@ document.addEventListener('DOMContentLoaded', () => {
   let ticketTypes = [];
   let formFields = [];
 
-  const injectStyles = () => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
-      .event-details-column { flex: 1; min-width: 320px; }
-      .purchase-form-column { flex: 1; min-width: 320px; }
-      .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .ticket-option label { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
-      .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-      .ticket-option input[type="radio"] { display: none; }
-      .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
-      #buyButton.btn-primary, #confirmPaymentBtn {
-        width: 100%; background-color: #007bff; color: white; border: none;
-        padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px;
-        cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease;
-        margin-top: 20px;
-      }
-      #buyButton.btn-primary:hover, #confirmPaymentBtn:hover { background-color: #0056b3; }
-      #buyButton.btn-primary:active, #confirmPaymentBtn:active { transform: scale(0.98); }
-      #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
-    `;
-    document.head.appendChild(style);
-  };
+const injectStyles = () => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+    .event-details-column { flex: 1; min-width: 320px; }
+    .purchase-form-column { flex: 1; min-width: 320px; }
+    .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ticket-option label { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
+    .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .ticket-option input[type="radio"] { display: none; }
+    .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
+
+    /* === BUTTONS === */
+    #buyButton.btn-primary, #confirmPaymentBtn {
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 15px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+
+    #buyButton.btn-primary {
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    /* === FIX ALIGNMENT FOR CONFIRM MODAL BUTTON === */
+    #confirmPaymentBtn {
+      border-radius: 0 0 16px 16px;
+      margin-top: 0;
+      display: block;
+    }
+
+    #buyButton.btn-primary:hover, #confirmPaymentBtn:hover { background-color: #0056b3; }
+    #buyButton.btn-primary:active, #confirmPaymentBtn:active { transform: scale(0.98); }
+    #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+    /* === MODAL CONTENT ALIGNMENT FIX === */
+    #reviewModal .modal-content {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px 24px 0 24px;
+      width: 100%;
+      max-width: 480px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    #reviewModal .modal-footer {
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+  `;
+  document.head.appendChild(style);
+};
+
 
   const initiatePayment = async () => {
     const confirmButton = document.getElementById('confirmPaymentBtn');
@@ -549,6 +590,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
