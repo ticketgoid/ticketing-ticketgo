@@ -3,42 +3,40 @@ const fetch = require('node-fetch');
 
 exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_SEAT } = process.env;
+  const tableName = 'rona';
 
   const fetchData = async (url) => {
-    const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } });
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
+    });
     if (!response.ok) throw new Error(`Airtable API Error: ${response.status} for URL: ${url}`);
     return await response.json();
   };
 
   try {
-    const seatEvent = await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/rona`);
-    
-    const namaSeat = seatEvent.fields.nama || [];
-    const hargaSeat = seatEvent.fields.harga_seat || [];
-    
-    // 2. Ambil jenis tiket berdasarkan relasi
-    // const ticketTypeIds = eventDetails.fields.ticket_types || [];
-    // const ticketFilter = `OR(${ticketTypeIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-    // const ticketTypes = ticketTypeIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}`) : { records: [] };
+    // Fetch all rows from the 'rona' table
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${tableName}`;
+    const data = await fetchData(url);
 
-    // 3. Ambil form fields berdasarkan relasi
-    // const formFieldIds = eventDetails.fields.formfields || [];
-    // const formFilter = `OR(${formFieldIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-    // const formFields = formFieldIds.length > 0 ? await fetchData(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`) : { records: [] };
+    // Extract only nama and price from each record
+    const seats = data.records.map(record => ({
+      id: record.id,
+      nama: record.fields.nama || null,
+      price: record.fields.harga_seat || null, 
+    }));
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        seatEvent,
-        namaSeat,
-        hargaSeat
-      }),
+      body: JSON.stringify({ seats }),
     };
   } catch (error) {
-    console.error('Error fetching event details from Airtable:', error);
+    console.error('Error fetching seat data from Airtable:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch event details', details: error.message }),
+      body: JSON.stringify({
+        error: 'Failed to fetch seat data',
+        details: error.message,
+      }),
     };
   }
 };
