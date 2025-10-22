@@ -1,182 +1,188 @@
 // GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
-    // --- KONFIGURASI PENTING ---
-    const SCRIPT_URL = '/api/create-transaction';
-    const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
-      try {
-        const payload = {
-          order_id: paymentResult.order_id,
-          transaction_status: paymentResult.transaction_status,
-          gross_amount: paymentResult.gross_amount,
-          customer_details: customerData,
-          item_details: itemDetails
-        };
+  // --- KONFIGURASI PENTING ---
+  const SCRIPT_URL = '/api/create-transaction';
 
-        // Memanggil fungsi backend baru kita di Netlify
-        await fetch('/api/save-to-airtable', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-          headers: { 'Content-Type': 'application/json' },
-        });
+  const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
+    try {
+      const payload = {
+        order_id: paymentResult.order_id,
+        transaction_status: paymentResult.transaction_status,
+        gross_amount: paymentResult.gross_amount,
+        customer_details: customerData,
+        item_details: itemDetails
+      };
 
-        console.log("Data berhasil dikirim ke Airtable.");
+      await fetch('/api/save-to-airtable', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      } catch (error) {
-        console.error("Gagal mengirim data ke Airtable:", error);
+      console.log("✅ Data berhasil dikirim ke Airtable.");
+    } catch (error) {
+      console.error("❌ Gagal mengirim data ke Airtable:", error);
+    }
+  };
+
+  const checkoutMain = document.getElementById('checkout-main');
+  let eventDetails = {};
+  let ticketTypes = [];
+  let formFields = [];
+
+  const injectStyles = () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+      .event-details-column { flex: 1; min-width: 320px; }
+      .purchase-form-column { flex: 1; min-width: 320px; }
+      .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .ticket-option label { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
+      .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+      .ticket-option input[type="radio"] { display: none; }
+      .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
+      #buyButton.btn-primary, #confirmPaymentBtn {
+        width: 100%; background-color: #007bff; color: white; border: none;
+        padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px;
+        cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease;
+        margin-top: 20px;
       }
-    };
-    
-    const checkoutMain = document.getElementById('checkout-main');
-    let eventDetails = {};
-    let ticketTypes = [];
-    let formFields = [];
+      #buyButton.btn-primary:hover, #confirmPaymentBtn:hover { background-color: #0056b3; }
+      #buyButton.btn-primary:active, #confirmPaymentBtn:active { transform: scale(0.98); }
+      #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
+    `;
+    document.head.appendChild(style);
+  };
 
-    const injectStyles = () => {
-        const style = document.createElement('style');
-        style.textContent = `
-            .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
-            .event-details-column { flex: 1; min-width: 320px; }
-            .purchase-form-column { flex: 1; min-width: 320px; }
-            .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-            .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
-            .ticket-option label { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
-            .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-            .ticket-option input[type="radio"] { display: none; }
-            .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; }
-            #buyButton.btn-primary { width: 100%; background-color: #007bff; color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease; margin-top: 20px; }
-            #buyButton.btn-primary:hover { background-color: #0056b3; }
-            #buyButton.btn-primary:active { transform: scale(0.98); }
-            #buyButton.btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
-            #confirmPaymentBtn { width: 100%; background-color: #007bff; color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease; margin-top: 20px; }
-            #confirmPaymentBtn:hover { background-color: #0056b3; }
-            #confirmPaymentBtn:active { transform: scale(0.98); }
-        `;
-        document.head.appendChild(style);
-    };
+  const initiatePayment = async () => {
+    const confirmButton = document.getElementById('confirmPaymentBtn');
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Memproses...';
 
-    const initiatePayment = async () => {
-        const confirmButton = document.getElementById('confirmPaymentBtn');
-        confirmButton.disabled = true;
-        confirmButton.textContent = 'Memproses...';
+    try {
+      const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
+      if (!selectedTicketInput) throw new Error("Tiket belum dipilih.");
 
+      const quantity = parseInt(document.getElementById('ticketQuantity').value);
+      const selectedTicketId = selectedTicketInput.value;
+      const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+      const seatName = seatSelected ? seatSelected.value : null;
+
+      // Ambil data tiket dari record Airtable
+      const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+      const fields = selectedTicketRecord?.fields || {};
+      const name = fields.Name || 'Tiket Tanpa Nama';
+      const priceField = fields.Price || 0;
+      const adminFeeField = fields.Admin_Fee || 0;
+      const hasDiscount = fields.Discount === true;
+
+      // Ambil harga kursi bila tersedia
+      let seatData = { price: 0 };
+      if (seatName) {
         try {
-            const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-            const quantity = parseInt(document.getElementById('ticketQuantity').value);
-            const price = parseFloat(selectedTicket.dataset.price);
-            const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-            const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
-            const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-            const seatName = seatSelected ? seatSelected.value : null;
-
-            if (!selectedTicketId) {
-                return;
-            }
-
-    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
-    const fields = selectedTicketRecord?.fields || {};
-
-    const name = fields.Name || 'Tiket Tanpa Nama';
-    const priceField = fields.Price || 0;
-    const adminFeeField = fields.Admin_Fee || 0;
-    const hasDiscount = fields.Discount === true;
-
-    let seatData = { price: 0 };
-    if (seatName) {
-        try {
-            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
-            if (response.ok) {
-                seatData = await response.json();
-            } else {
-                console.warn('Failed to fetch seat price from Airtable:', response.status);
-            }
+          const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+          if (response.ok) {
+            seatData = await response.json();
+          } else {
+            console.warn('⚠️ Gagal fetch harga kursi dari Airtable:', response.status);
+          }
         } catch (err) {
-            console.error('Error fetching seat price:', err);
+          console.error('❌ Error fetching seat price:', err);
         }
-    }
+      }
 
-    // --- Convert numeric fields ---
-    const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
-    const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
-    let discountedPrice = 0;
-    
-    if (hasDiscount) {
-        discountedPrice = seatData.price - discountPrice
-    } else {
-        discountedPrice = seatData.price
-    }
+      // Konversi ke angka
+      const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+      const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
 
-    const subtotal = discountedPrice * quantity;
-    const totalAdminFee = adminFee * quantity;
-    const finalTotal = subtotal + totalAdminFee;
-            const form = document.getElementById('customer-data-form');
-            const formData = new FormData(form);
-            const customerData = Object.fromEntries(formData.entries());
-            let customerName = '', customerEmail = '', customerPhone = '';
-            for (const [key, value] of Object.entries(customerData)) {
-                const lowerKey = key.toLowerCase();
-                if (lowerKey.includes('nama')) customerName = value;
-                else if (lowerKey.includes('email')) customerEmail = value;
-                else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
-            }
-            if (!customerName || !customerEmail || !customerPhone) {
-                throw new Error("Data nama, email, atau nomor tidak ditemukan dalam formulir.");
-            }
-            const payload = {
-                order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
-                gross_amount: finalTotal,
-                item_details: [{ id: selectedTicket.value, price: price + adminFee, quantity: quantity, name: selectedTicket.dataset.name }],
-                customer_details: { first_name: customerName, email: customerEmail, phone: '+62' + customerPhone }
-            };
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
+      // Hitung harga akhir
+      let discountedPrice = 0;
+      if (hasDiscount) {
+        discountedPrice = Math.max(0, seatData.price - discountPrice);
+      } else {
+        discountedPrice = seatData.price;
+      }
 
-            if (!response.ok) {
-                throw new Error(`Server merespons dengan status error: ${response.status}`);
-            }
-            
-            const result = await response.json();
+      const subtotal = discountedPrice * quantity;
+      const totalAdminFee = adminFee * quantity;
+      const finalTotal = subtotal + totalAdminFee;
 
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            if (!result.token) {
-                throw new Error("Token pembayaran tidak diterima dari server.");
-            }
+      // Ambil data pemesan
+      const form = document.getElementById('customer-data-form');
+      const formData = new FormData(form);
+      const customerData = Object.fromEntries(formData.entries());
 
-            window.snap.pay(result.token, {
-                onSuccess: (paymentResult) => {
-                    showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
-                    const customerDetailsForSheet = {
-                        first_name: customerName,
-                        email: customerEmail,
-                        phone: '+62' + customerPhone
-                    };
-                    const itemDetailsForSheet = {
-                        name: selectedTicket.dataset.name,
-                        quantity: quantity
-                    };
-                    saveDataToSheet(paymentResult, customerDetailsForSheet, itemDetailsForSheet);
-                },
-                onPending: (result) => showFeedback('pending', 'Menunggu Pembayaran', `Selesaikan pembayaran Anda. Status: ${result.transaction_status}`),
-                onError: (result) => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi atau gunakan metode pembayaran lain.'),
-                onClose: () => {
-                    confirmButton.disabled = false;
-                    confirmButton.textContent = 'Lanjutkan Pembayaran';
-                }
-            });
+      let customerName = '', customerEmail = '', customerPhone = '';
+      for (const [key, value] of Object.entries(customerData)) {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.includes('nama')) customerName = value;
+        else if (lowerKey.includes('email')) customerEmail = value;
+        else if (lowerKey.includes('nomor') || lowerKey.includes('telp') || lowerKey.includes('hp')) customerPhone = value;
+      }
 
-        } catch (error) {
-            console.error('Payment initiation error:', error);
-            showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
-            confirmButton.disabled = false;
-            confirmButton.textContent = 'Lanjutkan Pembayaran';
+      if (!customerName || !customerEmail || !customerPhone) {
+        throw new Error("Data nama, email, atau nomor telepon tidak lengkap.");
+      }
+
+      // Payload Midtrans
+      const payload = {
+        order_id: 'TICKETGO-' + Date.now() + Math.floor(Math.random() * 900 + 100),
+        gross_amount: finalTotal,
+        item_details: [{
+          id: selectedTicketId,
+          price: discountedPrice + adminFee,
+          quantity: quantity,
+          name: name
+        }],
+        customer_details: {
+          first_name: customerName,
+          email: customerEmail,
+          phone: '+62' + customerPhone
         }
-    };
+      };
+
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const result = await response.json();
+
+      if (result.error) throw new Error(result.error);
+      if (!result.token) throw new Error("Token pembayaran tidak diterima dari server.");
+
+      window.snap.pay(result.token, {
+        onSuccess: (paymentResult) => {
+          showFeedback('success', 'Pembayaran Berhasil!', 'Terima kasih! Tiket Anda akan segera dikirimkan.');
+          saveDataToSheet(paymentResult, {
+            first_name: customerName,
+            email: customerEmail,
+            phone: '+62' + customerPhone
+          }, { name, quantity });
+        },
+        onPending: (res) => showFeedback('pending', 'Menunggu Pembayaran', `Status: ${res.transaction_status}`),
+        onError: () => showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.'),
+        onClose: () => {
+          confirmButton.disabled = false;
+          confirmButton.textContent = 'Lanjutkan Pembayaran';
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Payment initiation error:', error);
+      showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
+      const confirmButton = document.getElementById('confirmPaymentBtn');
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'Lanjutkan Pembayaran';
+    }
+  };
+
+  injectStyles();
+});
+
 
     const showFeedback = (type, title, message) => {
         document.getElementById('reviewModal').style.display = 'none';
@@ -547,6 +553,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
