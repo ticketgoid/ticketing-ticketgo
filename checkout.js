@@ -212,19 +212,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let ticketOptionsHTML = ticketTypes.map(record => {
   const name = record.fields.Name || 'Tiket Tanpa Nama';
-  const priceField = record.fields.Price || '';
+  const discountPriceField = record.fields.Price || '';
   const adminFeeField = record.fields.Admin_Fee || 0;
   const showPrice = record.fields.Show_Price === true;
+  const hasDiscount = record.fields.Discount === true;
 
   // Convert "Rp10,000" → number
   const numericPrice = priceField
     ? parseInt(priceField.toString().replace(/[^0-9]/g, ''))
     : 0;
 
-  // Only show formatted price if Show_Price is true
+  const finalPrice = hasDiscount ? numericPrice - discountPriceField : numericPrice;
+
+  // Format display
   const formattedPrice = showPrice && numericPrice
-    ? `Rp ${numericPrice.toLocaleString('id-ID')}`
-    : '&nbsp;'; // blank space (preserves layout)
+    ? hasDiscount
+      ? `<span style="text-decoration: line-through; color: #888;">Rp ${numericPrice.toLocaleString('id-ID')}</span>
+         <span style="color: #e53935; font-weight: bold;">Rp ${finalPrice.toLocaleString('id-ID')}</span>`
+      : `Rp ${numericPrice.toLocaleString('id-ID')}`
+    : '&nbsp;'; // blank space (preserve layout)
 
   return `
     <div class="ticket-option">
@@ -233,7 +239,7 @@ let ticketOptionsHTML = ticketTypes.map(record => {
         id="${record.id}"
         name="ticket_choice"
         value="${record.id}"
-        data-price="${numericPrice}"
+        data-price="${finalPrice}"
         data-name="${name}"
         data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
       <label for="${record.id}">
@@ -244,6 +250,7 @@ let ticketOptionsHTML = ticketTypes.map(record => {
       </label>
     </div>`;
 }).join('');
+
 
         let formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
@@ -430,6 +437,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
