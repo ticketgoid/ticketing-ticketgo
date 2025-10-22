@@ -64,7 +64,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const quantity = parseInt(document.getElementById('ticketQuantity').value);
             const price = parseFloat(selectedTicket.dataset.price);
             const adminFee = parseFloat(selectedTicket.dataset.adminFee) || 0;
-            const finalTotal = (price + adminFee) * quantity;
+            const selectedTicketId = document.querySelector('input[name="ticket_choice"]:checked')?.value;
+            const quantity = parseInt(document.getElementById('ticketQuantity').value);
+            const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+            const seatName = seatSelected ? seatSelected.value : null;
+
+            if (!selectedTicketId) {
+                return;
+            }
+
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketId);
+    const fields = selectedTicketRecord?.fields || {};
+
+    const name = fields.Name || 'Tiket Tanpa Nama';
+    const priceField = fields.Price || 0;
+    const adminFeeField = fields.Admin_Fee || 0;
+    const hasDiscount = fields.Discount === true;
+
+    let seatData = { price: 0 };
+    if (seatName) {
+        try {
+            const response = await fetch(`/api/get-event-price?seat=${encodeURIComponent(seatName)}&qty=${quantity}`);
+            if (response.ok) {
+                seatData = await response.json();
+            } else {
+                console.warn('Failed to fetch seat price from Airtable:', response.status);
+            }
+        } catch (err) {
+            console.error('Error fetching seat price:', err);
+        }
+    }
+
+    // --- Convert numeric fields ---
+    const discountPrice = parseInt(priceField.toString().replace(/[^0-9]/g, '')) || 0;
+    const adminFee = parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) || 0;
+    let discountedPrice = 0;
+    
+    if (hasDiscount) {
+        discountedPrice = seatData.price - discountPrice
+    } else {
+        discountedPrice = seatData.price
+    }
+
+    const subtotal = discountedPrice * quantity;
+    const totalAdminFee = adminFee * quantity;
+    const finalTotal = subtotal + totalAdminFee;
             const form = document.getElementById('customer-data-form');
             const formData = new FormData(form);
             const customerData = Object.fromEntries(formData.entries());
@@ -504,6 +548,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
