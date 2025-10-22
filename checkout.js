@@ -301,8 +301,6 @@ let ticketOptionsHTML = ticketTypes.map(record => {
       <input 
         type="radio" 
         id="${record.id}" 
-        name="ticket_choice" 
-        value="${record.id}" 
         data-price="${finalPrice}" 
         data-name="${name}" 
         data-admin-fee="${adminFeeField ? parseInt(adminFeeField.toString().replace(/[^0-9]/g, '')) : 0}">
@@ -571,6 +569,7 @@ const showReviewModal = async () => {
     
     buildPage();
 });
+
 
 
 
