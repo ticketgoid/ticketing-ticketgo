@@ -25,14 +25,10 @@ exports.handler = async function (event, context) {
       price: record.fields.harga_seat || null, 
     }));
 
-    const nama_seat = url.fields.nama || null;
-    const harga_seat = url.fields.harga_seat || null;
-
     return {
       statusCode: 200,
       body: JSON.stringify({
-        nama_seat,
-        harga_seat
+        seat
       }),
     };
   } catch (error) {
