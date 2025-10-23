@@ -95,7 +95,7 @@ exports.handler = async function (event, context) {
       subtotal = pricePerTicket * quantity;
     }
     
-    const adminFee = parseInt((ticketFields.Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || '0';
+    const adminFee = parseInt((ticketFields.Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0;
     const totalAdminFee = adminFee * quantity;
     const finalTotal = subtotal + totalAdminFee;
     // --- AKHIR KALKULASI HARGA ---
@@ -153,3 +153,4 @@ exports.handler = async function (event, context) {
     };
   }
 };
+
