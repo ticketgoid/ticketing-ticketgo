@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
           icon.classList.add('fa-check-circle'); 
           iconWrapper.classList.add('success');
           closeBtn.textContent = 'Oke';
-          closeBtn.onclick = () => window.location.reload();
+          closeBtn.onclick = () => window.location.href = 'index.html';
       } else if (type === 'pending') { 
           icon.classList.add('fa-hourglass-half'); 
           iconWrapper.classList.add('pending');
