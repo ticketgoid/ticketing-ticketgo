@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
           customer_details: customerData,
           eventId: eventDetails.id,
           rekapTableName: eventDetails.fields['Tabel Penjualan'],
-          eventType: eventDetails.fields['Tipe Event'], // KIRIM TIPE EVENT
+          eventType: eventDetails.fields['Tipe Event'],
           item_details: {
               ...itemDetails,
-              seatTableName: eventDetails.fields['Tabel Harga Kursi'], // KIRIM NAMA TABEL KURSI
+              seatTableName: eventDetails.fields['Tabel Harga Kursi'],
           }
         };
         await fetch('/api/save-to-airtable', {
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quantity,
             name,
             seatName: seatSelected ? seatSelected.value : null,
-            seatRecordId: seatSelected ? seatSelected.dataset.recordId : null, // KIRIM SEAT RECORD ID
+            seatRecordId: seatSelected ? seatSelected.dataset.recordId : null,
           },
           customer_details: { first_name: customerName, email: customerEmail, phone: `+62${customerPhone.replace(/^0/, '')}` }
         };
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('feedbackTitle').textContent = title;
       document.getElementById('feedbackMessage').textContent = message;
       feedbackModal.classList.add('visible');
-      document.getElementById('closeFeedbackBtn').onclick = () => feedbackModal.classList.remove('visible');
+      document.getElementById('closeFeedbackBtn').onclick = () => window.location.reload(); // Reload halaman setelah notif ditutup
     };
   
     const injectStyles = () => {
@@ -158,12 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
             eventDetails = data.eventDetails;
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
-            sisaKuota = data.sisaKuota; // SIMPAN DATA KUOTA BARU
+            sisaKuota = data.sisaKuota;
             if (!ticketTypes || ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
                 return;
             }
-            await fetchAllSeatPrices();
+            if(eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi') await fetchAllSeatPrices();
             renderLayout();
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
@@ -198,8 +198,14 @@ document.addEventListener('DOMContentLoaded', () => {
           const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
           const name = Name || 'Tiket Tanpa Nama';
           const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
-          const kuotaInfo = sisaKuota[name.toLowerCase()];
-          const isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
+          
+          // --- PERUBAIKAN LOGIKA isSoldOut ---
+          let isSoldOut = false; // Default-nya, tiket tidak habis
+          if (eventType === 'Tanpa Pilihan Kursi') {
+            const kuotaInfo = sisaKuota[name.toLowerCase()];
+            isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
+          }
+          // Untuk 'Dengan Pilihan Kursi', isSoldOut akan tetap false saat render awal
           
           let priceHTML = '&nbsp;';
           if (Show_Price) {
@@ -252,6 +258,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return 1;
     };
+
+    // --- FUNGSI BARU UNTUK UPDATE TIKET BERDASARKAN KURSI ---
+    const updateTicketAvailabilityForSeat = () => {
+        const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+        if (!seatSelected) return;
+
+        const seatName = seatSelected.value.trim().toLowerCase();
+        const kuotaInfo = sisaKuota[seatName];
+        const remainingQuota = kuotaInfo ? kuotaInfo.sisa : 0;
+
+        document.querySelectorAll('input[name="ticket_choice"]').forEach(ticketRadio => {
+            const ticketRecord = ticketTypes.find(t => t.id === ticketRadio.value);
+            const bundleQty = ticketRecord.fields.BundleQuantity > 1 ? ticketRecord.fields.BundleQuantity : 1;
+            const isDisabled = remainingQuota < bundleQty;
+
+            ticketRadio.disabled = isDisabled;
+            const label = ticketRadio.closest('label');
+            label.classList.toggle('disabled', isDisabled);
+
+            const soldOutTag = label.querySelector('.sold-out-tag');
+            if (isDisabled && !soldOutTag) {
+                label.querySelector('.ticket-label-content .ticket-price').insertAdjacentHTML('afterend', '<span class="sold-out-tag">Habis</span>');
+            } else if (!isDisabled && soldOutTag) {
+                soldOutTag.remove();
+            }
+        });
+    };
   
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
@@ -269,6 +302,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
+
+          // Jika memilih kursi, update ketersediaan tiket
+          if (e.target.name === 'Pilihan_Kursi') {
+              // Reset pilihan tiket jika ganti kursi
+              const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+              if(selectedTicket) selectedTicket.checked = false;
+              updateTicketAvailabilityForSeat();
+          }
 
           document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
           const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
@@ -349,8 +390,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
       const eventType = eventDetails.fields['Tipe Event'];
   
-      if (!selectedTicket || (eventType === 'Dengan Pilihan Kursi' && !seatSelected)) {
+      if (!selectedTicket) {
         return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
+      }
+      if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) {
+          return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
       }
   
       const quantity = getCurrentQuantity();
@@ -360,11 +404,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const isBundleTicket = (fields.BundleQuantity || 1) > 1;
       
       let baseSeatPrice = 0;
-      if (eventType === 'Dengan Pilihan Kursi') {
+      if (eventType === 'Dengan Pilihan Kursi' && seatSelected) {
           baseSeatPrice = seatPrices[seatSelected.value.toLowerCase()] || 0;
       }
   
-      const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
+      const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || 0);
       let subtotal = 0, pricePerTicket = 0;
   
       if (isBundleTicket && isDiscountTicket) {
