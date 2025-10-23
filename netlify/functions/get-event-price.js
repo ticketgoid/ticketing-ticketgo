@@ -1,6 +1,3 @@
-// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
-const fetch = require('node-fetch');
-
 exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_SEAT } = process.env;
   const tableName = 'rona';
