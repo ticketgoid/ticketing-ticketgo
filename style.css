@@ -37,7 +37,7 @@
 }
 
 .preloader-logo {
-    height: 100px; /* Sesuaikan ukuran logo */
+    height: 60px; /* Sesuaikan ukuran logo */
     margin-bottom: 2rem;
 }
 
@@ -1296,5 +1296,6 @@ nav {
     font-size: 0.85rem;
     color: var(--gray-text);
 }
+
 
 
