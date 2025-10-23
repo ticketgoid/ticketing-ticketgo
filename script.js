@@ -16,33 +16,80 @@ function initializeApp() {
     const eventGrid = document.getElementById('eventGrid');
     let allEventsData = []; // Variabel untuk menyimpan semua data event
 
-    // --- Logika Carousel Hero ---
+    // --- Logika Carousel Hero (DIMODIFIKASI) ---
     const slides = document.querySelectorAll('.slide');
+    const sliderDotsContainer = document.getElementById('sliderDots');
+    let currentSlide = 0;
+    let heroInterval; // Variabel untuk menyimpan interval
+
     if (slides.length > 0) {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
-        let currentSlide = 0;
+
+        // --- FUNGSI BARU: Buat dots navigasi ---
+        function createSliderDots() {
+            if (!sliderDotsContainer) return;
+            sliderDotsContainer.innerHTML = ''; // Kosongkan dots
+            slides.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.className = 'slider-dot';
+                dot.dataset.index = index;
+                dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+                dot.addEventListener('click', () => {
+                    showSlide(index);
+                    resetInterval(); // Reset auto-slide saat dot diklik
+                });
+                sliderDotsContainer.appendChild(dot);
+            });
+        }
+        
+        // --- FUNGSI DIMODIFIKASI: Tampilkan slide DAN update dot aktif ---
         const showSlide = (index) => {
             slides.forEach(slide => slide.classList.remove('active-slide'));
             if(slides[index]) slides[index].classList.add('active-slide');
+
+            // Update dot aktif
+            if (sliderDotsContainer) {
+                Array.from(sliderDotsContainer.children).forEach((dot, dotIndex) => {
+                    dot.classList.toggle('active', dotIndex === index);
+                });
+            }
+            currentSlide = index;
         };
+
         const nextSlide = () => {
             currentSlide = (currentSlide + 1) % slides.length;
             showSlide(currentSlide);
         };
+        
         const prevSlide = () => {
             currentSlide = (currentSlide - 1 + slides.length) % slides.length;
             showSlide(currentSlide);
         };
+
+        // --- FUNGSI BARU: Reset interval auto-slide ---
+        const resetInterval = () => {
+            clearInterval(heroInterval);
+            heroInterval = setInterval(nextSlide, 5000);
+        };
+
         if (nextBtn && prevBtn) {
-            nextBtn.addEventListener('click', nextSlide);
-            prevBtn.addEventListener('click', prevSlide);
-            setInterval(nextSlide, 5000);
-            showSlide(currentSlide);
+            nextBtn.addEventListener('click', () => {
+                nextSlide();
+                resetInterval();
+            });
+            prevBtn.addEventListener('click', () => {
+                prevSlide();
+                resetInterval();
+            });
+            
+            createSliderDots(); // Panggil fungsi untuk buat dots
+            showSlide(currentSlide); // Tampilkan slide awal
+            heroInterval = setInterval(nextSlide, 5000); // Mulai auto-slide
         }
     }
     
-    // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT DARI NETLIFY FUNCTION ---
+    // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT (DIMODIFIKASI) ---
     async function renderEvents() {
         if (!eventGrid) return;
         eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
@@ -61,7 +108,12 @@ function initializeApp() {
             } else {
                 allEventsData.forEach(record => {
                     const fields = record.fields;
+                    // Pastikan field esensial ada
                     if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
+
+                    // --- PERUBAHAN 2: Ambil field Penyelenggara & Verifikasi ---
+                    const penyelenggara = fields['Penyelenggara'] || ''; // Ambil nama penyelenggara
+                    const isVerified = fields['verifikasi'] === true; // Cek status verifikasi
 
                     const eventDate = new Date(fields['Waktu']);
                     const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -76,6 +128,8 @@ function initializeApp() {
                     const eventCard = document.createElement('div');
                     eventCard.className = 'event-card';
                     eventCard.setAttribute('data-event-id', record.id); 
+                    
+                    // --- PERUBAHAN 2: Modifikasi innerHTML kartu ---
                     eventCard.innerHTML = `
                         <div class="card-image">
                             <img src="${fields['GambarEvent'][0].url}" alt="${fields['NamaEvent']}">
@@ -83,10 +137,17 @@ function initializeApp() {
                         </div>
                         <div class="card-content">
                             <h3 class="event-title">${fields['NamaEvent']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
+                            
+                            ${penyelenggara ? `<p class="penyelenggara">${penyelenggara} ${isVerified ? '<i class="fas fa-check-circle verified-icon"></i>' : ''}</p>` : ''}
+
                             <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
                             <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
+                            
                             <div class="price-buy">
-                                <p class="price">Mulai dari<br><span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span></p>
+                                <p class="price">
+                                    <span class="price-label">Mulai dari</span><br>
+                                    <span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span>
+                                </p>
                                 ${buttonHTML} 
                             </div>
                         </div>`;
@@ -100,19 +161,19 @@ function initializeApp() {
         }
     }
     
-    // --- FUNGSI PENGATUR EVENT LISTENERS ---
+    // --- FUNGSI PENGATUR EVENT LISTENERS (Tidak Berubah) ---
     function setupEventListeners() {
        // Mengarahkan ke halaman checkout.html dari seluruh kartu event
-eventGrid.addEventListener('click', function(e) {
-    // Cari elemen kartu event terdekat dari target klik
-    const card = e.target.closest('.event-card');
-    if (card) {
-        const eventId = card.dataset.eventId;
-        if (eventId) {
-            window.location.href = `checkout.html?eventId=${eventId}`;
-        }
-    }
-});
+        eventGrid.addEventListener('click', function(e) {
+            // Cari elemen kartu event terdekat dari target klik
+            const card = e.target.closest('.event-card');
+            if (card) {
+                const eventId = card.dataset.eventId;
+                if (eventId) {
+                    window.location.href = `checkout.html?eventId=${eventId}`;
+                }
+            }
+        });
         
         // Logika untuk tombol scroll carousel
         const scrollWrapper = document.querySelector('.event-grid-wrapper');
@@ -127,10 +188,12 @@ eventGrid.addEventListener('click', function(e) {
         initializeLiveSearch();
     }
     
-    // --- FUNGSI BARU UNTUK LOGIKA LIVE SEARCH ---
+    // --- FUNGSI BARU UNTUK LOGIKA LIVE SEARCH (Tidak Berubah) ---
     function initializeLiveSearch() {
         const searchInput = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('searchResultsContainer');
+
+        if (!searchInput || !resultsContainer) return;
 
         searchInput.addEventListener('input', () => {
             const searchTerm = searchInput.value.toLowerCase();
@@ -190,5 +253,3 @@ eventGrid.addEventListener('click', function(e) {
     // --- Inisialisasi Aplikasi ---
     renderEvents();
 }
-
-
