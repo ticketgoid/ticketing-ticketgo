@@ -294,10 +294,36 @@ function displaySearchResults(events) {
     resultsContainer.classList.add('visible');
 }
 
+// --- FUNGSI BARU: Animasi Looping untuk "Why TicketGo" ---
+function initializeWhyGoAnimation() {
+    const whyCards = document.querySelectorAll('.why-card');
+    if (whyCards.length === 0) return;
+
+    let currentThrobIndex = 0;
+    
+    // Tampilkan yang pertama langsung
+    whyCards[currentThrobIndex].classList.add('is-throbbing');
+
+    // Atur interval untuk berganti setiap 3 detik (3000 ms)
+    setInterval(() => {
+        // 1. Hapus "kedut" dari kartu yang sekarang
+        whyCards[currentThrobIndex].classList.remove('is-throbbing');
+        
+        // 2. Pindah ke kartu berikutnya (dan kembali ke 0 jika sudah di akhir)
+        currentThrobIndex = (currentThrobIndex + 1) % whyCards.length;
+        
+        // 3. Tambahkan "kedut" ke kartu yang baru
+        whyCards[currentThrobIndex].classList.add('is-throbbing');
+        
+    }, 3000); // Ganti angka 3000 (ms) ini untuk mengubah kecepatan giliran
+}
+
 // --- Fungsi Inisialisasi Utama ---
 function initializeApp() {
     // Panggil kedua fungsi pemuat data secara paralel
     loadHeroSlider();
     renderEvents();
+    initializeWhyGoAnimation();
 }
+
 
