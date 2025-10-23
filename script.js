@@ -11,25 +11,63 @@ window.addEventListener('load', () => {
     initializeApp();
 });
 
-function initializeApp() {
-    // --- Variabel Global & Elemen DOM ---
-    const eventGrid = document.getElementById('eventGrid');
-    let allEventsData = []; // Variabel untuk menyimpan semua data event
-
-    // --- Logika Carousel Hero (DIMODIFIKASI) ---
-    const slides = document.querySelectorAll('.slide');
+// --- FUNGSI BARU: Logika Hero Slider Dinamis (Request 3) ---
+async function loadHeroSlider() {
+    const sliderContainer = document.querySelector('.hero-slider-container');
     const sliderDotsContainer = document.getElementById('sliderDots');
-    let currentSlide = 0;
-    let heroInterval; // Variabel untuk menyimpan interval
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
 
-    if (slides.length > 0) {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
+    if (!sliderContainer || !sliderDotsContainer || !prevBtn || !nextBtn) {
+        console.error("Elemen Hero Slider tidak ditemukan.");
+        return;
+    }
 
-        // --- FUNGSI BARU: Buat dots navigasi ---
+    try {
+        const response = await fetch('/api/get-hero-slides');
+        if (!response.ok) throw new Error('Gagal mengambil data slider');
+        
+        const data = await response.json();
+        const slidesData = data.records;
+
+        if (!slidesData || slidesData.length === 0) {
+            sliderContainer.innerHTML = '<p>Slides tidak tersedia.</p>'; // Fallback
+            return;
+        }
+
+        // 1. Bangun HTML Slider dari data Airtable
+        sliderContainer.innerHTML = ''; // Kosongkan kontainer
+        slidesData.forEach((record, index) => {
+            const fields = record.fields;
+            // Pastikan ada gambar dan link
+            const imageUrl = fields['Gambar']?.[0]?.url;
+            const linkUrl = fields['LinkTujuan'] || '#'; // Default ke '#' jika link kosong
+
+            if (imageUrl) {
+                const slideLink = document.createElement('a');
+                slideLink.href = linkUrl;
+                slideLink.className = 'slide';
+                slideLink.dataset.slideIndex = index;
+                
+                const slideImage = document.createElement('img');
+                slideImage.src = imageUrl;
+                slideImage.alt = `Promotional Image ${index + 1}`;
+                
+                slideLink.appendChild(slideImage);
+                sliderContainer.appendChild(slideLink);
+            }
+        });
+
+        // 2. Setelah HTML dibuat, jalankan logika slider
+        const slides = document.querySelectorAll('.slide'); // Ambil slide yang baru dibuat
+        if (slides.length === 0) return;
+
+        let currentSlide = 0;
+        let heroInterval;
+
+        // --- Fungsi Bawaan Slider (sekarang di dalam loadHeroSlider) ---
         function createSliderDots() {
-            if (!sliderDotsContainer) return;
-            sliderDotsContainer.innerHTML = ''; // Kosongkan dots
+            sliderDotsContainer.innerHTML = '';
             slides.forEach((_, index) => {
                 const dot = document.createElement('button');
                 dot.className = 'slider-dot';
@@ -37,23 +75,19 @@ function initializeApp() {
                 dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
                 dot.addEventListener('click', () => {
                     showSlide(index);
-                    resetInterval(); // Reset auto-slide saat dot diklik
+                    resetInterval();
                 });
                 sliderDotsContainer.appendChild(dot);
             });
         }
         
-        // --- FUNGSI DIMODIFIKASI: Tampilkan slide DAN update dot aktif ---
         const showSlide = (index) => {
             slides.forEach(slide => slide.classList.remove('active-slide'));
             if(slides[index]) slides[index].classList.add('active-slide');
 
-            // Update dot aktif
-            if (sliderDotsContainer) {
-                Array.from(sliderDotsContainer.children).forEach((dot, dotIndex) => {
-                    dot.classList.toggle('active', dotIndex === index);
-                });
-            }
+            Array.from(sliderDotsContainer.children).forEach((dot, dotIndex) => {
+                dot.classList.toggle('active', dotIndex === index);
+            });
             currentSlide = index;
         };
 
@@ -67,105 +101,107 @@ function initializeApp() {
             showSlide(currentSlide);
         };
 
-        // --- FUNGSI BARU: Reset interval auto-slide ---
         const resetInterval = () => {
             clearInterval(heroInterval);
             heroInterval = setInterval(nextSlide, 5000);
         };
+        // --- Akhir Fungsi Bawaan Slider ---
 
-        if (nextBtn && prevBtn) {
-            nextBtn.addEventListener('click', () => {
-                nextSlide();
-                resetInterval();
-            });
-            prevBtn.addEventListener('click', () => {
-                prevSlide();
-                resetInterval();
-            });
-            
-            createSliderDots(); // Panggil fungsi untuk buat dots
-            showSlide(currentSlide); // Tampilkan slide awal
-            heroInterval = setInterval(nextSlide, 5000); // Mulai auto-slide
-        }
+        // 3. Inisialisasi Slider
+        nextBtn.addEventListener('click', () => {
+            nextSlide();
+            resetInterval();
+        });
+        prevBtn.addEventListener('click', () => {
+            prevSlide();
+            resetInterval();
+        });
+        
+        createSliderDots();
+        showSlide(currentSlide);
+        heroInterval = setInterval(nextSlide, 5000);
+
+    } catch (error) {
+        console.error("Error memuat Hero Slider:", error);
+        sliderContainer.innerHTML = '<p>Gagal memuat promosi. Coba lagi nanti.</p>';
     }
-    
-    // --- FUNGSI UTAMA: MENGAMBIL DAN MENAMPILKAN EVENT (DIMODIFIKASI) ---
-    async function renderEvents() {
-        if (!eventGrid) return;
-        eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-        const url = '/api/get-events'; 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
-            const data = await response.json();
-            
-            allEventsData = data.records; // Simpan data event untuk digunakan di pencarian
-            
-            eventGrid.innerHTML = ''; 
+}
 
-            if (allEventsData.length === 0) {
-                eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
-            } else {
-                allEventsData.forEach(record => {
-                    const fields = record.fields;
-                    // Pastikan field esensial ada
-                    if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
 
-                    // --- PERUBAHAN 2: Ambil field Penyelenggara & Verifikasi ---
-                    const penyelenggara = fields['Penyelenggara'] || ''; // Ambil nama penyelenggara
-                    const isVerified = fields['verifikasi'] === true; // Cek status verifikasi
+// --- Fungsi untuk memuat Event Cards (Tidak Berubah) ---
+async function renderEvents() {
+    const eventGrid = document.getElementById('eventGrid');
+    if (!eventGrid) return;
+    eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
+    const url = '/api/get-events'; 
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        const data = await response.json();
+        
+        window.allEventsData = data.records; // Simpan data event untuk digunakan di pencarian
+        
+        eventGrid.innerHTML = ''; 
 
-                    const eventDate = new Date(fields['Waktu']);
-                    const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
-                    const isPriority = fields['Prioritas'] === true;
-                    
-                    const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
-                    const buttonHTML = isRegistrationOpen
-                        ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
-                        : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
+        if (allEventsData.length === 0) {
+            eventGrid.innerHTML = '<p>Belum ada event yang tersedia.</p>';
+        } else {
+            allEventsData.forEach(record => {
+                const fields = record.fields;
+                if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
 
-                    const eventCard = document.createElement('div');
-                    eventCard.className = 'event-card';
-                    eventCard.setAttribute('data-event-id', record.id); 
-                    
-                    // --- PERUBAHAN 2: Modifikasi innerHTML kartu ---
-                    eventCard.innerHTML = `
-                        <div class="card-image">
-                            <img src="${fields['GambarEvent'][0].url}" alt="${fields['NamaEvent']}">
-                            <span class="tag festival">${fields['Tag'] || ''}</span>
+                const penyelenggara = fields['Penyelenggara'] || '';
+                const isVerified = fields['verifikasi'] === true;
+                const eventDate = new Date(fields['Waktu']);
+                const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
+                const isPriority = fields['Prioritas'] === true;
+                
+                const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+                const buttonHTML = isRegistrationOpen
+                    ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
+                    : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
+
+                const eventCard = document.createElement('div');
+                eventCard.className = 'event-card';
+                eventCard.setAttribute('data-event-id', record.id); 
+                
+                eventCard.innerHTML = `
+                    <div class="card-image">
+                        <img src="${fields['GambarEvent'][0].url}" alt="${fields['NamaEvent']}">
+                        <span class="tag festival">${fields['Tag'] || ''}</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="event-title">${fields['NamaEvent']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
+                        
+                        ${penyelenggara ? `<p class="penyelenggara">${penyelenggara} ${isVerified ? '<i class="fas fa-check-circle verified-icon"></i>' : ''}</p>` : ''}
+
+                        <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
+                        <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
+                        
+                        <div class="price-buy">
+                            <p class="price">
+                                <span class="price-label">Mulai dari</span><br>
+                                <span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span>
+                            </p>
+                            ${buttonHTML} 
                         </div>
-                        <div class="card-content">
-                            <h3 class="event-title">${fields['NamaEvent']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
-                            
-                            ${penyelenggara ? `<p class="penyelenggara">${penyelenggara} ${isVerified ? '<i class="fas fa-check-circle verified-icon"></i>' : ''}</p>` : ''}
-
-                            <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
-                            <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
-                            
-                            <div class="price-buy">
-                                <p class="price">
-                                    <span class="price-label">Mulai dari</span><br>
-                                    <span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span>
-                                </p>
-                                ${buttonHTML} 
-                            </div>
-                        </div>`;
-                    eventGrid.appendChild(eventCard);
-                });
-            }
-            setupEventListeners();
-        } catch (error) {
-            console.error("Gagal mengambil event dari backend:", error);
-            eventGrid.innerHTML = '<p>Gagal memuat event. Silakan coba lagi nanti.</p>';
+                    </div>`;
+                eventGrid.appendChild(eventCard);
+            });
         }
+        setupEventListeners();
+    } catch (error) {
+        console.error("Gagal mengambil event dari backend:", error);
+        eventGrid.innerHTML = '<p>Gagal memuat event. Silakan coba lagi nanti.</p>';
     }
-    
-    // --- FUNGSI PENGATUR EVENT LISTENERS (Tidak Berubah) ---
-    function setupEventListeners() {
-       // Mengarahkan ke halaman checkout.html dari seluruh kartu event
+}
+
+// --- Fungsi Pengatur Event Listener (Tidak Berubah) ---
+function setupEventListeners() {
+    const eventGrid = document.getElementById('eventGrid');
+    if (eventGrid) {
         eventGrid.addEventListener('click', function(e) {
-            // Cari elemen kartu event terdekat dari target klik
             const card = e.target.closest('.event-card');
             if (card) {
                 const eventId = card.dataset.eventId;
@@ -174,82 +210,83 @@ function initializeApp() {
                 }
             }
         });
-        
-        // Logika untuk tombol scroll carousel
-        const scrollWrapper = document.querySelector('.event-grid-wrapper');
-        const scrollLeftBtn = document.getElementById('scrollLeftBtn');
-        const scrollRightBtn = document.getElementById('scrollRightBtn');
-        if(scrollWrapper && scrollLeftBtn && scrollRightBtn) {
-            scrollLeftBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: -scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
-            scrollRightBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
-        }
-        
-        // Inisialisasi logika live search baru
-        initializeLiveSearch();
     }
     
-    // --- FUNGSI BARU UNTUK LOGIKA LIVE SEARCH (Tidak Berubah) ---
-    function initializeLiveSearch() {
-        const searchInput = document.getElementById('searchInput');
-        const resultsContainer = document.getElementById('searchResultsContainer');
-
-        if (!searchInput || !resultsContainer) return;
-
-        searchInput.addEventListener('input', () => {
-            const searchTerm = searchInput.value.toLowerCase();
-
-            if (searchTerm.length === 0) {
-                resultsContainer.classList.remove('visible');
-                return;
-            }
-
-            const filteredEvents = allEventsData.filter(record => 
-                record.fields.NamaEvent.toLowerCase().includes(searchTerm)
-            );
-
-            displaySearchResults(filteredEvents);
-        });
-        
-        // Sembunyikan hasil pencarian jika klik di luar area pencarian
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) {
-                resultsContainer.classList.remove('visible');
-            }
-        });
+    const scrollWrapper = document.querySelector('.event-grid-wrapper');
+    const scrollLeftBtn = document.getElementById('scrollLeftBtn');
+    const scrollRightBtn = document.getElementById('scrollRightBtn');
+    if(scrollWrapper && scrollLeftBtn && scrollRightBtn) {
+        scrollLeftBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: -scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
+        scrollRightBtn.addEventListener('click', () => { scrollWrapper.scrollBy({ left: scrollWrapper.clientWidth * 0.8, behavior: 'smooth' }); });
     }
+    
+    initializeLiveSearch();
+}
 
-    function displaySearchResults(events) {
-        const resultsContainer = document.getElementById('searchResultsContainer');
-        resultsContainer.innerHTML = '';
+// --- Fungsi Logika Live Search (Tidak Berubah) ---
+function initializeLiveSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const resultsContainer = document.getElementById('searchResultsContainer');
+    if (!searchInput || !resultsContainer) return;
 
-        if (events.length === 0) {
+    searchInput.addEventListener('input', () => {
+        const searchTerm = searchInput.value.toLowerCase();
+
+        if (searchTerm.length === 0) {
             resultsContainer.classList.remove('visible');
             return;
         }
 
-        events.forEach(record => {
-            const fields = record.fields;
-            const eventDate = new Date(fields.Waktu);
-            const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-            const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.',':');
+        const filteredEvents = (window.allEventsData || []).filter(record => 
+            record.fields.NamaEvent.toLowerCase().includes(searchTerm)
+        );
 
-            const item = document.createElement('a');
-            item.href = `checkout.html?eventId=${record.id}`;
-            item.className = 'search-result-item';
-            
-            item.innerHTML = `
-                <img src="${fields.GambarEvent[0].thumbnails.small.url}" alt="${fields.NamaEvent}" class="result-image">
-                <div class="result-info">
-                    <div class="result-title">${fields.NamaEvent}</div>
-                    <div class="result-date">${formattedDate}, ${formattedTime} WIB</div>
-                </div>
-            `;
-            resultsContainer.appendChild(item);
-        });
+        displaySearchResults(filteredEvents);
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-container')) {
+            resultsContainer.classList.remove('visible');
+        }
+    });
+}
 
-        resultsContainer.classList.add('visible');
+// --- Fungsi Tampilan Hasil Pencarian (Tidak Berubah) ---
+function displaySearchResults(events) {
+    const resultsContainer = document.getElementById('searchResultsContainer');
+    resultsContainer.innerHTML = '';
+
+    if (events.length === 0) {
+        resultsContainer.classList.remove('visible');
+        return;
     }
 
-    // --- Inisialisasi Aplikasi ---
+    events.forEach(record => {
+        const fields = record.fields;
+        const eventDate = new Date(fields.Waktu);
+        const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.',':');
+
+        const item = document.createElement('a');
+        item.href = `checkout.html?eventId=${record.id}`;
+        item.className = 'search-result-item';
+        
+        item.innerHTML = `
+            <img src="${fields.GambarEvent[0].thumbnails.small.url}" alt="${fields.NamaEvent}" class="result-image">
+            <div class="result-info">
+                <div class="result-title">${fields.NamaEvent}</div>
+                <div class="result-date">${formattedDate}, ${formattedTime} WIB</div>
+            </div>
+        `;
+        resultsContainer.appendChild(item);
+    });
+
+    resultsContainer.classList.add('visible');
+}
+
+// --- Fungsi Inisialisasi Utama ---
+function initializeApp() {
+    // Panggil kedua fungsi pemuat data secara paralel
+    loadHeroSlider();
     renderEvents();
 }
