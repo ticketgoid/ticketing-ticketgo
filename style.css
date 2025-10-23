@@ -1449,3 +1449,47 @@ nav {
     transform: scale(1.05);
     z-index: 10;
 }
+
+@media (max-width: 600px) {
+    
+    /* 1. Memperkecil logo di header */
+    header .logo img {
+        height: 35px; /* Mengecilkan dari 50px */
+    }
+
+    /* 2. Mengubah "Why" section menjadi Carousel */
+    #why-ticketgo {
+        /* Hapus padding horizontal section agar carousel bisa 'penuh' */
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .why-grid {
+        display: flex; /* Ubah dari grid ke flex */
+        overflow-x: auto; /* Aktifkan scroll horizontal */
+        scroll-snap-type: x mandatory; /* Wajibkan snap */
+        
+        /* Padding ini penting agar kartu pertama/terakhir bisa di tengah */
+        padding: 0 10%; 
+
+        /* Sembunyikan scrollbar */
+        -ms-overflow-style: none;  /* IE dan Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .why-grid::-webkit-scrollbar {
+        display: none; /* Sembunyikan scrollbar untuk Chrome, Safari */
+    }
+
+    .why-card {
+        flex: 0 0 80%; /* Lebar setiap kartu (80% dari container) */
+        scroll-snap-align: center; /* Posisikan kartu di tengah saat snap */
+
+        /* Matikan animasi 'throb' di mobile */
+        animation: none !important;
+    }
+
+    .why-card.is-throbbing {
+        animation: none; /* Pastikan .is-throbbing tidak melakukan apa-apa */
+    }
+}
