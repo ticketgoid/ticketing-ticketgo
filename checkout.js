@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkoutMain = document.getElementById('checkout-main');
     let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {}, sisaKuota = {};
   
-    // ... (Semua fungsi lain seperti saveDataToSheet, initiatePayment, dll. tetap sama persis)
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
         const payload = {
@@ -30,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("❌ Gagal mengirim data ke Airtable:", error);
       }
     };
+  
     const initiatePayment = async () => {
       const confirmButton = document.getElementById('confirmPaymentBtn');
       confirmButton.disabled = true;
@@ -38,12 +38,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const eventType = eventDetails.fields['Tipe Event'];
+  
         if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) throw new Error("Kursi belum dipilih.");
         if (!selectedTicketInput) throw new Error("Jenis tiket belum dipilih.");
+  
         const { finalTotal, pricePerTicket, quantity } = calculatePrice();
         const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
         const fields = selectedTicketRecord?.fields || {};
         const name = fields.Name || 'Tiket Tanpa Nama';
+        
         let customerName = '', customerEmail = '', customerPhone = '';
         new FormData(document.getElementById('customer-data-form')).forEach((value, key) => {
           const lowerKey = key.toLowerCase();
@@ -51,7 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (lowerKey.includes('email')) customerEmail = value;
           else if (lowerKey.includes('nomor')) customerPhone = value;
         });
+  
         if (!customerName || !customerEmail || !customerPhone) throw new Error("Data pemesan tidak lengkap.");
+  
         const adminFee = parseInt(fields.Admin_Fee?.toString().replace(/[^0-9]/g, '') || '0');
         const payload = {
           order_id: `TICKETGO-${Date.now()}`,
@@ -67,10 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           customer_details: { first_name: customerName, email: customerEmail, phone: `+62${customerPhone.replace(/^0/, '')}` }
         };
+  
         const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        
         const result = await response.json();
         if (result.error || !result.token) throw new Error(result.error || "Token pembayaran tidak diterima.");
+  
         window.snap.pay(result.token, {
           onSuccess: res => {
             showFeedback('success', 'Pembayaran Berhasil!', 'E-tiket Anda akan segera dikirimkan.');
@@ -87,13 +95,16 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmButton.textContent = 'Lanjutkan Pembayaran';
       }
     };
+  
     const showFeedback = (type, title, message) => {
       document.getElementById('reviewModal')?.classList.remove('visible');
       const feedbackModal = document.getElementById('feedbackModal');
       const iconWrapper = feedbackModal.querySelector('.feedback-icon');
       const icon = feedbackModal.querySelector('.fas');
+      
       iconWrapper.className = 'feedback-icon';
       icon.className = 'fas';
+      
       if (type === 'success') { 
           icon.classList.add('fa-check-circle'); 
           iconWrapper.classList.add('success');
@@ -104,19 +115,22 @@ document.addEventListener('DOMContentLoaded', () => {
           icon.classList.add('fa-times-circle'); 
           iconWrapper.classList.add('error');
       }
+      
       document.getElementById('feedbackTitle').textContent = title;
       document.getElementById('feedbackMessage').textContent = message;
       feedbackModal.classList.add('visible');
       document.getElementById('closeFeedbackBtn').onclick = () => window.location.reload();
     };
+  
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
-          .ticket-option label { flex-wrap: wrap; cursor: pointer; } .quantity-selector-wrapper { display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; border-top: 1px solid #f0f0f0; } .quantity-selector-wrapper.visible { display: block; } .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; } .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; } .quantity-selector button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; background-color: var(--white); font-size: 1.2rem; font-weight: 600; color: var(--gray-text); cursor: pointer; transition: all 0.2s; } .quantity-selector button:hover:not(:disabled) { background-color: var(--teal); border-color: var(--teal); color: var(--white); } .quantity-selector button:disabled { opacity: 0.5; cursor: not-allowed; } .quantity-selector input { width: 40px; height: 32px; text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; } .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; } .event-details-column, .purchase-form-column { flex: 1; min-width: 320px; } .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); } .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; } .ticket-option .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; } .ticket-option input[type="radio"] { display: none; } .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; } #buyButton, #confirmPaymentBtn { width: 100%; background-color: var(--orange); color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color 0.3s ease, transform 0.1s ease; margin-top: 20px; } #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; } #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); } #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; } .modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } .modal.visible { display: flex; opacity: 1; visibility: visible; } .feedback-modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); } .feedback-modal.visible { display: flex; }
+          .ticket-option label { flex-wrap: wrap; cursor: pointer; } .quantity-selector-wrapper { display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; border-top: 1px solid #f0f0f0; } .quantity-selector-wrapper.visible { display: block; } .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; } .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; } .quantity-selector button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; background-color: var(--white); font-size: 1.2rem; font-weight: 600; color: var(--gray-text); cursor: pointer; transition: all 0.2s; } .quantity-selector button:hover:not(:disabled) { background-color: var(--teal); border-color: var(--teal); color: var(--white); } .quantity-selector button:disabled { opacity: 0.5; cursor: not-allowed; } .quantity-selector input { width: 40px; height: 32px; text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; } .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; } .event-details-column, .purchase-form-column { flex: 1; min-width: 320px; } .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); } .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; } .ticket-option .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; } .ticket-option input[type="radio"] { display: none; } .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; } #buyButton, #confirmPaymentBtn { width: 100%; background-color: var(--orange); color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color: 0.3s ease, transform 0.1s ease; margin-top: 20px; } #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; } #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); } #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; } .modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } .modal.visible { display: flex; opacity: 1; visibility: visible; } .feedback-modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); } .feedback-modal.visible { display: flex; }
           .ticket-option label.disabled { cursor: not-allowed; background-color: #f1f5f9; color: #94a3b8; } .ticket-option label.disabled:hover { border-color: #e5e7eb; box-shadow: none; } .sold-out-tag { font-weight: 700; color: #ef4444; margin-left: auto; white-space: nowrap; }
         `;
         document.head.appendChild(style);
     };
+    
     const fetchAllSeatPrices = async () => {
         const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
         for (const seatName of seatOptions) {
@@ -131,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+  
     const buildPage = async () => {
         injectStyles();
         const params = new URLSearchParams(window.location.search);
@@ -155,10 +170,12 @@ document.addEventListener('DOMContentLoaded', () => {
             checkoutMain.innerHTML = `<p>Gagal memuat detail event. Error: ${error.message}</p>`;
         }
     };
+  
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
         let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
         let seatSelectionHTML = '';
+
         if (eventType === 'Dengan Pilihan Kursi') {
             const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
             const seatOptionsContent = seatOptions.map((option, index) => {
@@ -176,24 +193,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
             seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
         }
+    
         const ticketOptionsHTML = ticketTypes.map(record => {
           const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
           const name = Name || 'Tiket Tanpa Nama';
           const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
+          
           let isSoldOut = false;
           if (eventType === 'Tanpa Pilihan Kursi') {
             const kuotaInfo = sisaKuota[name.toLowerCase()];
             isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
           }
+          
           let priceHTML = '&nbsp;';
           if (Show_Price) {
             const numericPrice = parseInt((Price || 0).toString().replace(/[^0-9]/g, '')) || 0;
             priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
           }
+
           const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
+          
           const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' 
                 ? '<span class="sold-out-tag"></span>' 
                 : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
+
           return `<div class="ticket-option">
                       <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
                       <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
@@ -205,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       </label>
                   </div>`;
         }).join('');
+    
         const formFieldsHTML = formFields.map(record => {
           const { FieldLabel, FieldType, Is_Required } = record.fields;
           if (!FieldLabel || !FieldType) return '';
@@ -213,11 +237,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (FieldType.toLowerCase() === 'tel') return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div></div>`;
           return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}"></div>`;
         }).join('');
+    
         checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
+        
         const buyButton = document.getElementById('buyButton');
         if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
         attachEventListeners();
     };
+      
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -278,18 +305,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================================
     // =================== KODE DIAGNOSTIK BERAKHIR DI SINI ==================
     // =======================================================================
-
+  
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
       const form = document.getElementById('customer-data-form');
+
       const checkButtonState = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
         const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
         const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
         const isFormValid = form.checkValidity();
+        
         buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid);
       };
+  
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
           if (e.target.name === 'Pilihan_Kursi') {
@@ -297,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if(selectedTicket) selectedTicket.checked = false;
               updateTicketAvailabilityForSeat();
           }
+
           document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
           const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
           if (selectedTicketRadio) {
@@ -305,20 +336,27 @@ document.addEventListener('DOMContentLoaded', () => {
                   selectedTicketRadio.closest('.ticket-option').querySelector('.quantity-selector-wrapper')?.classList.add('visible');
               }
           }
+
           checkButtonState();
           updatePrice();
         }
       });
+      
       form.addEventListener('input', checkButtonState);
+  
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
         if (!qtyInput) return;
+
         const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicketRadio) return;
+        
         const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
         if (!selectedTicketRecord) return;
+        
         const eventType = eventDetails.fields['Tipe Event'];
         let maxQty = 0;
+
         if (eventType === 'Dengan Pilihan Kursi') {
             const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
             if(seatSelected) {
@@ -331,9 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const kuotaInfo = sisaKuota[ticketName];
             maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
         }
+
         const increaseBtn = e.target.closest('.quantity-selector').querySelector('.increase-qty-btn');
         const decreaseBtn = e.target.closest('.quantity-selector').querySelector('.decrease-qty-btn');
         let currentVal = parseInt(qtyInput.value);
+
         if (e.target.closest('.increase-qty-btn')) {
             if (currentVal < maxQty) {
                 qtyInput.value = currentVal + 1;
@@ -343,13 +383,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtyInput.value = currentVal - 1;
             }
         }
+        
         currentVal = parseInt(qtyInput.value);
         decreaseBtn.disabled = currentVal <= 1;
         increaseBtn.disabled = currentVal >= maxQty;
+
         updatePrice();
         checkButtonState();
       });
+  
       buyButton.addEventListener('click', showReviewModal);
+  
       const reviewModal = document.getElementById('reviewModal');
       if (reviewModal) {
         reviewModal.querySelector('.close-button')?.addEventListener('click', () => reviewModal.classList.remove('visible'));
@@ -357,27 +401,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       document.getElementById('confirmPaymentBtn')?.addEventListener('click', initiatePayment);
     };
+    
     const calculatePrice = () => {
       const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
       const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
       const eventType = eventDetails.fields['Tipe Event'];
+  
       if (!selectedTicket) {
         return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
       }
       if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) {
           return { finalTotal: 0, pricePerTicket: 0, quantity: 1, subtotal: 0, totalAdminFee: 0 };
       }
+  
       const quantity = getCurrentQuantity();
       const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicket.value);
       const fields = selectedTicketRecord?.fields || {};
       const isDiscountTicket = fields.Discount === true;
       const isBundleTicket = (fields.BundleQuantity || 1) > 1;
+      
       let baseSeatPrice = 0;
       if (eventType === 'Dengan Pilihan Kursi' && seatSelected) {
           baseSeatPrice = seatPrices[seatSelected.value.toLowerCase()] || 0;
       }
+  
       const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || 0);
       let subtotal = 0, pricePerTicket = 0;
+  
       if (isBundleTicket && isDiscountTicket) {
         const totalBasePrice = baseSeatPrice * quantity;
         subtotal = totalBasePrice - ticketPriceField;
@@ -389,24 +439,31 @@ document.addEventListener('DOMContentLoaded', () => {
         pricePerTicket = baseSeatPrice > 0 ? baseSeatPrice : ticketPriceField;
         subtotal = pricePerTicket * quantity;
       }
+  
       const adminFee = parseInt(fields.Admin_Fee?.toString().replace(/[^0-9]/g, '') || '0');
       const totalAdminFee = adminFee * quantity;
       const finalTotal = subtotal + totalAdminFee;
+  
       return { subtotal, totalAdminFee, finalTotal, pricePerTicket, quantity };
     };
+  
     const updatePrice = () => {
       const reviewContainer = document.getElementById('price-review');
       const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
       const eventType = eventDetails.fields['Tipe Event'];
+  
       if (!selectedTicket || (eventType === 'Dengan Pilihan Kursi' && !document.querySelector('input[name="Pilihan_Kursi"]:checked'))) {
-        reviewContainer.innerHTML = '<p>Pilih kursi dan/atau jenis tiket untuk melihat harga.</p>';
+        reviewContainer.innerHTML = '<p>Pilih tiket untuk melihat harga.</p>';
         return;
       }
+  
       const { subtotal, totalAdminFee, finalTotal, quantity } = calculatePrice();
       const isBundle = quantity > 1 && selectedTicket.dataset.canChooseQuantity !== 'true';
       const displayText = isBundle ? selectedTicket.dataset.name : `${selectedTicket.dataset.name} x ${quantity}`;
+      
       reviewContainer.innerHTML = `<div class="review-row"><span>${displayText}</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr><div class="review-row total"><span><strong>Total</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div>`;
     };
+  
     const showReviewModal = () => {
       const form = document.getElementById('customer-data-form');
       if (!form.checkValidity()) {
@@ -417,16 +474,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
       if (!selectedTicketInput) return;
+
       const quantity = getCurrentQuantity();
       const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
       const isBundleTicket = (selectedTicketRecord.fields.BundleQuantity || 1) > 1;
       const { subtotal, totalAdminFee, finalTotal, pricePerTicket } = calculatePrice();
       const name = selectedTicketInput.dataset.name;
+
       const displayText = isBundleTicket ? name : `${name} x ${quantity}`;
+
       let formDataHTML = '';
       for (const [key, originalValue] of new FormData(form).entries()) {
         let label = key;
         let displayValue = originalValue;
+
         if (key === 'ticket_choice') {
             continue; 
         } 
@@ -438,8 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         formDataHTML += `<div class="review-row"><span>${label}</span><span>${displayValue}</span></div>`;
       }
+
       document.getElementById('reviewDetails').innerHTML = `<h4>Detail Pesanan:</h4><div class="review-row"><span>Tiket</span><span>${displayText}</span></div><div class="review-row"><span>${isBundleTicket ? 'Harga Paket' : 'Harga per Tiket'}</span><span>Rp ${isBundleTicket ? subtotal.toLocaleString('id-ID') : pricePerTicket.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Subtotal Tiket</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div><div class="review-row"><span>Biaya Admin</span><span>Rp ${totalAdminFee.toLocaleString('id-ID')}</span></div><hr><div class="review-row total"><span><strong>Total Pembayaran</strong></span><span><strong>Rp ${finalTotal.toLocaleString('id-ID')}</strong></span></div><hr><h4>Data Pemesan:</h4>${formDataHTML}`;
       document.getElementById('reviewModal').classList.add('visible');
     };
+    
     buildPage();
 });
