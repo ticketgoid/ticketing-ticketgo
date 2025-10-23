@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const SCRIPT_URL = '/api/create-transaction';
     const checkoutMain = document.getElementById('checkout-main');
-    let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {}, seatQuotas = {};
+    let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {}, sisaKuota = {};
   
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
@@ -11,9 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
           transaction_status: paymentResult.transaction_status,
           gross_amount: paymentResult.gross_amount,
           customer_details: customerData,
-          item_details: itemDetails,
           eventId: eventDetails.id,
-          rekapTableName: eventDetails.fields['Tabel Penjualan']
+          rekapTableName: eventDetails.fields['Tabel Penjualan'],
+          eventType: eventDetails.fields['Tipe Event'], // KIRIM TIPE EVENT
+          item_details: {
+              ...itemDetails,
+              seatTableName: eventDetails.fields['Tabel Harga Kursi'], // KIRIM NAMA TABEL KURSI
+          }
         };
         await fetch('/api/save-to-airtable', {
           method: 'POST',
@@ -64,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quantity,
             name,
             seatName: seatSelected ? seatSelected.value : null,
+            seatRecordId: seatSelected ? seatSelected.dataset.recordId : null, // KIRIM SEAT RECORD ID
           },
           customer_details: { first_name: customerName, email: customerEmail, phone: `+62${customerPhone.replace(/^0/, '')}` }
         };
@@ -153,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             eventDetails = data.eventDetails;
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
-            seatQuotas = data.seatQuotas;
+            sisaKuota = data.sisaKuota; // SIMPAN DATA KUOTA BARU
             if (!ticketTypes || ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
                 return;
@@ -174,25 +179,46 @@ document.addEventListener('DOMContentLoaded', () => {
         if (eventType === 'Dengan Pilihan Kursi') {
             const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
             const seatOptionsContent = seatOptions.map((option, index) => {
-                const remainingQuota = seatQuotas[option.toLowerCase()];
-                const isDisabled = remainingQuota <= 0;
-                return `<div class="ticket-option"><input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${option.trim()}" ${isDisabled ? 'disabled' : ''}><label for="seat_option_${index}" class="${isDisabled ? 'disabled' : ''}"><div class="ticket-label-content"><span class="ticket-name">${option.trim()}</span>${isDisabled ? '<span class="sold-out-tag">Habis</span>' : ''}</div></label></div>`;
+                const kuotaInfo = sisaKuota[option.trim().toLowerCase()];
+                const isDisabled = !kuotaInfo || kuotaInfo.sisa <= 0;
+                return `<div class="ticket-option">
+                            <input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${option.trim()}" data-record-id="${kuotaInfo?.recordId || ''}" ${isDisabled ? 'disabled' : ''}>
+                            <label for="seat_option_${index}" class="${isDisabled ? 'disabled' : ''}">
+                                <div class="ticket-label-content">
+                                    <span class="ticket-name">${option.trim()}</span>
+                                    ${isDisabled ? '<span class="sold-out-tag">Habis</span>' : ''}
+                                </div>
+                            </label>
+                        </div>`;
             }).join('');
             seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
         }
     
         const ticketOptionsHTML = ticketTypes.map(record => {
-          const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity, 'Sisa Kuota': sisaKuota } = record.fields;
-          const isSoldOut = eventType === 'Tanpa Pilihan Kursi' && sisaKuota <= 0;
+          const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
           const name = Name || 'Tiket Tanpa Nama';
           const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
+          const kuotaInfo = sisaKuota[name.toLowerCase()];
+          const isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
+          
           let priceHTML = '&nbsp;';
           if (Show_Price) {
             const numericPrice = parseInt((Price || 0).toString().replace(/[^0-9]/g, '')) || 0;
             priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
           }
+
           const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
-          return `<div class="ticket-option"><input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}><label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}"><div class="ticket-label-content"><span class="ticket-name">${name}</span>${isSoldOut ? '<span class="sold-out-tag">Habis</span>' : `<span class="ticket-price">${priceHTML}</span>`}</div>${quantitySelectorHTML}</label></div>`;
+          
+          return `<div class="ticket-option">
+                      <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
+                      <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
+                          <div class="ticket-label-content">
+                              <span class="ticket-name">${name}</span>
+                              ${isSoldOut ? '<span class="sold-out-tag">Habis</span>' : `<span class="ticket-price">${priceHTML}</span>`}
+                          </div>
+                          ${quantitySelectorHTML}
+                      </label>
+                  </div>`;
         }).join('');
     
         const formFieldsHTML = formFields.map(record => {
@@ -227,33 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return 1;
     };
   
-    const updateTicketAvailability = () => {
-        const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-        if (!seatSelected) return;
-    
-        const remainingSeatQuota = seatQuotas[seatSelected.value.toLowerCase()];
-        document.querySelectorAll('input[name="ticket_choice"]').forEach(ticketRadio => {
-          const ticketRecord = ticketTypes.find(t => t.id === ticketRadio.value);
-          const requiredTickets = ticketRecord.fields.BundleQuantity > 1 ? ticketRecord.fields.BundleQuantity : 1;
-          const isSoldOutBySeat = remainingSeatQuota < requiredTickets;
-          const isSoldOutByType = (ticketRecord.fields['Sisa Kuota'] || 1) <= 0;
-          const label = ticketRadio.closest('.ticket-option').querySelector('label');
-          const soldOutTag = label.querySelector('.sold-out-tag');
-          
-          if (isSoldOutBySeat || isSoldOutByType) {
-            ticketRadio.disabled = true;
-            label.classList.add('disabled');
-            if (!soldOutTag) {
-              label.querySelector('.ticket-label-content').insertAdjacentHTML('beforeend', '<span class="sold-out-tag">Habis</span>');
-            }
-          } else {
-            ticketRadio.disabled = false;
-            label.classList.remove('disabled');
-            soldOutTag?.remove();
-          }
-        });
-    };
-  
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
       const form = document.getElementById('customer-data-form');
@@ -270,10 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
-          if (eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi' && e.target.name === 'Pilihan_Kursi') {
-            updateTicketAvailability();
-          }
-          
+
           document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
           const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
           if (selectedTicketRadio) {
@@ -293,10 +289,47 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
         if (!qtyInput) return;
-        const currentVal = parseInt(qtyInput.value);
-        if (e.target.closest('.increase-qty-btn')) qtyInput.value = currentVal + 1;
-        else if (e.target.closest('.decrease-qty-btn') && currentVal > 1) qtyInput.value = currentVal - 1;
-        qtyInput.parentElement.querySelector('.decrease-qty-btn').disabled = parseInt(qtyInput.value) <= 1;
+
+        const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
+        if (!selectedTicketRadio) return;
+        
+        const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
+        if (!selectedTicketRecord) return;
+        
+        const eventType = eventDetails.fields['Tipe Event'];
+        let maxQty = 0;
+
+        if (eventType === 'Dengan Pilihan Kursi') {
+            const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+            if(seatSelected) {
+                const seatName = seatSelected.value.trim().toLowerCase();
+                const kuotaInfo = sisaKuota[seatName];
+                maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
+            }
+        } else {
+            const ticketName = selectedTicketRecord.fields.Name.toLowerCase();
+            const kuotaInfo = sisaKuota[ticketName];
+            maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
+        }
+
+        const increaseBtn = e.target.closest('.quantity-selector').querySelector('.increase-qty-btn');
+        const decreaseBtn = e.target.closest('.quantity-selector').querySelector('.decrease-qty-btn');
+        let currentVal = parseInt(qtyInput.value);
+
+        if (e.target.closest('.increase-qty-btn')) {
+            if (currentVal < maxQty) {
+                qtyInput.value = currentVal + 1;
+            }
+        } else if (e.target.closest('.decrease-qty-btn')) {
+            if (currentVal > 1) {
+                qtyInput.value = currentVal - 1;
+            }
+        }
+        
+        currentVal = parseInt(qtyInput.value);
+        decreaseBtn.disabled = currentVal <= 1;
+        increaseBtn.disabled = currentVal >= maxQty;
+
         updatePrice();
         checkButtonState();
       });
@@ -390,13 +423,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const displayText = isBundleTicket ? name : `${name} x ${quantity}`;
 
       let formDataHTML = '';
-      // DIPERBAIKI: Menggunakan variabel baru (displayValue) untuk menghindari error konstanta.
       for (const [key, originalValue] of new FormData(form).entries()) {
         let label = key;
         let displayValue = originalValue;
 
         if (key === 'ticket_choice') {
-            continue; // Lewati field ini agar tidak tampil di review
+            continue; 
         } 
         else if (key.toLowerCase().includes('nomor')) {
             displayValue = `+62${originalValue.replace(/^0/, '')}`;
