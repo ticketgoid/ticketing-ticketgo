@@ -296,6 +296,7 @@ function displaySearchResults(events) {
 
 // --- FUNGSI BARU: Animasi Looping untuk "Why TicketGo" ---
 function initializeWhyGoAnimation() {
+    if (window.innerWidth <= 600) return;
     const whyCards = document.querySelectorAll('.why-card');
     if (whyCards.length === 0) return;
 
@@ -318,12 +319,48 @@ function initializeWhyGoAnimation() {
     }, 3000); // Ganti angka 3000 (ms) ini untuk mengubah kecepatan giliran
 }
 
+// --- FUNGSI BARU: Animasi Carousel "Why TicketGo" (Mobile) ---
+function initializeWhyGoCarousel() {
+    // Hanya jalankan di mobile
+    if (window.innerWidth > 600) return; 
+
+    const grid = document.querySelector('.why-grid');
+    if (!grid) return;
+
+    let currentCardIndex = 0;
+    const cards = grid.querySelectorAll('.why-card');
+    if (cards.length === 0) return;
+
+    // Tambahkan 'scroll-behavior: smooth' via JS
+    grid.style.scrollBehavior = 'smooth';
+
+    setInterval(() => {
+        // Pindah ke kartu berikutnya
+        currentCardIndex = (currentCardIndex + 1) % cards.length;
+        
+        const card = cards[currentCardIndex];
+        
+        // Kalkulasi posisi scroll baru agar kartu pas di tengah
+        const gridWidth = grid.offsetWidth;
+        const cardWidth = card.offsetWidth;
+        const cardLeft = card.offsetLeft; // Jarak kartu dari kiri container
+
+        // Target scroll = posisi kiri kartu - (setengah sisa ruang)
+        const newScrollLeft = cardLeft - (gridWidth - cardWidth) / 2;
+
+        grid.scrollTo(newScrollLeft, 0);
+
+    }, 5000); // Ganti angka ini (dalam ms) untuk kecepatan ganti (5 detik)
+}
+
 // --- Fungsi Inisialisasi Utama ---
 function initializeApp() {
     // Panggil kedua fungsi pemuat data secara paralel
     loadHeroSlider();
     renderEvents();
     initializeWhyGoAnimation();
+    initializeWhyGoCarousel();
 }
+
 
 
