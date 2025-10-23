@@ -1,4 +1,4 @@
-// GANTI SELURUH ISI FILE checkout.js DENGAN KODE DIAGNOSTIK INI
+// GANTI SELURUH ISI FILE checkout.js DENGAN KODE FINAL INI
 document.addEventListener('DOMContentLoaded', () => {
     const SCRIPT_URL = '/api/create-transaction';
     const checkoutMain = document.getElementById('checkout-main');
@@ -259,52 +259,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return 1;
     };
 
-    // =======================================================================
-    // ================== KODE DIAGNOSTIK DIMULAI DI SINI ==================
-    // =======================================================================
     const updateTicketAvailabilityForSeat = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         if (!seatSelected) return;
-
-        console.clear(); // Membersihkan konsol setiap kali kursi baru dipilih
-        console.log(`%c===== MEMULAI DIAGNOSIS =====`, 'color: #0D9488; font-weight: bold; font-size: 14px;');
 
         const seatName = seatSelected.value.trim().toLowerCase();
         const kuotaInfo = sisaKuota[seatName];
         const remainingQuota = kuotaInfo ? kuotaInfo.sisa : 0;
 
-        console.log(`Kursi yang dipilih: %c${seatSelected.value}`, 'color: #F97316; font-weight: bold;');
-        console.log(`Sisa kuota untuk kursi ini: %c${remainingQuota}`, 'color: #F97316; font-weight: bold;');
-        console.log('---------------------------------');
-
         document.querySelectorAll('input[name="ticket_choice"]').forEach(ticketRadio => {
-            const ticketName = ticketRadio.dataset.name;
-            console.log(`Memeriksa tiket: %c${ticketName}`, 'font-weight: bold;');
-
             const bundleQty = parseInt(ticketRadio.dataset.bundleQuantity) || 1;
-            console.log(`   - Bundle Quantity (dari HTML): ${bundleQty}`);
-
             const isDisabled = remainingQuota < bundleQty;
-            console.log(`   - Sisa Kuota (${remainingQuota}) < Bundle Qty (${bundleQty}) ? %c${isDisabled}`, `color: ${isDisabled ? '#EF4444' : '#22C55E'}; font-weight: bold;`);
 
             ticketRadio.disabled = isDisabled;
-            const label = ticketRadio.closest('label');
-            label.classList.toggle('disabled', isDisabled);
-            
-            const soldOutTag = label.querySelector('.sold-out-tag');
-            if (soldOutTag) {
-                soldOutTag.textContent = isDisabled ? 'Habis' : '';
-                console.log(`   - Status visual diubah menjadi: ${isDisabled ? 'Habis' : 'Tersedia'}`);
-            } else {
-                console.error(`   - GAGAL: Tidak bisa menemukan elemen '.sold-out-tag' untuk tiket ${ticketName}`);
+
+            // --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
+            // Cari label yang benar menggunakan atribut 'for' yang cocok dengan 'id' radio button
+            const label = document.querySelector(`label[for="${ticketRadio.id}"]`);
+            if (label) {
+                label.classList.toggle('disabled', isDisabled);
+                const soldOutTag = label.querySelector('.sold-out-tag');
+                if (soldOutTag) {
+                    soldOutTag.textContent = isDisabled ? 'Habis' : '';
+                }
             }
-            console.log('---------------------------------');
         });
-        console.log(`%c===== DIAGNOSIS SELESAI =====`, 'color: #0D9488; font-weight: bold; font-size: 14px;');
     };
-    // =======================================================================
-    // =================== KODE DIAGNOSTIK BERAKHIR DI SINI ==================
-    // =======================================================================
   
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
