@@ -218,8 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
                           <div class="ticket-label-content">
                               <span class="ticket-name">${name}</span>
-                              <span class="ticket-price">${priceHTML}</span>
-                          </div>
+                              </div>
                           ${quantitySelectorHTML}
                       </label>
                   </div>`;
@@ -274,9 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const label = ticketRadio.closest('label');
             label.classList.toggle('disabled', isDisabled);
             
-            // --- LOGIKA MENAMPILKAN TAG "HABIS" YANG DIPERBAIKI ---
             const ticketLabelContent = label.querySelector('.ticket-label-content');
-            const soldOutTag = ticketLabelContent.querySelector('.sold-out-tag');
+            if (!ticketLabelContent) return;
+
+            // --- ROBUST LOGIC TO ADD/REMOVE "HABIS" TAG ---
+            let soldOutTag = ticketLabelContent.querySelector('.sold-out-tag');
             
             if (isDisabled) {
                 if (!soldOutTag) {
@@ -490,3 +491,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
+
+}
