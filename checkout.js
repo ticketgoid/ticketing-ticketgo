@@ -213,12 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
           
+          // --- PERBAIKAN STRUKTUR HTML ---
+          // Selalu render tag <span class="sold-out-tag"></span> kosong jika event memiliki kursi,
+          // agar fungsinya dapat menemukannya nanti.
+          const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' ? '<span class="sold-out-tag"></span>' : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
+
           return `<div class="ticket-option">
                       <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
                       <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
                           <div class="ticket-label-content">
                               <span class="ticket-name">${name}</span>
-                              ${eventType === 'Tanpa Pilihan Kursi' ? `<span class="ticket-price">${priceHTML}</span>` : ''}
+                              ${soldOutTagHTML}
                           </div>
                           ${quantitySelectorHTML}
                       </label>
@@ -266,27 +271,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const remainingQuota = kuotaInfo ? kuotaInfo.sisa : 0;
 
         document.querySelectorAll('input[name="ticket_choice"]').forEach(ticketRadio => {
-            const ticketRecord = ticketTypes.find(t => t.id === ticketRadio.value);
-            const bundleQty = ticketRecord.fields.BundleQuantity > 1 ? ticketRecord.fields.BundleQuantity : 1;
+            // --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
+            // Langsung baca bundle quantity dari data-attribute, ini lebih andal
+            const bundleQty = parseInt(ticketRadio.dataset.bundleQuantity) || 1;
             const isDisabled = remainingQuota < bundleQty;
 
             ticketRadio.disabled = isDisabled;
             const label = ticketRadio.closest('label');
             label.classList.toggle('disabled', isDisabled);
             
-            const ticketLabelContent = label.querySelector('.ticket-label-content');
-            if (!ticketLabelContent) return;
-
-            let soldOutTag = ticketLabelContent.querySelector('.sold-out-tag');
-            
-            if (isDisabled) {
-                if (!soldOutTag) {
-                    ticketLabelContent.insertAdjacentHTML('beforeend', '<span class="sold-out-tag">Habis</span>');
-                }
-            } else {
-                if (soldOutTag) {
-                    soldOutTag.remove();
-                }
+            const soldOutTag = label.querySelector('.sold-out-tag');
+            if (soldOutTag) {
+                soldOutTag.textContent = isDisabled ? 'Habis' : '';
             }
         });
     };
