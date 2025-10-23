@@ -1493,3 +1493,48 @@ nav {
         animation: none; /* Pastikan .is-throbbing tidak melakukan apa-apa */
     }
 }
+
+@media (max-width: 600px) {
+    
+    /* 1. Atur padding section agar rapi */
+    #events {
+        padding: 4rem 0; /* Hapus padding kiri/kanan section */
+    }
+
+    /* 2. Ubah wrapper menjadi carousel horizontal */
+    .event-grid-wrapper {
+        overflow-x: auto; /* Aktifkan scroll horizontal */
+        scroll-snap-type: x mandatory; /* Wajibkan snap */
+        
+        /* Padding 10vw di kiri/kanan agar kartu pertama/terakhir 
+           bisa di tengah dan kartu berikutnya "mengintip" */
+        padding: 0 10vw; 
+
+        /* Sembunyikan scrollbar */
+        -ms-overflow-style: none;  /* IE dan Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    .event-grid-wrapper::-webkit-scrollbar {
+        display: none; /* Sembunyikan scrollbar untuk Chrome, Safari */
+    }
+
+    /* 3. Ubah layout grid menjadi horizontal */
+    .event-grid, .event-grid.two-rows {
+        display: grid;
+        grid-auto-flow: column; /* Kunci: Susun kartu secara horizontal */
+        grid-template-columns: none; /* Hapus setting kolom vertikal */
+        grid-template-rows: 1fr;
+        gap: 1rem; /* Jarak antar kartu */
+    }
+
+    /* 4. Atur lebar kartu */
+    .event-card {
+        width: 80vw; /* Lebar kartu 80% dari lebar layar */
+        scroll-snap-align: center; /* Posisikan di tengah saat snap/scroll */
+    }
+
+    /* 5. Sembunyikan panah navigasi di mobile */
+    .event-carousel-container .arrow-btn {
+        display: none;
+    }
+}
