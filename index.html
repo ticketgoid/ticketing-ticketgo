@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+     <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -36,14 +36,45 @@
 
         <main>
             <section id="hero">
-                <div class="hero-slider-container">
-                    <div class="slide active-slide"><img src="assets/hero-img1.png" alt="Promotional Image 1"></div>
-                    <div class="slide"><img src="assets/hero-img2.png" alt="Promotional Image 2"></div>
-                </div>
-                <button class="slider-arrow prev" id="prevBtn">&lt;</button>
-                <button class="slider-arrow next" id="nextBtn">&gt;</button>
-            </section>
+    <div class="hero-slider-container">
+        <a href="#" class="slide active-slide" data-slide-index="0">
+            <img src="assets/hero-img1.png" alt="Promotional Image 1">
+        </a>
+        <a href="#" class="slide" data-slide-index="1">
+            <img src="assets/hero-img2.png" alt="Promotional Image 2">
+        </a>
+        </div>
+    <button class="slider-arrow prev" id="prevBtn">&lt;</button>
+    <button class="slider-arrow next" id="nextBtn">&gt;</button>
+    
+    <div class="slider-dots" id="sliderDots"></div> 
+</section>
 
+<section id="why-ticketgo">
+    <div class="why-grid">
+        <div class="why-card">
+            <div class="why-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h4>Transaksi Aman</h4>
+            <p>Didukung oleh payment gateway terpercaya, setiap transaksi dijamin aman.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h4>Proses Cepat</h4>
+            <p>Pilih event, bayar, dan dapatkan e-tiket instan langsung ke email Anda.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <h4>Event Terkurasi</h4>
+            <p>Kami bekerja sama dengan penyelenggara terbaik untuk event berkualitas.</p>
+        </div>
+    </div>
+</section>
             <section id="events">
                 <h2>Event <span class="highlight">Mendatang</span></h2>
                 <div class="event-carousel-container">
@@ -130,6 +161,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
