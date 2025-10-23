@@ -218,7 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
                       <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
                           <div class="ticket-label-content">
                               <span class="ticket-name">${name}</span>
-                              </div>
+                              ${eventType === 'Tanpa Pilihan Kursi' ? `<span class="ticket-price">${priceHTML}</span>` : ''}
+                          </div>
                           ${quantitySelectorHTML}
                       </label>
                   </div>`;
@@ -276,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ticketLabelContent = label.querySelector('.ticket-label-content');
             if (!ticketLabelContent) return;
 
-            // --- ROBUST LOGIC TO ADD/REMOVE "HABIS" TAG ---
             let soldOutTag = ticketLabelContent.querySelector('.sold-out-tag');
             
             if (isDisabled) {
@@ -491,5 +491,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     buildPage();
 });
-
-}
