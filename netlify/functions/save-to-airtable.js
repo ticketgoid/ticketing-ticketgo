@@ -1,6 +1,3 @@
-// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
-const fetch = require('node-fetch');
-
 // Fungsi untuk membuat record baru (POST)
 const postToAirtable = async (apiKey, baseId, tableName, record) => {
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
