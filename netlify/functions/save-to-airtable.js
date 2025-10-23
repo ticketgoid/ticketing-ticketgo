@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 
 // Fungsi untuk membuat record baru (POST)
 const postToAirtable = async (apiKey, baseId, tableName, record) => {
-  const url = `https://api.table.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -19,7 +19,7 @@ const postToAirtable = async (apiKey, baseId, tableName, record) => {
 
 // --- FUNGSI BARU UNTUK UPDATE KUOTA ---
 const updateAirtableRecord = async (apiKey, baseId, tableName, recordId, quantity) => {
-    const url = `https://api.table.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`;
+    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`;
 
     // 1. Ambil nilai 'Kuota Terjual' saat ini
     const getResponse = await fetch(url, {
@@ -60,38 +60,24 @@ exports.handler = async function (event, context) {
 
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT, AIRTABLE_BASE_ID_REKAP, AIRTABLE_BASE_ID_SEAT } = process.env;
   const data = JSON.parse(event.body);
-
-  const quotaTrackerRecord = {
-    fields: {
-      "OrderID": data.order_id,
-      "Jumlah Tiket": data.item_details.quantity,
-      "Tiket yg Dibeli": [data.item_details.ticketRecordId],
-      "Kursi yg Dibeli": data.item_details.seatName || null,
-      "Link ke Event": [data.eventId]
-    },
-  };
-
-  // ### PERBAIKAN NAMA FIELD ###
-  // Nama field disesuaikan persis dengan screenshot Base 'Penjualan' Anda
+  
+  // Data untuk rekapitulasi (Base 'Penjualan')
   const rekapRecord = {
     fields: {
-      "Order ID": data.order_id, // Perbaikan: "OrderID" -> "Order ID"
-      "Nama Pembeli": data.customer_details.first_name, // Perbaikan: "NamaPembeli" -> "Nama Pembeli"
+      "Order ID": data.order_id,
+      "Nama Pembeli": data.customer_details.first_name,
       "Email": data.customer_details.email,
-      "No. HP": data.customer_details.phone, // Perbaikan: "NoHP" -> "No. HP"
-      "Jenis Tiket": data.item_details.name, // Perbaikan: "JenisTiket" -> "Jenis Tiket"
-      "Jumlah Tiket": data.item_details.quantity, // Perbaikan: "JumlahTiket" -> "Jumlah Tiket"
-      "Total Bayar": parseFloat(data.gross_amount), // Perbaikan: "TotalBayar" -> "Total Bayar"
-      "Status Pembayaran": data.transaction_status, // Perbaikan: "StatusPembayaran" -> "Status Pembayaran"
+      "No. HP": data.customer_details.phone,
+      "Jenis Tiket": data.item_details.name,
+      "Jumlah Tiket": data.item_details.quantity,
+      "Total Bayar": parseFloat(data.gross_amount),
+      "Status Pembayaran": data.transaction_status,
     },
   };
 
   try {
     // Proses pencatatan rekap tetap berjalan seperti biasa
-    const [rekapResult] = await Promise.all([
-        // Hapus postToAirtable untuk 'Penjualan' di Base Event, karena sudah tidak relevan
-        postToAirtable(AIRTABLE_API_KEY, AIRTABLE_BASE_ID_REKAP, data.rekapTableName, rekapRecord)
-    ]);
+    const rekapResult = await postToAirtable(AIRTABLE_API_KEY, AIRTABLE_BASE_ID_REKAP, data.rekapTableName, rekapRecord);
     
     // --- LOGIKA UPDATE KUOTA BARU ---
     let quotaUpdateResult = { success: false };
@@ -104,7 +90,7 @@ exports.handler = async function (event, context) {
             data.item_details.seatRecordId, // ID record kursi (cth: "VIP")
             data.item_details.quantity
         );
-    } else {
+    } else { // 'Tanpa Pilihan Kursi'
         // Update kuota di Base 'Event List', tabel 'Ticket Types'
         quotaUpdateResult = await updateAirtableRecord(
             AIRTABLE_API_KEY,
