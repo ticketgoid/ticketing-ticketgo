@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('feedbackTitle').textContent = title;
       document.getElementById('feedbackMessage').textContent = message;
       feedbackModal.classList.add('visible');
-      document.getElementById('closeFeedbackBtn').onclick = () => window.location.reload(); // Reload halaman setelah notif ditutup
+      document.getElementById('closeFeedbackBtn').onclick = () => window.location.reload();
     };
   
     const injectStyles = () => {
@@ -199,13 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const name = Name || 'Tiket Tanpa Nama';
           const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
           
-          // --- PERUBAIKAN LOGIKA isSoldOut ---
-          let isSoldOut = false; // Default-nya, tiket tidak habis
+          let isSoldOut = false;
           if (eventType === 'Tanpa Pilihan Kursi') {
             const kuotaInfo = sisaKuota[name.toLowerCase()];
             isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
           }
-          // Untuk 'Dengan Pilihan Kursi', isSoldOut akan tetap false saat render awal
           
           let priceHTML = '&nbsp;';
           if (Show_Price) {
@@ -220,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
                           <div class="ticket-label-content">
                               <span class="ticket-name">${name}</span>
-                              ${isSoldOut ? '<span class="sold-out-tag">Habis</span>' : `<span class="ticket-price">${priceHTML}</span>`}
+                              <span class="ticket-price">${priceHTML}</span>
                           </div>
                           ${quantitySelectorHTML}
                       </label>
@@ -259,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return 1;
     };
 
-    // --- FUNGSI BARU UNTUK UPDATE TIKET BERDASARKAN KURSI ---
     const updateTicketAvailabilityForSeat = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         if (!seatSelected) return;
@@ -276,12 +273,19 @@ document.addEventListener('DOMContentLoaded', () => {
             ticketRadio.disabled = isDisabled;
             const label = ticketRadio.closest('label');
             label.classList.toggle('disabled', isDisabled);
-
-            const soldOutTag = label.querySelector('.sold-out-tag');
-            if (isDisabled && !soldOutTag) {
-                label.querySelector('.ticket-label-content .ticket-price').insertAdjacentHTML('afterend', '<span class="sold-out-tag">Habis</span>');
-            } else if (!isDisabled && soldOutTag) {
-                soldOutTag.remove();
+            
+            // --- LOGIKA MENAMPILKAN TAG "HABIS" YANG DIPERBAIKI ---
+            const ticketLabelContent = label.querySelector('.ticket-label-content');
+            const soldOutTag = ticketLabelContent.querySelector('.sold-out-tag');
+            
+            if (isDisabled) {
+                if (!soldOutTag) {
+                    ticketLabelContent.insertAdjacentHTML('beforeend', '<span class="sold-out-tag">Habis</span>');
+                }
+            } else {
+                if (soldOutTag) {
+                    soldOutTag.remove();
+                }
             }
         });
     };
@@ -302,10 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
-
-          // Jika memilih kursi, update ketersediaan tiket
           if (e.target.name === 'Pilihan_Kursi') {
-              // Reset pilihan tiket jika ganti kursi
               const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
               if(selectedTicket) selectedTicket.checked = false;
               updateTicketAvailabilityForSeat();
