@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
   
-    const resumePayment = () => {
+        const resumePayment = () => {
         if (!pendingPaymentToken || !pendingPayload) return;
 
         window.snap.pay(pendingPaymentToken, {
@@ -50,9 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showFeedback('pending', 'Menunggu Pembayaran', `Status: ${res.transaction_status}`);
           },
           onError: () => {
-            showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.');
-            pendingPaymentToken = null;
+            // --- PERUBAHAN DI SINI ---
+            // Kita panggil modal 'error', BUKAN reload paksa.
+            // Hapus token agar pengguna bisa membuat order baru saat halaman di-refresh.
+            pendingPaymentToken = null; 
             pendingPayload = null;
+            showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.');
+            // --- AKHIR PERUBAHAN ---
           },
           onClose: () => {
             showFeedback('pending', 'Anda menutup jendela pembayaran', 'Klik tombol di bawah untuk melanjutkan pembayaran Anda.');
@@ -150,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
   
-    const showFeedback = (type, title, message) => {
+      const showFeedback = (type, title, message) => {
       document.getElementById('reviewModal')?.classList.remove('visible');
       const feedbackModal = document.getElementById('feedbackModal');
       const iconWrapper = feedbackModal.querySelector('.feedback-icon');
@@ -168,8 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (type === 'pending') { 
           icon.classList.add('fa-hourglass-half'); 
           iconWrapper.classList.add('pending');
-          closeBtn.textContent = 'Lanjutkan Pembayaran';
-          closeBtn.onclick = () => {
+          closeBtn.textContent = 'Lanjutkan Pembayaran'; // Ubah teks tombol
+          closeBtn.onclick = () => { // Ubah fungsi tombol
               feedbackModal.classList.remove('visible');
               resumePayment();
           };
@@ -177,7 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
           icon.classList.add('fa-times-circle'); 
           iconWrapper.classList.add('error');
           closeBtn.textContent = 'Oke';
-          closeBtn.onclick = () => feedbackModal.classList.remove('visible');
+          // Saat tombol "Oke" di modal error diklik, halaman akan me-refresh.
+          closeBtn.onclick = () => window.location.reload();
       }
       
       document.getElementById('feedbackTitle').textContent = title;
@@ -185,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
       feedbackModal.classList.add('visible');
     };
   
-    // ... (Fungsi injectStyles tetap sama) ...
+   
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
@@ -229,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // ... (Fungsi renderLayout tetap sama) ...
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
         let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
@@ -294,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
         attachEventListeners();
     };
     
-    // ... (Fungsi getCurrentQuantity, updateTicketAvailabilityForSeat, attachEventListeners, calculatePrice, updatePrice, showReviewModal tetap sama) ...
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -493,3 +496,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     buildPage();
 });
+
