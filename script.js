@@ -353,6 +353,39 @@ function initializeWhyGoCarousel() {
     }, 5000); // Ganti angka ini (dalam ms) untuk kecepatan ganti (5 detik)
 }
 
+// --- FUNGSI BARU: Animasi Carousel Event (Mobile) ---
+function initializeEventCarousel() {
+    // Hanya jalankan di mobile
+    if (window.innerWidth > 600) return;
+
+    const gridWrapper = document.querySelector('.event-grid-wrapper');
+    if (!gridWrapper) return;
+
+    // Tunggu sebentar agar semua gambar event sempat dimuat
+    setTimeout(() => {
+        const cards = gridWrapper.querySelectorAll('.event-card');
+        if (cards.length <= 1) return; // Tidak perlu carousel jika hanya 1 kartu
+
+        let currentEventIndex = 0;
+        gridWrapper.style.scrollBehavior = 'smooth';
+
+        setInterval(() => {
+            currentEventIndex = (currentEventIndex + 1) % cards.length;
+            const card = cards[currentEventIndex];
+
+            // Kalkulasi posisi scroll baru agar kartu pas di tengah
+            const wrapperWidth = gridWrapper.offsetWidth;
+            const cardWidth = card.offsetWidth;
+            const cardLeft = card.offsetLeft;
+            
+            const newScrollLeftTarget = cardLeft - (wrapperWidth - cardWidth) / 2;
+            
+            gridWrapper.scrollTo(newScrollLeftTarget, 0);
+
+        }, 5000); // 5 detik
+    }, 1000); // Beri jeda 1 detik sebelum memulai
+}
+
 // --- Fungsi Inisialisasi Utama ---
 function initializeApp() {
     // Panggil kedua fungsi pemuat data secara paralel
@@ -360,7 +393,9 @@ function initializeApp() {
     renderEvents();
     initializeWhyGoAnimation();
     initializeWhyGoCarousel();
+    initializeEventCarousel();
 }
+
 
 
 
