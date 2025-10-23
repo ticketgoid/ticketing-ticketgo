@@ -1,3 +1,6 @@
+// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
+// const fetch = require('node-fetch'); <-- BARIS INI DIHAPUS (REKOMENDASI 5)
+
 // Fungsi pembantu untuk berkomunikasi dengan Airtable API
 const airtableFetch = async (apiKey, url) => {
     const response = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}` } });
@@ -43,22 +46,27 @@ exports.handler = async function (event, context) {
         formFields = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
-    // --- LOGIKA KUOTA BARU ---
+    // --- LOGIKA KUOTA DAN HARGA BARU (DIGABUNG) ---
     let sisaKuota = {}; // Objek untuk menyimpan sisa kuota (key: nama, value: sisa)
+    let seatPrices = {}; // Objek untuk menyimpan harga kursi (key: nama, value: harga)
     const eventType = eventDetails.fields['Tipe Event'];
     const seatPriceTableName = eventDetails.fields['Tabel Harga Kursi'];
 
     if (eventType === 'Dengan Pilihan Kursi' && seatPriceTableName) {
-        // Jika event pakai kursi, ambil kuota dari Base 'Harga Seating'
+        // Jika event pakai kursi, ambil kuota DAN HARGA dari Base 'Harga Seating'
         const allSeats = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(seatPriceTableName)}`);
+        
         allSeats.records.forEach(seat => {
             const seatName = seat.fields.nama; // 'nama' dari tabel 'rona'
             if (seatName) {
-                // Langsung ambil 'Sisa Kuota' dari Airtable
-                sisaKuota[seatName.toLowerCase()] = {
+                const seatNameLower = seatName.toLowerCase();
+                // Ambil 'Sisa Kuota'
+                sisaKuota[seatNameLower] = {
                     sisa: seat.fields['Sisa Kuota'] || 0,
-                    recordId: seat.id // Simpan recordId untuk proses update nanti
+                    recordId: seat.id
                 };
+                // Ambil 'harga_seat'
+                seatPrices[seatNameLower] = seat.fields.harga_seat || 0;
             }
         });
 
@@ -67,15 +75,15 @@ exports.handler = async function (event, context) {
         ticketTypes.records.forEach(ticket => {
             const ticketName = ticket.fields.Name;
             if (ticketName) {
-                // Langsung ambil 'Sisa Kuota' dari Airtable
+                // Ambil 'Sisa Kuota'
                 sisaKuota[ticketName.toLowerCase()] = {
                     sisa: ticket.fields['Sisa Kuota'] || 0,
-                    recordId: ticket.id // Simpan recordId untuk proses update nanti
+                    recordId: ticket.id
                 };
             }
         });
     }
-    // --- AKHIR LOGIKA KUOTA BARU ---
+    // --- AKHIR LOGIKA KUOTA DAN HARGA BARU ---
 
     return {
       statusCode: 200,
@@ -83,7 +91,8 @@ exports.handler = async function (event, context) {
         eventDetails,
         ticketTypes,
         formFields,
-        sisaKuota // Kirim objek sisaKuota ke frontend
+        sisaKuota,
+        seatPrices // Kirim objek seatPrices ke frontend
       }),
     };
   } catch (error) {
