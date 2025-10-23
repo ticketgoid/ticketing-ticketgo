@@ -213,10 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
           
-          // --- PERBAIKAN STRUKTUR HTML ---
-          // Selalu render tag <span class="sold-out-tag"></span> kosong jika event memiliki kursi,
-          // agar fungsinya dapat menemukannya nanti.
-          const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' ? '<span class="sold-out-tag"></span>' : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
+          const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' 
+                ? '<span class="sold-out-tag"></span>' 
+                : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
 
           return `<div class="ticket-option">
                       <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
@@ -271,8 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const remainingQuota = kuotaInfo ? kuotaInfo.sisa : 0;
 
         document.querySelectorAll('input[name="ticket_choice"]').forEach(ticketRadio => {
-            // --- PERBAIKAN LOGIKA UTAMA ADA DI SINI ---
-            // Langsung baca bundle quantity dari data-attribute, ini lebih andal
             const bundleQty = parseInt(ticketRadio.dataset.bundleQuantity) || 1;
             const isDisabled = remainingQuota < bundleQty;
 
@@ -421,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         subtotal = pricePerTicket * quantity;
       }
   
-      const adminFee = parseInt(fields.Admin_Fee?.toString().replace(/[^0-9]/g, '') || '0');
+      const adminFee = parseInt(fields.Admin_Fee?.toString().replace(/[^0-9]/g, '') || 0);
       const totalAdminFee = adminFee * quantity;
       const finalTotal = subtotal + totalAdminFee;
   
