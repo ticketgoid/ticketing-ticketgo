@@ -28,14 +28,14 @@ exports.handler = async function (event, context) {
 
   try {
     // 1. Mengambil detail event utama dari Base 'Event List'
-    const eventDetails = await airtableFetch(AIRTABLE_API_KEY, `https://api.table.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events/${eventId}`);
+    const eventDetails = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events/${eventId}`);
     
     // 2. Mengambil jenis tiket yang terhubung dengan event ini
     const ticketTypeIds = eventDetails.fields.ticket_types || [];
     let ticketTypes = { records: [] };
     if (ticketTypeIds.length > 0) {
         const ticketFilter = `OR(${ticketTypeIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-        ticketTypes = await airtableFetch(AIRTABLE_API_KEY, `https://api.table.com/v0/${AIRTABLE_BASE_ID_EVENT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
+        ticketTypes = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
     // 3. Mengambil form fields yang terhubung dengan event ini
@@ -43,7 +43,7 @@ exports.handler = async function (event, context) {
     let formFields = { records: [] };
     if (formFieldIds.length > 0) {
         const formFilter = `OR(${formFieldIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
-        formFields = await airtableFetch(AIRTABLE_API_KEY, `https://api.table.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
+        formFields = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
     // --- LOGIKA KUOTA BARU ---
@@ -53,7 +53,7 @@ exports.handler = async function (event, context) {
 
     if (eventType === 'Dengan Pilihan Kursi' && seatPriceTableName) {
         // Jika event pakai kursi, ambil kuota dari Base 'Harga Seating'
-        const allSeats = await airtableFetch(AIRTABLE_API_KEY, `https://api.table.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(seatPriceTableName)}`);
+        const allSeats = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(seatPriceTableName)}`);
         allSeats.records.forEach(seat => {
             const seatName = seat.fields.nama; // 'nama' dari tabel 'rona'
             if (seatName) {
