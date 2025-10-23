@@ -1335,7 +1335,7 @@ nav {
 
 /* Style untuk ikon verified */
 .verified-icon {
-    color: var(--teal); /* Warna teal untuk centang */
+    color: #1D9BF0; /* Warna biru "verified" */
     margin-left: 5px;
     font-size: 0.9rem;
 }
@@ -1414,3 +1414,4 @@ nav {
     color: var(--gray-text);
     line-height: 1.6;
 }
+
