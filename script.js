@@ -39,22 +39,32 @@ async function loadHeroSlider() {
         sliderContainer.innerHTML = ''; // Kosongkan kontainer
         slidesData.forEach((record, index) => {
             const fields = record.fields;
-            // Pastikan ada gambar dan link
             const imageUrl = fields['Gambar']?.[0]?.url;
-            const linkUrl = fields['LinkTujuan'] || '#'; // Default ke '#' jika link kosong
+            const linkUrl = fields['LinkTujuan']; // Ambil link
 
             if (imageUrl) {
-                const slideLink = document.createElement('a');
-                slideLink.href = linkUrl;
-                slideLink.className = 'slide';
-                slideLink.dataset.slideIndex = index;
+                // Tentukan elemen pembungkus: <a> jika ada link, <div> jika tidak
+                const wrapperTag = linkUrl ? 'a' : 'div';
+                const slideWrapper = document.createElement(wrapperTag);
+                
+                if (linkUrl) {
+                    slideWrapper.href = linkUrl;
+                    // Buka link eksternal di tab baru
+                    if (linkUrl.startsWith('http')) {
+                        slideWrapper.target = '_blank';
+                        slideWrapper.rel = 'noopener noreferrer';
+                    }
+                }
+
+                slideWrapper.className = 'slide';
+                slideWrapper.dataset.slideIndex = index;
                 
                 const slideImage = document.createElement('img');
                 slideImage.src = imageUrl;
                 slideImage.alt = `Promotional Image ${index + 1}`;
                 
-                slideLink.appendChild(slideImage);
-                sliderContainer.appendChild(slideLink);
+                slideWrapper.appendChild(slideImage);
+                sliderContainer.appendChild(slideWrapper);
             }
         });
 
@@ -290,3 +300,4 @@ function initializeApp() {
     loadHeroSlider();
     renderEvents();
 }
+
