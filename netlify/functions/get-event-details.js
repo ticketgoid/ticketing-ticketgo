@@ -1,6 +1,3 @@
-// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
-// const fetch = require('node-fetch'); <-- BARIS INI DIHAPUS (REKOMENDASI 5)
-
 // Fungsi pembantu untuk berkomunikasi dengan Airtable API
 const airtableFetch = async (apiKey, url) => {
     const response = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}` } });
