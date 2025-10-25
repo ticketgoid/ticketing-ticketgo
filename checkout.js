@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.snap.pay(pendingPaymentToken, {
           onSuccess: res => {
-            // --- BAGIAN YANG DIPERBARUI (1/2) ---
             const email = pendingPayload.customer_details.email;
             const successMessage = `
                 Konfirmasi E-Ticket telah dikirim ke email <strong>${email}</strong>.
@@ -51,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 dengan menyertakan bukti transfer Anda.
             `;
             showFeedback('success', 'Pembayaran Berhasil!', successMessage);
-            // --- AKHIR PERUBAHAN ---
 
             saveDataToSheet(res, pendingPayload.customer_details, pendingPayload.item_details);
             pendingPaymentToken = null;
@@ -185,10 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       document.getElementById('feedbackTitle').textContent = title;
-      // --- BAGIAN YANG DIPERBARUI (2/2) ---
-      // Menggunakan innerHTML agar tag <br> dan <a> bisa dirender
       document.getElementById('feedbackMessage').innerHTML = message;
-      // --- AKHIR PERUBAHAN ---
       feedbackModal.classList.add('visible');
     };
   
@@ -197,9 +192,29 @@ document.addEventListener('DOMContentLoaded', () => {
         style.textContent = `
           .ticket-option label { flex-wrap: wrap; cursor: pointer; } .quantity-selector-wrapper { display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; border-top: 1px solid #f0f0f0; } .quantity-selector-wrapper.visible { display: block; } .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; } .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; } .quantity-selector button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; background-color: var(--white); font-size: 1.2rem; font-weight: 600; color: var(--gray-text); cursor: pointer; transition: all 0.2s; } .quantity-selector button:hover:not(:disabled) { background-color: var(--teal); border-color: var(--teal); color: var(--white); } .quantity-selector button:disabled { opacity: 0.5; cursor: not-allowed; } .quantity-selector input { width: 40px; height: 32px; text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; } .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; } .event-details-column, .purchase-form-column { flex: 1; min-width: 320px; } .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); } .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; } .ticket-option .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; } .ticket-option input[type="radio"] { display: none; } .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; } #buyButton, #confirmPaymentBtn { width: 100%; background-color: var(--orange); color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color: 0.3s ease, transform 0.1s ease; margin-top: 20px; } #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; } #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); } #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; } .modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } .modal.visible { display: flex; opacity: 1; visibility: visible; } .feedback-modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); } .feedback-modal.visible { display: flex; }
           .ticket-option label.disabled { cursor: not-allowed; background-color: #f1f5f9; color: #94a3b8; } .ticket-option label.disabled:hover { border-color: #e5e7eb; box-shadow: none; } .sold-out-tag { font-weight: 700; color: #ef4444; margin-left: auto; white-space: nowrap; }
-          /* Tambahan style untuk pesan sukses */
           #feedbackMessage { line-height: 1.6; }
           #feedbackMessage a { color: var(--teal); font-weight: 600; text-decoration: underline; }
+
+          /* --- PERUBAHAN BARU DIMULAI DI SINI --- */
+          /* 1. Mengubah warna tombol di semua popup feedback menjadi oranye */
+          #closeFeedbackBtn {
+            background-color: var(--orange);
+          }
+          #closeFeedbackBtn:hover {
+            background-color: #EA580C; /* Warna oranye lebih gelap saat hover */
+          }
+
+          /* 2. Mengatur warna spesifik untuk setiap ikon status */
+          .feedback-icon.success .fas {
+            color: #28a745; /* Hijau untuk ikon sukses */
+          }
+          .feedback-icon.pending .fas {
+            color: #007bff; /* Biru untuk ikon tertunda */
+          }
+          .feedback-icon.error .fas {
+            color: #dc3545; /* Merah untuk ikon gagal */
+          }
+          /* --- AKHIR PERUBAHAN --- */
         `;
         document.head.appendChild(style);
     };
@@ -232,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // ... Sisa kode dari renderLayout hingga akhir tetap sama ...
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
         let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
