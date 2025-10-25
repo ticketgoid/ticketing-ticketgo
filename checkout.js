@@ -35,13 +35,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
   
-        const resumePayment = () => {
+    const resumePayment = () => {
         if (!pendingPaymentToken || !pendingPayload) return;
 
         window.snap.pay(pendingPaymentToken, {
           onSuccess: res => {
-            showFeedback('success', 'Pembayaran Berhasil!', 'E-tiket Anda akan segera dikirimkan.');
-            // Gunakan data dari pendingPayload untuk save-to-airtable
+            // --- BAGIAN YANG DIPERBARUI (1/2) ---
+            const email = pendingPayload.customer_details.email;
+            const successMessage = `
+                Konfirmasi E-Ticket telah dikirim ke email <strong>${email}</strong>.
+                <br><br>
+                Mohon cek folder Spam/Promosi secara berkala. Apabila dalam <strong>2x24 jam</strong> E-Ticket belum diterima, silakan hubungi kami melalui 
+                <a href="https://instagram.com/ticketgo.id" target="_blank" rel="noopener noreferrer">Instagram (@ticketgo.id)</a> atau 
+                <a href="https://wa.me/6287849679178" target="_blank" rel="noopener noreferrer">WhatsApp (+62 878-4967-9178)</a> 
+                dengan menyertakan bukti transfer Anda.
+            `;
+            showFeedback('success', 'Pembayaran Berhasil!', successMessage);
+            // --- AKHIR PERUBAHAN ---
+
             saveDataToSheet(res, pendingPayload.customer_details, pendingPayload.item_details);
             pendingPaymentToken = null;
             pendingPayload = null;
@@ -50,13 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showFeedback('pending', 'Menunggu Pembayaran', `Status: ${res.transaction_status}`);
           },
           onError: () => {
-            // --- PERUBAHAN DI SINI ---
-            // Kita panggil modal 'error', BUKAN reload paksa.
-            // Hapus token agar pengguna bisa membuat order baru saat halaman di-refresh.
             pendingPaymentToken = null; 
             pendingPayload = null;
             showFeedback('error', 'Pembayaran Gagal', 'Silakan coba lagi.');
-            // --- AKHIR PERUBAHAN ---
           },
           onClose: () => {
             showFeedback('pending', 'Anda menutup jendela pembayaran', 'Klik tombol di bawah untuk melanjutkan pembayaran Anda.');
@@ -81,8 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) throw new Error("Kursi belum dipilih.");
         if (!selectedTicketInput) throw new Error("Jenis tiket belum dipilih.");
   
-        // Kalkulasi harga tetap dilakukan di sini HANYA untuk modal review
-        // Harga final akan divalidasi oleh server
         const { quantity } = calculatePrice();
         const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
         const name = selectedTicketRecord?.fields?.Name || 'Tiket Tanpa Nama';
@@ -97,8 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
         if (!customerName || !customerEmail || !customerPhone) throw new Error("Data pemesan tidak lengkap.");
   
-        // --- PAYLOAD BARU UNTUK SERVER (REKOMENDASI 1) ---
-        // Payload ini hanya berisi INPUT, bukan harga
         const transactionApiPayload = {
           order_id: `TICKETGO-${Date.now()}`,
           eventId: eventDetails.id,
@@ -112,8 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         };
         
-        // --- PAYLOAD BARU UNTUK DISIMPAN (UNTUK save-to-airtable NANTI) ---
-        // Ini adalah data yang akan diteruskan ke save-to-airtable SETELAH pembayaran berhasil
         const airtableSavePayload = {
             customer_details: transactionApiPayload.customer_details,
             item_details: {
@@ -126,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
   
-        // Panggil create-transaction dengan payload input
         const response = await fetch(SCRIPT_URL, { 
             method: 'POST', 
             body: JSON.stringify(transactionApiPayload), 
@@ -142,9 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.error || !result.token) throw new Error(result.error || "Token pembayaran tidak diterima.");
         
         pendingPaymentToken = result.token;
-        pendingPayload = airtableSavePayload; // Simpan data untuk 'save-to-airtable'
+        pendingPayload = airtableSavePayload;
 
-        resumePayment(); // Panggil fungsi resumePayment
+        resumePayment();
 
       } catch (error) {
         console.error('❌ Gagal memulai pembayaran:', error);
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
   
-      const showFeedback = (type, title, message) => {
+    const showFeedback = (type, title, message) => {
       document.getElementById('reviewModal')?.classList.remove('visible');
       const feedbackModal = document.getElementById('feedbackModal');
       const iconWrapper = feedbackModal.querySelector('.feedback-icon');
@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (type === 'pending') { 
           icon.classList.add('fa-hourglass-half'); 
           iconWrapper.classList.add('pending');
-          closeBtn.textContent = 'Lanjutkan Pembayaran'; // Ubah teks tombol
-          closeBtn.onclick = () => { // Ubah fungsi tombol
+          closeBtn.textContent = 'Lanjutkan Pembayaran';
+          closeBtn.onclick = () => {
               feedbackModal.classList.remove('visible');
               resumePayment();
           };
@@ -181,27 +181,28 @@ document.addEventListener('DOMContentLoaded', () => {
           icon.classList.add('fa-times-circle'); 
           iconWrapper.classList.add('error');
           closeBtn.textContent = 'Oke';
-          // Saat tombol "Oke" di modal error diklik, halaman akan me-refresh.
           closeBtn.onclick = () => window.location.reload();
       }
       
       document.getElementById('feedbackTitle').textContent = title;
-      document.getElementById('feedbackMessage').textContent = message;
+      // --- BAGIAN YANG DIPERBARUI (2/2) ---
+      // Menggunakan innerHTML agar tag <br> dan <a> bisa dirender
+      document.getElementById('feedbackMessage').innerHTML = message;
+      // --- AKHIR PERUBAHAN ---
       feedbackModal.classList.add('visible');
     };
   
-   
     const injectStyles = () => {
         const style = document.createElement('style');
         style.textContent = `
           .ticket-option label { flex-wrap: wrap; cursor: pointer; } .quantity-selector-wrapper { display: none; width: 100%; padding-top: 1rem; margin-top: 0.75rem; border-top: 1px solid #f0f0f0; } .quantity-selector-wrapper.visible { display: block; } .quantity-selector { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; } .quantity-selector p { margin-right: auto; font-weight: 600; font-size: 0.9rem; } .quantity-selector button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; background-color: var(--white); font-size: 1.2rem; font-weight: 600; color: var(--gray-text); cursor: pointer; transition: all 0.2s; } .quantity-selector button:hover:not(:disabled) { background-color: var(--teal); border-color: var(--teal); color: var(--white); } .quantity-selector button:disabled { opacity: 0.5; cursor: not-allowed; } .quantity-selector input { width: 40px; height: 32px; text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; font-weight: 600; -moz-appearance: textfield; } .checkout-body { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; } .event-details-column, .purchase-form-column { flex: 1; min-width: 320px; } .event-poster-container { width: 100%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; margin-bottom: 24px; background-color: #f0f2f5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); } .event-poster { width: 100%; height: 100%; object-fit: cover; display: block; } .ticket-option .ticket-label-content { display: flex; justify-content: space-between; align-items: center; width: 100%; } .ticket-option input[type="radio"] { display: none; } .seat-map-image { max-width: 100%; height: auto; display: block; border-radius: 8px; margin-top: 10px; } #buyButton, #confirmPaymentBtn { width: 100%; background-color: var(--orange); color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; text-align: center; transition: background-color: 0.3s ease, transform 0.1s ease; margin-top: 20px; } #buyButton:hover, #confirmPaymentBtn:hover { background-color: #EA580C; } #buyButton:active, #confirmPaymentBtn:active { transform: scale(0.98); } #buyButton:disabled { background-color: #cccccc; cursor: not-allowed; } .modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0, 0, 0, 0.6); padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } .modal.visible { display: flex; opacity: 1; visibility: visible; } .feedback-modal { display: none; align-items: center; justify-content: center; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); } .feedback-modal.visible { display: flex; }
           .ticket-option label.disabled { cursor: not-allowed; background-color: #f1f5f9; color: #94a3b8; } .ticket-option label.disabled:hover { border-color: #e5e7eb; box-shadow: none; } .sold-out-tag { font-weight: 700; color: #ef4444; margin-left: auto; white-space: nowrap; }
+          /* Tambahan style untuk pesan sukses */
+          #feedbackMessage { line-height: 1.6; }
+          #feedbackMessage a { color: var(--teal); font-weight: 600; text-decoration: underline; }
         `;
         document.head.appendChild(style);
     };
-
-    // --- FUNGSI INI DIHAPUS (REKOMENDASI 2) ---
-    // const fetchAllSeatPrices = async () => { ... }
 
     const buildPage = async () => {
         injectStyles();
@@ -217,15 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
             sisaKuota = data.sisaKuota;
-            seatPrices = data.seatPrices; // <-- DIUBAH (REKOMENDASI 2)
+            seatPrices = data.seatPrices;
             
             if (!ticketTypes || ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
                 return;
             }
-            
-            // --- PANGGILAN API INI DIHAPUS (REKOMENDASI 2) ---
-            // if(eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi') await fetchAllSeatPrices();
             
             renderLayout();
         } catch (error) {
@@ -297,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
         attachEventListeners();
     };
-    
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -426,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const isBundleTicket = (fields.BundleQuantity || 1) > 1;
       let baseSeatPrice = 0;
       if (eventType === 'Dengan Pilihan Kursi' && seatSelected) {
-          // 'seatPrices' sekarang diisi oleh buildPage
           baseSeatPrice = seatPrices[seatSelected.value.toLowerCase()] || 0; 
       }
       const ticketPriceField = parseInt(fields.Price?.toString().replace(/[^0-9]/g, '') || 0);
@@ -496,4 +492,3 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     buildPage();
 });
-
