@@ -200,7 +200,7 @@ async function renderEvents() {
                 eventGrid.appendChild(eventCard);
             });
         }
-        setupEventListeners();
+        // setupEventListeners(); // <-- BARIS INI DIHAPUS KARENA MENYEBABKAN ERROR
     } catch (error) {
         console.error("Gagal mengambil event dari backend:", error);
         eventGrid.innerHTML = '<p>Gagal memuat event. Silakan coba lagi nanti.</p>';
@@ -394,8 +394,5 @@ function initializeApp() {
     initializeWhyGoAnimation();
     initializeWhyGoCarousel();
     initializeEventCarousel();
+    setupEventListeners(); // <-- PEMANGGILAN DIPINDAHKAN KE SINI
 }
-
-
-
-
