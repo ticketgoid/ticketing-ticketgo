@@ -6,7 +6,58 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let pendingPaymentToken = null;
     let pendingPayload = null;
-  
+
+    // --- FUNGSI BARU UNTUK SEO: MEMBUAT STRUCTURED DATA ---
+    const generateStructuredData = () => {
+        // Hapus structured data lama jika ada, untuk mencegah duplikasi
+        const oldSchema = document.getElementById('event-structured-data');
+        if (oldSchema) {
+            oldSchema.remove();
+        }
+
+        const fields = eventDetails.fields;
+        const eventId = new URLSearchParams(window.location.search).get('eventId');
+        
+        // Menemukan harga terendah dari semua jenis tiket yang tersedia
+        const lowestPrice = ticketTypes.reduce((min, ticket) => {
+            const price = parseInt(ticket.fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
+            return price > 0 && price < min ? price : min;
+        }, Infinity);
+
+        const schema = {
+            "@context": "https://schema.org",
+            "@type": "Event",
+            "name": fields.NamaEvent,
+            "startDate": fields.Waktu, // Format ISO 8601 (misal: "2025-12-15T19:00:00.000Z")
+            "location": {
+                "@type": "Place",
+                "name": fields.Lokasi,
+                "address": fields.Lokasi // Properti address bisa sama dengan nama jika tidak ada detail
+            },
+            "image": [
+                fields.Poster[0].url
+            ],
+            "description": fields.Deskripsi,
+            "offers": {
+                "@type": "Offer",
+                "url": `https://nama-domain-anda.com/checkout.html?eventId=${eventId}`, // GANTI DENGAN DOMAIN ANDA
+                "price": lowestPrice === Infinity ? "0" : lowestPrice.toString(),
+                "priceCurrency": "IDR",
+                "availability": fields['Pendaftaran Dibuka'] ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+                "validFrom": new Date().toISOString() // Biasanya tiket valid sejak sekarang
+            }
+        };
+
+        const script = document.createElement('script');
+        script.id = 'event-structured-data';
+        script.type = 'application/ld+json';
+        script.text = JSON.stringify(schema);
+        document.head.appendChild(script);
+
+        console.log("✅ Structured Data untuk SEO berhasil dibuat dan ditambahkan.");
+    };
+    // --- AKHIR FUNGSI BARU UNTUK SEO ---
+
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
         const payload = {
@@ -197,21 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
           .feedback-icon.success .fas { color: #28a745; }
           .feedback-icon.pending .fas { color: #007bff; }
           .feedback-icon.error .fas { color: #dc3545; }
-
-          /* --- STYLE VALIDASI BARU --- */
-          .validation-message {
-            color: #dc3545; /* Merah */
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-            display: none; /* Sembunyikan secara default */
-          }
-          input.invalid {
-            border-color: #dc3545 !important; /* Border merah jika invalid */
-          }
-          input.invalid:focus {
-             box-shadow: 0 0 0 1px #dc3545 !important;
-          }
-          /* --- AKHIR STYLE VALIDASI BARU --- */
+          .validation-message { color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem; display: none; }
+          input.invalid { border-color: #dc3545 !important; }
+          input.invalid:focus { box-shadow: 0 0 0 1px #dc3545 !important; }
         `;
         document.head.appendChild(style);
     };
@@ -238,13 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             renderLayout();
+            generateStructuredData(); // --- PANGGIL FUNGSI SEO DI SINI ---
         } catch (error) {
             console.error('Gagal membangun halaman:', error);
             checkoutMain.innerHTML = `<p>Gagal memuat detail event. Error: ${error.message}</p>`;
         }
     };
     
-    // --- FUNGSI RENDERLAYOUT DIPERBARUI ---
+    // ... Sisa kode lainnya tetap sama persis ...
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
         let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
@@ -296,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>`;
         }).join('');
         
-        // --- PERUBAHAN DI SINI: MENAMBAHKAN ELEMEN PESAN ERROR ---
         const formFieldsHTML = formFields.map(record => {
             const { FieldLabel, FieldType, Is_Required } = record.fields;
             if (!FieldLabel || !FieldType) return '';
@@ -324,14 +363,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${validationMessage}
                     </div>`;
         }).join('');
-        // --- AKHIR PERUBAHAN ---
 
         checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
         const buyButton = document.getElementById('buyButton');
         if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
         attachEventListeners();
     };
-
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -365,34 +402,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
-    
-    // --- FUNGSI ATTACHEVENTLISTENERS DIPERBARUI ---
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
       const form = document.getElementById('customer-data-form');
-
-      // Fungsi validasi email
       const validateEmail = (email) => {
           const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
           return re.test(String(email).toLowerCase());
       };
-
       const checkButtonState = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
         const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
         const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
-        
         let isCustomValidationOk = true;
         const emailInput = form.querySelector('input[type="email"]');
         if (emailInput && emailInput.value && !validateEmail(emailInput.value)) {
             isCustomValidationOk = false;
         }
-
         const isFormValid = form.checkValidity();
         buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid || !isCustomValidationOk);
       };
-
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
           if (e.target.name === 'Pilihan_Kursi') {
@@ -412,10 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
           updatePrice();
         }
       });
-
-      // Listener validasi real-time
       form.addEventListener('input', e => {
-          // Validasi khusus untuk Email
           if (e.target.matches('input[type="email"]')) {
               const emailInput = e.target;
               const errorElement = document.getElementById(`${emailInput.id}-error`);
@@ -427,13 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
                   if (errorElement) errorElement.style.display = 'none';
               }
           }
-          // Validasi khusus untuk Nomor Telepon (hanya angka)
           if (e.target.matches('input[type="tel"]')) {
               e.target.value = e.target.value.replace(/[^0-9]/g, '');
           }
           checkButtonState();
       });
-
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
         if (!qtyInput) return;
@@ -481,8 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       document.getElementById('confirmPaymentBtn')?.addEventListener('click', initiatePayment);
     };
-    // --- AKHIR PERUBAHAN ---
-    
     const calculatePrice = () => {
       const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
       const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
