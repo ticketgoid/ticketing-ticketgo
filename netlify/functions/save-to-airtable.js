@@ -1,3 +1,6 @@
+// GANTI SELURUH ISI FILE DENGAN KODE BARU INI
+const fetch = require('node-fetch');
+
 // Fungsi untuk membuat record baru (POST)
 const postToAirtable = async (apiKey, baseId, tableName, record) => {
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
@@ -58,6 +61,7 @@ exports.handler = async function (event, context) {
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT, AIRTABLE_BASE_ID_REKAP, AIRTABLE_BASE_ID_SEAT } = process.env;
   const data = JSON.parse(event.body);
   
+  // --- BAGIAN YANG DIPERBARUI ---
   // Data untuk rekapitulasi (Base 'Penjualan')
   const rekapRecord = {
     fields: {
@@ -66,11 +70,13 @@ exports.handler = async function (event, context) {
       "Email": data.customer_details.email,
       "No. HP": data.customer_details.phone,
       "Jenis Tiket": data.item_details.name,
+      "Seating": data.item_details.seatName, // <-- DATA BARU DITAMBAHKAN DI SINI
       "Jumlah Tiket": data.item_details.quantity,
       "Total Bayar": parseFloat(data.gross_amount),
       "Status Pembayaran": data.transaction_status,
     },
   };
+  // --- AKHIR BAGIAN YANG DIPERBARUI ---
 
   try {
     // Proses pencatatan rekap tetap berjalan seperti biasa
