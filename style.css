@@ -1650,72 +1650,93 @@ nav {
     }
 }
 
-/* --- PERUBAHAN HEADER BARU --- */
+/* --- GAYA BARU UNTUK HEADER & SLIDE-IN MENU --- */
 
-/* 1. Ubah warna latar belakang header */
+/* 1. Ubah warna header dan pastikan search bar tetap putih */
 header {
     background-color: var(--orange);
 }
-
-/* 2. Pastikan search bar tetap putih dan ikon pencarian terlihat */
-.search-input {
-    background-color: var(--white);
-}
-.search-input:focus {
+.search-input, .search-input:focus {
     background-color: var(--white);
 }
 .search-icon-inside {
     color: var(--gray-text);
 }
 
-/* 3. Gaya untuk tombol menu (garis tiga) */
+/* 2. Gaya untuk tombol menu (garis tiga) */
 .menu-toggle {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.8rem; /* Ukuran ikon */
+    font-size: 1.8rem;
     color: var(--white); /* Warna ikon putih agar kontras */
+    z-index: 1001; /* Pastikan selalu di atas */
 }
 
-/* 4. Gaya untuk menu dropdown */
+/* 3. Gaya untuk panel menu slide-in */
 .nav-menu {
-    display: none; /* Sembunyikan secara default */
-    position: absolute;
-    top: 70px; /* Sesuaikan jarak dari atas */
-    right: 5%;
-    background-color: var(--white);
-    border-radius: 8px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    position: fixed; /* Kunci: Posisi relatif terhadap layar */
+    top: 0;
+    right: -100%; /* Mulai dari luar layar sebelah kanan */
+    width: 80%;   /* Lebar panel */
+    max-width: 320px;
+    height: 100vh; /* Tinggi penuh layar */
+    background-color: var(--orange);
+    box-shadow: -4px 0 15px rgba(0,0,0,0.2);
     list-style: none;
-    padding: 0.5rem 0;
-    z-index: 110;
-    min-width: 200px;
+    padding: 6rem 0 2rem;
+    z-index: 1000;
+    transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Animasi slide */
+    display: block; /* Selalu block, visibilitas diatur oleh 'right' */
 }
 
-/* 5. Kelas 'active' untuk menampilkan menu */
+/* 4. Kelas 'active' untuk menampilkan menu */
 .nav-menu.active {
-    display: block;
+    right: 0; /* Pindahkan ke dalam layar */
 }
 
+/* 5. Gaya untuk link di dalam menu */
 .nav-menu li a, .nav-menu .dropdown-toggle {
     display: block;
-    padding: 0.75rem 1.5rem;
-    color: var(--black);
+    padding: 1rem 2rem;
+    color: var(--white); /* Warna teks putih */
     font-weight: 600;
     cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
-
+.nav-menu li:first-child a { /* Hilangkan border untuk tombol close */
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
 .nav-menu li a:hover {
-    background-color: var(--gray-light);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* 6. Gaya untuk submenu dropdown 'Hubungi Kami' */
+/* 6. Tombol close di dalam menu */
+.close-menu-btn {
+    position: absolute;
+    top: 1.25rem;
+    left: 1.5rem;
+    font-size: 2rem;
+}
+.close-menu-btn a { /* Atur agar tidak seperti link menu biasa */
+    padding: 0.5rem;
+    border: none !important;
+}
+.close-menu-btn a:hover {
+    background: none !important;
+}
+
+/* 7. Gaya untuk submenu dropdown 'Hubungi Kami' */
 .dropdown-content {
-    display: none; /* Sembunyikan submenu secara default */
+    display: none;
     list-style: none;
-    padding-left: 1.5rem; /* Beri indentasi */
+    padding-left: 1rem;
+    background-color: rgba(0,0,0,0.1);
 }
-
 .dropdown-content.show {
     display: block;
+}
+.dropdown-content li a {
+    padding-left: 3rem; /* Beri indentasi lebih dalam */
+    border: none;
 }
