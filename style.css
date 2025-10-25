@@ -1629,10 +1629,6 @@ nav {
 /* --- STYLE BARU UNTUK LIVE SEARCH MOBILE --- */
 
 @media (max-width: 600px) {
-    .search-container {
-        position: static; /* Hapus posisi relatif di mobile */
-    }
-
     .search-results {
         /* Buat agar memenuhi lebar layar */
         left: 0;
@@ -1739,4 +1735,19 @@ header {
 .dropdown-content li a {
     padding-left: 3rem; /* Beri indentasi lebih dalam */
     border: none;
+}
+
+/* --- GAYA UNTUK TOMBOL MENU AKTIF (X) --- */
+
+/* Sembunyikan ikon X secara default */
+.menu-toggle .fa-times {
+    display: none;
+}
+
+/* Tampilkan ikon X dan sembunyikan ikon bar saat tombol aktif */
+.menu-toggle.active .fa-times {
+    display: block;
+}
+.menu-toggle.active .fa-bars {
+    display: none;
 }
