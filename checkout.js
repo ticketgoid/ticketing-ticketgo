@@ -2,18 +2,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     const SCRIPT_URL = '/api/create-transaction';
     const checkoutMain = document.getElementById('checkout-main');
-    // seatPrices sekarang akan diisi oleh buildPage
     let eventDetails = {}, ticketTypes = [], formFields = [], seatPrices = {}, sisaKuota = {};
     
     let pendingPaymentToken = null;
-    let pendingPayload = null; // Ini akan menyimpan data untuk 'save-to-airtable'
+    let pendingPayload = null;
   
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
         const payload = {
           order_id: paymentResult.order_id,
           transaction_status: paymentResult.transaction_status,
-          // gross_amount diambil dari server-side (paymentResult)
           gross_amount: paymentResult.gross_amount, 
           customer_details: customerData,
           eventId: eventDetails.id,
@@ -194,27 +192,26 @@ document.addEventListener('DOMContentLoaded', () => {
           .ticket-option label.disabled { cursor: not-allowed; background-color: #f1f5f9; color: #94a3b8; } .ticket-option label.disabled:hover { border-color: #e5e7eb; box-shadow: none; } .sold-out-tag { font-weight: 700; color: #ef4444; margin-left: auto; white-space: nowrap; }
           #feedbackMessage { line-height: 1.6; }
           #feedbackMessage a { color: var(--teal); font-weight: 600; text-decoration: underline; }
+          #closeFeedbackBtn { background-color: var(--orange); }
+          #closeFeedbackBtn:hover { background-color: #EA580C; }
+          .feedback-icon.success .fas { color: #28a745; }
+          .feedback-icon.pending .fas { color: #007bff; }
+          .feedback-icon.error .fas { color: #dc3545; }
 
-          /* --- PERUBAHAN BARU DIMULAI DI SINI --- */
-          /* 1. Mengubah warna tombol di semua popup feedback menjadi oranye */
-          #closeFeedbackBtn {
-            background-color: var(--orange);
+          /* --- STYLE VALIDASI BARU --- */
+          .validation-message {
+            color: #dc3545; /* Merah */
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: none; /* Sembunyikan secara default */
           }
-          #closeFeedbackBtn:hover {
-            background-color: #EA580C; /* Warna oranye lebih gelap saat hover */
+          input.invalid {
+            border-color: #dc3545 !important; /* Border merah jika invalid */
           }
-
-          /* 2. Mengatur warna spesifik untuk setiap ikon status */
-          .feedback-icon.success .fas {
-            color: #28a745; /* Hijau untuk ikon sukses */
+          input.invalid:focus {
+             box-shadow: 0 0 0 1px #dc3545 !important;
           }
-          .feedback-icon.pending .fas {
-            color: #007bff; /* Biru untuk ikon tertunda */
-          }
-          .feedback-icon.error .fas {
-            color: #dc3545; /* Merah untuk ikon gagal */
-          }
-          /* --- AKHIR PERUBAHAN --- */
+          /* --- AKHIR STYLE VALIDASI BARU --- */
         `;
         document.head.appendChild(style);
     };
@@ -247,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // ... Sisa kode dari renderLayout hingga akhir tetap sama ...
+    // --- FUNGSI RENDERLAYOUT DIPERBARUI ---
     const renderLayout = () => {
         const eventType = eventDetails.fields['Tipe Event'];
         let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
@@ -298,19 +295,43 @@ document.addEventListener('DOMContentLoaded', () => {
                       </label>
                   </div>`;
         }).join('');
+        
+        // --- PERUBAHAN DI SINI: MENAMBAHKAN ELEMEN PESAN ERROR ---
         const formFieldsHTML = formFields.map(record => {
-          const { FieldLabel, FieldType, Is_Required } = record.fields;
-          if (!FieldLabel || !FieldType) return '';
-          const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-          let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
-          if (FieldType.toLowerCase() === 'tel') return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div></div>`;
-          return `<div class="form-group"><label for="${fieldId}">${FieldLabel}</label><input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}"></div>`;
+            const { FieldLabel, FieldType, Is_Required } = record.fields;
+            if (!FieldLabel || !FieldType) return '';
+            const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
+            let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
+            const isEmailField = FieldType.toLowerCase() === 'email';
+            const isPhoneField = FieldType.toLowerCase() === 'tel';
+
+            let fieldHTML = '';
+            let validationMessage = '';
+
+            if (isPhoneField) {
+                fieldHTML = `<div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div>`;
+            } else {
+                fieldHTML = `<input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}">`;
+            }
+
+            if(isEmailField){
+                validationMessage = `<p id="${fieldId}-error" class="validation-message">Format email tidak valid (contoh: email@domain.com).</p>`;
+            }
+
+            return `<div class="form-group">
+                        <label for="${fieldId}">${FieldLabel}</label>
+                        ${fieldHTML}
+                        ${validationMessage}
+                    </div>`;
         }).join('');
+        // --- AKHIR PERUBAHAN ---
+
         checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields['Poster']?.[0]?.url || ''}" alt="Poster" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
         const buyButton = document.getElementById('buyButton');
         if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
         attachEventListeners();
     };
+
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -344,17 +365,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+    
+    // --- FUNGSI ATTACHEVENTLISTENERS DIPERBARUI ---
     const attachEventListeners = () => {
       const buyButton = document.getElementById('buyButton');
       const form = document.getElementById('customer-data-form');
+
+      // Fungsi validasi email
+      const validateEmail = (email) => {
+          const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+          return re.test(String(email).toLowerCase());
+      };
+
       const checkButtonState = () => {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
         const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
         const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
         const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
+        
+        let isCustomValidationOk = true;
+        const emailInput = form.querySelector('input[type="email"]');
+        if (emailInput && emailInput.value && !validateEmail(emailInput.value)) {
+            isCustomValidationOk = false;
+        }
+
         const isFormValid = form.checkValidity();
-        buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid);
+        buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid || !isCustomValidationOk);
       };
+
       document.getElementById('checkout-main').addEventListener('change', e => {
         if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
           if (e.target.name === 'Pilihan_Kursi') {
@@ -374,7 +412,28 @@ document.addEventListener('DOMContentLoaded', () => {
           updatePrice();
         }
       });
-      form.addEventListener('input', checkButtonState);
+
+      // Listener validasi real-time
+      form.addEventListener('input', e => {
+          // Validasi khusus untuk Email
+          if (e.target.matches('input[type="email"]')) {
+              const emailInput = e.target;
+              const errorElement = document.getElementById(`${emailInput.id}-error`);
+              if (emailInput.value && !validateEmail(emailInput.value)) {
+                  emailInput.classList.add('invalid');
+                  if (errorElement) errorElement.style.display = 'block';
+              } else {
+                  emailInput.classList.remove('invalid');
+                  if (errorElement) errorElement.style.display = 'none';
+              }
+          }
+          // Validasi khusus untuk Nomor Telepon (hanya angka)
+          if (e.target.matches('input[type="tel"]')) {
+              e.target.value = e.target.value.replace(/[^0-9]/g, '');
+          }
+          checkButtonState();
+      });
+
       document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
         const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
         if (!qtyInput) return;
@@ -422,6 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       document.getElementById('confirmPaymentBtn')?.addEventListener('click', initiatePayment);
     };
+    // --- AKHIR PERUBAHAN ---
+    
     const calculatePrice = () => {
       const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
       const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
