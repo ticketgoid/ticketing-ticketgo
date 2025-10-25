@@ -14,25 +14,20 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch(error => console.error(error));
     };
 
-    // Memuat footer ke dalam elemen <footer id="footer-placeholder">
+    // Memuat footer
     loadComponent("footer#footer-placeholder", "footer.html");
 
-    // --- LOGIKA BARU UNTUK MENU HEADER ---
+    // --- LOGIKA HEADER DIPERBARUI ---
     const menuToggle = document.getElementById('menu-toggle');
-    const closeMenuBtn = document.getElementById('close-menu-btn'); // Tombol close baru
     const navMenu = document.getElementById('nav-menu');
     const dropdownToggle = document.getElementById('dropdown-toggle');
     const dropdownContent = document.getElementById('dropdown-content');
 
-    if (menuToggle && navMenu && closeMenuBtn) {
-        // Tampilkan menu
+    if (menuToggle && navMenu) {
+        // Tampilkan/sembunyikan menu utama dengan mengubah tombol
         menuToggle.addEventListener('click', () => {
-            navMenu.classList.add('active');
-        });
-
-        // Sembunyikan menu
-        closeMenuBtn.addEventListener('click', () => {
-            navMenu.classList.remove('active');
+            navMenu.classList.toggle('active');
+            menuToggle.classList.toggle('active'); // <-- Tambahan: Toggle kelas pada tombol
         });
 
         // Tampilkan/sembunyikan submenu
@@ -42,5 +37,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 dropdownContent.classList.toggle('show');
             });
         }
+        
+        // Sembunyikan menu jika klik di luar
+        document.addEventListener('click', (e) => {
+            if (!navMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+                navMenu.classList.remove('active');
+                menuToggle.classList.remove('active'); // <-- Tambahan: Hapus kelas aktif dari tombol juga
+                if (dropdownContent) {
+                    dropdownContent.classList.remove('show');
+                }
+            }
+        });
     }
 });
