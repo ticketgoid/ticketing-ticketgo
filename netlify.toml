@@ -1,11 +1,12 @@
-# File: netlify.toml
-
 [build]
-  # Direktori tempat Netlify akan menemukan file-file backend Anda
   functions = "netlify/functions"
 
 [[redirects]]
-  # Mengarahkan permintaan dari /api/* ke function yang sesuai
   from = "/api/*"
   to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/generate-sitemap"
   status = 200
