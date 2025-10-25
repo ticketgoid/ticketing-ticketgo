@@ -1625,3 +1625,27 @@ nav {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* --- STYLE BARU UNTUK LIVE SEARCH MOBILE --- */
+
+@media (max-width: 600px) {
+    .search-container {
+        position: static; /* Hapus posisi relatif di mobile */
+    }
+
+    .search-results {
+        /* Buat agar memenuhi lebar layar */
+        left: 0;
+        right: 0;
+        top: 100%; /* Posisi tetap di bawah header */
+        
+        /* Hilangkan batas yang tidak perlu di mobile */
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        
+        /* Atur tinggi maksimal agar tidak terlalu panjang */
+        max-height: 70vh; /* Maksimal 70% dari tinggi layar */
+    }
+}
