@@ -19,15 +19,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- LOGIKA BARU UNTUK MENU HEADER ---
     const menuToggle = document.getElementById('menu-toggle');
+    const closeMenuBtn = document.getElementById('close-menu-btn'); // Tombol close baru
     const navMenu = document.getElementById('nav-menu');
     const dropdownToggle = document.getElementById('dropdown-toggle');
     const dropdownContent = document.getElementById('dropdown-content');
 
-    if (menuToggle && navMenu) {
-        // Tampilkan/sembunyikan menu utama
-        menuToggle.addEventListener('click', (e) => {
-            e.stopPropagation(); // Mencegah klik menyebar ke document
-            navMenu.classList.toggle('active');
+    if (menuToggle && navMenu && closeMenuBtn) {
+        // Tampilkan menu
+        menuToggle.addEventListener('click', () => {
+            navMenu.classList.add('active');
+        });
+
+        // Sembunyikan menu
+        closeMenuBtn.addEventListener('click', () => {
+            navMenu.classList.remove('active');
         });
 
         // Tampilkan/sembunyikan submenu
@@ -37,15 +42,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 dropdownContent.classList.toggle('show');
             });
         }
-
-        // Sembunyikan menu jika klik di luar area menu
-        document.addEventListener('click', (e) => {
-            if (!navMenu.contains(e.target) && !menuToggle.contains(e.target)) {
-                navMenu.classList.remove('active');
-                if (dropdownContent) {
-                    dropdownContent.classList.remove('show');
-                }
-            }
-        });
     }
 });
