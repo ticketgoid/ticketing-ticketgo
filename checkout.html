@@ -11,13 +11,34 @@
 <body class="checkout-page">
 
     <header>
-        <nav>
-            <a href="index.html" class="logo">
-                <img src="assets/Logo TicketGo PNG.png" alt="TicketGo Logo">
-                <span>Ticket<span class="logo-go">Go</span></span>
-            </a>
-        </nav>
-    </header>
+    <nav>
+        <a href="index.html" class="logo">
+            <img src="assets/logo-header.png" alt="TicketGo Logo">
+        </a>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Cari Event Pilihanmu">
+            <i class="fas fa-search search-icon-inside"></i>
+            <div id="searchResultsContainer" class="search-results"></div>
+        </div>
+        <div class="nav-right">
+            <button id="menu-toggle" class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul id="nav-menu" class="nav-menu">
+                <li><a href="tentang-kami.html">Tentang Kami</a></li>
+                <li><a href="faq.html">FAQ</a></li>
+                <li><a href="syarat-ketentuan.html">Syarat & Ketentuan</a></li>
+                <li class="dropdown">
+                    <div id="dropdown-toggle" class="dropdown-toggle">Hubungi Kami <i class="fas fa-chevron-down"></i></div>
+                    <ul id="dropdown-content" class="dropdown-content">
+                        <li><a href="https://instagram.com/ticketgo.id" target="_blank">Instagram</a></li>
+                        <li><a href="https://wa.me/6287849679178" target="_blank">WhatsApp</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
 
     <main id="checkout-main">
         <div id="loader" class="checkout-loader">
@@ -59,6 +80,7 @@
       data-client-key="Mid-client-bm1UIHZ9NBwbp1QW"></script>
 </body>
 </html>
+
 
 
 
