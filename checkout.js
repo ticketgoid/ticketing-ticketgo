@@ -7,57 +7,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let pendingPaymentToken = null;
     let pendingPayload = null;
 
-    // --- FUNGSI BARU UNTUK SEO: MEMBUAT STRUCTURED DATA ---
-    const generateStructuredData = () => {
-        // Hapus structured data lama jika ada, untuk mencegah duplikasi
-        const oldSchema = document.getElementById('event-structured-data');
-        if (oldSchema) {
-            oldSchema.remove();
+    // GANTI FUNGSI INI DI checkout.js
+const generateStructuredData = () => {
+    // Hapus structured data lama jika ada, untuk mencegah duplikasi
+    const oldSchema = document.getElementById('event-structured-data');
+    if (oldSchema) {
+        oldSchema.remove();
+    }
+
+    const fields = eventDetails.fields;
+    const eventId = new URLSearchParams(window.location.search).get('eventId');
+    
+    // Menemukan harga terendah dari semua jenis tiket yang tersedia
+    const lowestPrice = ticketTypes.reduce((min, ticket) => {
+        const price = parseInt(ticket.fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
+        return price > 0 && price < min ? price : min;
+    }, Infinity);
+
+    const schema = {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": fields.NamaEvent,
+        "startDate": fields.Waktu, // Format ISO 8601 (misal: "2025-12-15T19:00:00.000Z")
+        "location": {
+            "@type": "Place",
+            "name": fields.Lokasi,
+            "address": fields.Lokasi // Properti address bisa sama dengan nama jika tidak ada detail
+        },
+        // --- PERBAIKAN DI SINI ---
+        // Cek apakah fields.Poster ada dan tidak kosong sebelum mengaksesnya
+        "image": fields.Poster && fields.Poster.length > 0 ? [fields.Poster[0].url] : [],
+        // --- AKHIR PERBAIKAN ---
+        "description": fields.Deskripsi,
+        "offers": {
+            "@type": "Offer",
+            "url": `https://ticketgo.my.id/checkout.html?eventId=${eventId}`, // GANTI DENGAN DOMAIN ANDA JIKA BERBEDA
+            "price": lowestPrice === Infinity ? "0" : lowestPrice.toString(),
+            "priceCurrency": "IDR",
+            "availability": fields['Pendaftaran Dibuka'] ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+            "validFrom": new Date().toISOString() // Biasanya tiket valid sejak sekarang
         }
-
-        const fields = eventDetails.fields;
-        const eventId = new URLSearchParams(window.location.search).get('eventId');
-        
-        // Menemukan harga terendah dari semua jenis tiket yang tersedia
-        const lowestPrice = ticketTypes.reduce((min, ticket) => {
-            const price = parseInt(ticket.fields.Price?.toString().replace(/[^0-9]/g, '') || '0');
-            return price > 0 && price < min ? price : min;
-        }, Infinity);
-
-        const schema = {
-            "@context": "https://schema.org",
-            "@type": "Event",
-            "name": fields.NamaEvent,
-            "startDate": fields.Waktu, // Format ISO 8601 (misal: "2025-12-15T19:00:00.000Z")
-            "location": {
-                "@type": "Place",
-                "name": fields.Lokasi,
-                "address": fields.Lokasi // Properti address bisa sama dengan nama jika tidak ada detail
-            },
-            "image": [
-                fields.Poster[0].url
-            ],
-            "description": fields.Deskripsi,
-            "offers": {
-                "@type": "Offer",
-                "url": `https://nama-domain-anda.com/checkout.html?eventId=${eventId}`, // GANTI DENGAN DOMAIN ANDA
-                "price": lowestPrice === Infinity ? "0" : lowestPrice.toString(),
-                "priceCurrency": "IDR",
-                "availability": fields['Pendaftaran Dibuka'] ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
-                "validFrom": new Date().toISOString() // Biasanya tiket valid sejak sekarang
-            }
-        };
-
-        const script = document.createElement('script');
-        script.id = 'event-structured-data';
-        script.type = 'application/ld+json';
-        script.text = JSON.stringify(schema);
-        document.head.appendChild(script);
-
-        console.log("✅ Structured Data untuk SEO berhasil dibuat dan ditambahkan.");
     };
-    // --- AKHIR FUNGSI BARU UNTUK SEO ---
 
+    const script = document.createElement('script');
+    script.id = 'event-structured-data';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(schema);
+    document.head.appendChild(script);
+
+    console.log("✅ Structured Data untuk SEO berhasil dibuat dan ditambahkan.");
+};
+    
     const saveDataToSheet = async (paymentResult, customerData, itemDetails) => {
       try {
         const payload = {
@@ -591,3 +591,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     buildPage();
 });
+
