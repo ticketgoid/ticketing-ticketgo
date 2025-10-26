@@ -117,7 +117,7 @@ exports.handler = async function (event, context) {
     };
 
     // --- 5. PANGGIL API MIDTRANS ---
-    const isProduction = false; // Sesuaikan jika perlu
+    const isProduction = true; // Sesuaikan jika perlu
     const midtransApiUrl = isProduction
       ? 'https://app.midtrans.com/snap/v1/transactions'
       : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
@@ -153,4 +153,5 @@ exports.handler = async function (event, context) {
     };
   }
 };
+
 
