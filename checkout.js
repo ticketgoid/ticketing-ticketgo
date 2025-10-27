@@ -273,6 +273,7 @@ const generateStructuredData = () => {
             formFields = data.formFields.records;
             sisaKuota = data.sisaKuota;
             seatPrices = data.seatPrices;
+            seatOptions = data.seatOptions
             
             if (!ticketTypes || ticketTypes.length === 0) {
                 checkoutMain.innerHTML = `<p>Tiket belum tersedia untuk event ini.</p>`;
@@ -287,29 +288,26 @@ const generateStructuredData = () => {
         }
     };
     
-    // File: checkout.js
-// GANTI SELURUH FUNGSI INI
-
-const renderLayout = () => {
+  const renderLayout = () => {
     const eventType = eventDetails.fields['Tipe Event'];
     
-    // --- INILAH BARIS YANG DIPERBAIKI ---
     let seatMapHTML = eventDetails.fields.Seat_Map?.url 
         ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields.Seat_Map.url}" alt="${eventDetails.fields.Seat_Map.alt || 'Peta Kursi'}" class="seat-map-image"></div>` 
         : '';
-    // --- AKHIR PERBAIKAN ---
 
     let seatSelectionHTML = '';
     if (eventType === 'Dengan Pilihan Kursi') {
-        const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
-        const seatOptionsContent = seatOptions.map((option, index) => {
-            const kuotaInfo = sisaKuota[option.trim().toLowerCase()];
+        // --- LOGIKA BARU UNTUK MENAMPILKAN OPSI KURSI ---
+        const seatOptionsContent = seatOptions.map((seat, index) => {
+            const optionName = seat.nama.trim();
+            const kuotaInfo = sisaKuota[optionName.toLowerCase()];
             const isDisabled = !kuotaInfo || kuotaInfo.sisa <= 0;
+            
             return `<div class="ticket-option">
-                        <input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${option.trim()}" data-record-id="${kuotaInfo?.recordId || ''}" ${isDisabled ? 'disabled' : ''}>
+                        <input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${optionName}" data-record-id="${seat.id}" ${isDisabled ? 'disabled' : ''}>
                         <label for="seat_option_${index}" class="${isDisabled ? 'disabled' : ''}">
                             <div class="ticket-label-content">
-                                <span class="ticket-name">${option.trim()}</span>
+                                <span class="ticket-name">${optionName}</span>
                                 ${isDisabled ? '<span class="sold-out-tag">Habis</span>' : ''}
                             </div>
                         </label>
@@ -317,6 +315,7 @@ const renderLayout = () => {
         }).join('');
         seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
     }
+      
     const ticketOptionsHTML = ticketTypes.map(record => {
       const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
       const name = Name || 'Tiket Tanpa Nama';
@@ -377,7 +376,7 @@ const renderLayout = () => {
 
     checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields.Poster?.url || 'assets/default-poster.png'}" alt="${eventDetails.fields.Poster?.alt || eventDetails.fields.NamaEvent}" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
     const buyButton = document.getElementById('buyButton');
-    if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
+    if (eventDetails.fields['PendaftaranDibuka'] !== true) { buyButton.textContent = 'Sold Out'; buyButton.disabled = true; }
     attachEventListeners();
 };
     
@@ -603,6 +602,7 @@ const renderLayout = () => {
     };
     buildPage();
 });
+
 
 
 
