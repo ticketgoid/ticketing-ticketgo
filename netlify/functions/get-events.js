@@ -3,19 +3,18 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-// Path ke file cache di direktori sementara yang disediakan Netlify
 const CACHE_FILE_PATH = path.join('/tmp', 'events_cache.json');
-// Durasi cache (2 menit)
-const CACHE_DURATION = 2 * 60 * 1000;
+// Durasi cache normal (2 menit)
+const CACHE_DURATION_SUCCESS = 2 * 60 * 1000;
+// Durasi cache darurat jika Airtable gagal (30 detik)
+const CACHE_DURATION_FAILURE = 30 * 1000;
 
 exports.handler = async function (event, context) {
   try {
-    // Coba baca file cache terlebih dahulu
     const cachedData = JSON.parse(await fs.readFile(CACHE_FILE_PATH, 'utf-8'));
     const now = Date.now();
 
-    // Jika cache valid, sajikan dari cache
-    if (now - cachedData.timestamp < CACHE_DURATION) {
+    if (now - cachedData.timestamp < cachedData.duration) {
       console.log('GET-EVENTS: Berhasil! Menyajikan data dari FILE CACHE.');
       return {
         statusCode: 200,
@@ -23,10 +22,7 @@ exports.handler = async function (event, context) {
       };
     }
   } catch (error) {
-    // Abaikan error jika file cache tidak ada (wajar terjadi pertama kali)
-    if (error.code !== 'ENOENT') {
-      console.error('Gagal membaca file cache:', error);
-    }
+    if (error.code !== 'ENOENT') console.error('Gagal membaca file cache:', error);
   }
 
   console.log('GET-EVENTS: Cache tidak ada atau kedaluwarsa. Mengambil data baru dari Airtable...');
@@ -39,21 +35,34 @@ exports.handler = async function (event, context) {
     });
 
     if (!response.ok) {
-      // Jika error dari Airtable, langsung kembalikan error
-      console.error(`Airtable Error: ${response.status}`);
-      return { statusCode: response.status, body: response.statusText };
+      // Jika error dari Airtable (misal 429), JANGAN HANYA GAGAL.
+      console.error(`Airtable Error: ${response.status}. Membuat cache darurat.`);
+      
+      // --- INILAH PERUBAHAN KUNCI ---
+      // Buat cache darurat dengan data kosong dan durasi pendek
+      const fallbackData = { records: [] };
+      await fs.writeFile(CACHE_FILE_PATH, JSON.stringify({
+        timestamp: Date.now(),
+        duration: CACHE_DURATION_FAILURE, // Durasi pendek
+        data: fallbackData,
+      }));
+
+      // Kembalikan data kosong untuk sementara, BUKAN error.
+      // Ini akan membuat halaman event kosong sesaat, tapi tidak error.
+      return {
+        statusCode: 200,
+        body: JSON.stringify(fallbackData),
+      };
     }
 
     const data = await response.json();
     
-    // Siapkan data untuk disimpan di cache
-    const dataToCache = {
+    // Tulis data baru yang berhasil ke file cache dengan durasi normal
+    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify({
       timestamp: Date.now(),
+      duration: CACHE_DURATION_SUCCESS, // Durasi normal
       data: data,
-    };
-
-    // Tulis data baru ke file cache
-    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(dataToCache));
+    }));
     console.log('GET-EVENTS: Berhasil! File cache berhasil diperbarui dengan data dari Airtable.');
 
     return {
