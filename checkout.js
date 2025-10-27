@@ -265,6 +265,9 @@ const generateStructuredData = () => {
             if (!response.ok) throw new Error(`Gagal memuat data: ${response.statusText}`);
             
             const data = await response.json();
+
+            console.log("DATA YANG DITERIMA BROWSER:", data);
+            
             eventDetails = data.eventDetails;
             ticketTypes = data.ticketTypes.records;
             formFields = data.formFields.records;
@@ -591,6 +594,7 @@ const generateStructuredData = () => {
     };
     buildPage();
 });
+
 
 
 
