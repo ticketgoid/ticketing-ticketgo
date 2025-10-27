@@ -20,15 +20,34 @@ export async function handler(event, context) {
 
     if (eventDetailsRes.error) throw eventDetailsRes.error;
 
-    // Transformasi data agar sesuai format Airtable
     const eventDetails = { id: eventDetailsRes.data.id, fields: eventDetailsRes.data };
     const ticketTypes = { records: ticketTypesRes.data.map(t => ({ id: t.id, fields: t })) };
     const formFields = { records: formFieldsRes.data.map(f => ({ id: f.id, fields: f })) };
 
     let sisaKuota = {};
+    let seatPrices = {};
     const eventType = eventDetails.fields.TipeEvent;
 
-    if (eventType === 'Tanpa Pilihan Kursi') {
+    if (eventType === 'Dengan Pilihan Kursi') {
+        // --- INILAH LOGIKA YANG DITAMBAHKAN ---
+        const { data: seatData, error: seatError } = await supabase
+            .from('Harga_Seating')
+            .select('*')
+            .eq('event_id', eventId);
+
+        if (seatError) throw seatError;
+
+        seatData.forEach(seat => {
+            const seatName = seat.nama;
+            if (seatName) {
+                const seatNameLower = seatName.toLowerCase();
+                const sisa = (seat.TotalKuota || 0) - (seat.KuotaTerjual || 0);
+                sisaKuota[seatNameLower] = { sisa: sisa > 0 ? sisa : 0, recordId: seat.id };
+                seatPrices[seatNameLower] = seat.harga_seat || 0;
+            }
+        });
+
+    } else { // Tanpa Pilihan Kursi
         ticketTypes.records.forEach(ticket => {
             const ticketName = ticket.fields.Name;
             if (ticketName) {
@@ -37,19 +56,16 @@ export async function handler(event, context) {
             }
         });
     }
-    
+
     const responseData = {
         eventDetails,
         ticketTypes,
         formFields,
         sisaKuota,
-        seatPrices: {}
+        seatPrices
     };
     
-    // --- TAMBAHAN DEBUGGING DI SINI ---
-    // Cetak isi dari kolom Poster untuk memastikan datanya ada
     console.log("DEBUG: Data Poster yang akan dikirim:", JSON.stringify(responseData.eventDetails.fields.Poster, null, 2));
-    // --- AKHIR TAMBAHAN DEBUGGING ---
 
     return {
       statusCode: 200,
