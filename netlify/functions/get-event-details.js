@@ -12,15 +12,12 @@ export async function handler(event, context) {
   }
   
   try {
-    // --- INILAH PERUBAHAN UTAMA ---
-    // Keempat panggilan database sekarang dijalankan secara bersamaan
     const [eventDetailsRes, ticketTypesRes, formFieldsRes, seatDataRes] = await Promise.all([
       supabase.from('Events').select('*').eq('id', eventId).single(),
       supabase.from('Ticket_Types').select('*').eq('event_id', eventId).order('Urutan'),
       supabase.from('Form_Fields').select('*').eq('event_id', eventId).order('Urutan'),
-      supabase.from('Harga_Seating').select('*').eq('event_id', eventId) // Selalu ambil data kursi
+      supabase.from('Harga_Seating').select('*').eq('event_id', eventId).order('nama') // Urutkan kursi berdasarkan nama
     ]);
-    // --- AKHIR PERUBAHAN ---
 
     if (eventDetailsRes.error) throw eventDetailsRes.error;
     if (seatDataRes.error) throw seatDataRes.error;
@@ -31,11 +28,11 @@ export async function handler(event, context) {
 
     let sisaKuota = {};
     let seatPrices = {};
-    const eventType = eventDetails.fields.TipeEvent;
+    const eventType = eventDetails.fields['Tipe Event'];
+    const seatOptionsData = seatDataRes.data || [];
 
     if (eventType === 'Dengan Pilihan Kursi') {
-        const seatData = seatDataRes.data || [];
-        seatData.forEach(seat => {
+        seatOptionsData.forEach(seat => {
             const seatName = seat.nama;
             if (seatName) {
                 const seatNameLower = seatName.toLowerCase();
@@ -59,7 +56,10 @@ export async function handler(event, context) {
         ticketTypes,
         formFields,
         sisaKuota,
-        seatPrices
+        seatPrices,
+        // --- INILAH PERUBAHAN UTAMA ---
+        // Kirim daftar lengkap opsi kursi ke frontend
+        seatOptions: seatOptionsData 
     };
     
     return {
