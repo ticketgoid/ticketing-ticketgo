@@ -1,11 +1,26 @@
-exports.handler = async function (event, context) {
-  // --- PERUBAHAN DI SINI ---
-  // Menggunakan AIRTABLE_BASE_ID_EVENT, bukan _TESTI
-  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
-  // Menggunakan nama tabel 'Testimoni'
-  const tableName = 'Testimoni'; 
-  // --- AKHIR PERUBAHAN ---
+// File: netlify/functions/get-testimoni.js
 
+const cache = {
+  data: null,
+  timestamp: 0,
+};
+
+const CACHE_DURATION = 10 * 60 * 1000; // 10 menit
+
+exports.handler = async function (event, context) {
+  const now = Date.now();
+
+  if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
+    console.log('GET-TESTIMONI: Menyajikan data dari cache...');
+    return {
+      statusCode: 200,
+      body: JSON.stringify(cache.data),
+    };
+  }
+
+  console.log('GET-TESTIMONI: Mengambil data baru dari Airtable...');
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
+  const tableName = 'Testimoni'; 
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/${encodeURIComponent(tableName)}`;
 
   try {
@@ -20,6 +35,10 @@ exports.handler = async function (event, context) {
     }
 
     const data = await response.json();
+    
+    cache.data = data;
+    cache.timestamp = now;
+
     return {
       statusCode: 200,
       body: JSON.stringify(data),
