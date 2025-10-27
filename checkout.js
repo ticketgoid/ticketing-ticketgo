@@ -73,7 +73,7 @@ const generateStructuredData = () => {
               seatTableName: eventDetails.fields['Tabel Harga Kursi'],
           }
         };
-        await fetch('/api/save-to-airtable', {
+        await fetch('/api/save-transaction', {
           method: 'POST',
           body: JSON.stringify(payload),
           headers: { 'Content-Type': 'application/json' },
@@ -623,6 +623,7 @@ const attachEventListeners = () => {
     };
     buildPage();
 });
+
 
 
 
