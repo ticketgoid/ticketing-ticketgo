@@ -1,6 +1,12 @@
 [build]
   functions = "netlify/functions"
 
+# --- TAMBAHKAN BAGIAN INI ---
+# Memberitahu Netlify untuk menyertakan folder-folder ini saat deploy functions
+[functions]
+  included_files = ["assets/hero/**", "assets/testimoni/**"]
+# --- AKHIR BAGIAN TAMBAHAN ---
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
