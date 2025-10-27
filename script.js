@@ -137,6 +137,7 @@ async function loadHeroSlider() {
     }
 }
 
+// File: script.js
 async function renderEvents() {
     const eventGrid = document.getElementById('eventGrid');
     if (!eventGrid) return;
@@ -163,7 +164,7 @@ async function renderEvents() {
                 const buttonHTML = isRegistrationOpen && !isSoldOut
                     ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
                     : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
-                
+
                 const penyelenggara = fields.Penyelenggara || '';
                 const isVerified = fields.verifikasi === true;
                 const eventDate = new Date(fields.Waktu);
@@ -392,6 +393,7 @@ function initializeApp() {
     initializeEventCarousel();
     setupEventListeners(); // <-- PEMANGGILAN DIPINDAHKAN KE SINI
 }
+
 
 
 
