@@ -1,3 +1,5 @@
+// File: netlify/functions/get-event-details.js
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
@@ -24,24 +26,36 @@ export async function handler(event, context) {
     const formFields = { records: formFieldsRes.data.map(f => ({ id: f.id, fields: f })) };
 
     let sisaKuota = {};
-    ticketTypes.records.forEach(ticket => {
-        const ticketName = ticket.fields.Name;
-        if (ticketName) {
-            const sisa = (ticket.fields.TotalKuota || 0) - (ticket.fields.KuotaTerjual || 0);
-            sisaKuota[ticketName.toLowerCase()] = { sisa: sisa > 0 ? sisa : 0, recordId: ticket.id };
-        }
-    });
+    const eventType = eventDetails.fields.TipeEvent;
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
+    if (eventType === 'Tanpa Pilihan Kursi') {
+        ticketTypes.records.forEach(ticket => {
+            const ticketName = ticket.fields.Name;
+            if (ticketName) {
+                const sisa = (ticket.fields.TotalKuota || 0) - (ticket.fields.KuotaTerjual || 0);
+                sisaKuota[ticketName.toLowerCase()] = { sisa: sisa > 0 ? sisa : 0, recordId: ticket.id };
+            }
+        });
+    }
+    
+    const responseData = {
         eventDetails,
         ticketTypes,
         formFields,
         sisaKuota,
         seatPrices: {}
-      }),
     };
+    
+    // --- TAMBAHAN DEBUGGING DI SINI ---
+    // Cetak isi dari kolom Poster untuk memastikan datanya ada
+    console.log("DEBUG: Data Poster yang akan dikirim:", JSON.stringify(responseData.eventDetails.fields.Poster, null, 2));
+    // --- AKHIR TAMBAHAN DEBUGGING ---
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(responseData),
+    };
+
   } catch (error) {
     console.error('Error di fungsi get-event-details:', error);
     return {
