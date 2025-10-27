@@ -1,10 +1,14 @@
 [build]
   functions = "netlify/functions"
 
-# --- TAMBAHKAN BAGIAN INI ---
-# Memberitahu Netlify untuk menyertakan folder-folder ini saat deploy functions
 [functions]
   included_files = ["assets/hero/**", "assets/testimoni/**"]
+
+# --- TAMBAHKAN SELURUH BAGIAN INI ---
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "script-src 'self' 'unsafe-eval' https://app.midtrans.com https://api.midtrans.com;"
 # --- AKHIR BAGIAN TAMBAHAN ---
 
 [[redirects]]
