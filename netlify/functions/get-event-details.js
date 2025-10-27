@@ -1,56 +1,113 @@
-// File: netlify/functions/get-events.js
+// File: netlify/functions/get-event-details.js
 
-// 1. Buat "cache" di luar handler agar persisten antar pemanggilan
-const cache = {
-  data: null,
-  timestamp: 0,
+const cache = {}; // Gunakan objek untuk menyimpan cache per event ID
+
+const CACHE_DURATION = 1 * 60 * 1000; // 1 menit
+
+const airtableFetch = async (apiKey, url) => {
+    const response = await fetch(url, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`Airtable API Error: ${response.status} for URL: ${url}`);
+        console.error('Error Body:', errorBody);
+        throw new Error(`Airtable API Error: ${response.status}`);
+    }
+    return await response.json();
 };
 
-// Durasi cache dalam milidetik (2 menit)
-const CACHE_DURATION = 2 * 60 * 1000; 
-
 exports.handler = async function (event, context) {
-  const now = Date.now();
+  const { eventId } = event.queryStringParameters;
+  if (!eventId) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Event ID is required' }) };
+  }
 
-  // 2. Cek apakah cache valid dan kembalikan jika iya
-  if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
-    console.log('GET-EVENTS: Menyajikan data dari cache...');
+  const now = Date.now();
+  const cachedEvent = cache[eventId];
+
+  if (cachedEvent && (now - cachedEvent.timestamp < CACHE_DURATION)) {
+    console.log(`GET-EVENT-DETAILS: Menyajikan data dari cache untuk eventId: ${eventId}`);
     return {
       statusCode: 200,
-      body: JSON.stringify(cache.data),
+      body: JSON.stringify(cachedEvent.data),
     };
   }
 
-  console.log('GET-EVENTS: Mengambil data baru dari Airtable...');
-  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
+  console.log(`GET-EVENT-DETAILS: Mengambil data baru dari Airtable untuk eventId: ${eventId}`);
+  const { 
+    AIRTABLE_API_KEY, 
+    AIRTABLE_BASE_ID_EVENT, 
+    AIRTABLE_BASE_ID_SEAT,
+  } = process.env;
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      return { statusCode: response.status, body: response.statusText };
+    // 1. Mengambil detail event utama
+    const eventDetails = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events/${eventId}`);
+    
+    // 2. Mengambil jenis tiket
+    const ticketTypeIds = eventDetails.fields.ticket_types || [];
+    let ticketTypes = { records: [] };
+    if (ticketTypeIds.length > 0) {
+        const ticketFilter = `OR(${ticketTypeIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
+        ticketTypes = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Ticket%20Types?filterByFormula=${encodeURIComponent(ticketFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
     }
 
-    const data = await response.json();
+    // 3. Mengambil form fields
+    const formFieldIds = eventDetails.fields.formfields || [];
+    let formFields = { records: [] };
+    if (formFieldIds.length > 0) {
+        const formFilter = `OR(${formFieldIds.map(id => `RECORD_ID()='${id}'`).join(',')})`;
+        formFields = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Form%20Fields?filterByFormula=${encodeURIComponent(formFilter)}&sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`);
+    }
+
+    // --- LOGIKA KUOTA DAN HARGA ---
+    let sisaKuota = {};
+    let seatPrices = {};
+    const eventType = eventDetails.fields['Tipe Event'];
+    const seatPriceTableName = eventDetails.fields['Tabel Harga Kursi'];
+
+    if (eventType === 'Dengan Pilihan Kursi' && seatPriceTableName) {
+        const allSeats = await airtableFetch(AIRTABLE_API_KEY, `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_SEAT}/${encodeURIComponent(seatPriceTableName)}`);
+        allSeats.records.forEach(seat => {
+            const seatName = seat.fields.nama;
+            if (seatName) {
+                const seatNameLower = seatName.toLowerCase();
+                sisaKuota[seatNameLower] = { sisa: seat.fields['Sisa Kuota'] || 0, recordId: seat.id };
+                seatPrices[seatNameLower] = seat.fields.harga_seat || 0;
+            }
+        });
+    } else if (eventType === 'Tanpa Pilihan Kursi') {
+        ticketTypes.records.forEach(ticket => {
+            const ticketName = ticket.fields.Name;
+            if (ticketName) {
+                sisaKuota[ticketName.toLowerCase()] = { sisa: ticket.fields['Sisa Kuota'] || 0, recordId: ticket.id };
+            }
+        });
+    }
+
+    // Gabungkan semua data yang diambil
+    const responseData = {
+      eventDetails,
+      ticketTypes,
+      formFields,
+      sisaKuota,
+      seatPrices
+    };
     
-    // 3. Simpan data baru ke cache sebelum mengembalikannya
-    cache.data = data;
-    cache.timestamp = now;
+    // Simpan data ke cache
+    cache[eventId] = {
+      data: responseData,
+      timestamp: now,
+    };
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      body: JSON.stringify(responseData),
     };
   } catch (error) {
-    console.error('Error fetching events from Airtable:', error);
+    console.error('Error di fungsi get-event-details:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch events' }),
+      body: JSON.stringify({ error: 'Failed to fetch event details', details: error.message }),
     };
   }
 };
