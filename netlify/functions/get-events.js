@@ -1,24 +1,32 @@
 // File: netlify/functions/get-events.js
 
-// 1. Buat "cache" di luar handler agar persisten antar pemanggilan
-const cache = {
-  data: null,
-  timestamp: 0,
-};
+const fs = require('fs').promises;
+const path = require('path');
 
-// Durasi cache dalam milidetik (2 menit)
-const CACHE_DURATION = 2 * 60 * 1000; 
+// Path ke file cache di direktori sementara yang disediakan oleh Netlify
+const CACHE_FILE_PATH = path.join('/tmp', 'events_cache.json');
+// Durasi cache (2 menit)
+const CACHE_DURATION = 2 * 60 * 1000;
 
 exports.handler = async function (event, context) {
-  const now = Date.now();
+  try {
+    // Coba baca file cache terlebih dahulu
+    const cachedData = JSON.parse(await fs.readFile(CACHE_FILE_PATH, 'utf-8'));
+    const now = Date.now();
 
-  // 2. Cek apakah cache valid dan kembalikan jika iya
-  if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
-    console.log('GET-EVENTS: Menyajikan data dari cache...');
-    return {
-      statusCode: 200,
-      body: JSON.stringify(cache.data),
-    };
+    // Jika cache valid, sajikan dari cache
+    if (now - cachedData.timestamp < CACHE_DURATION) {
+      console.log('GET-EVENTS: Menyajikan data dari file cache...');
+      return {
+        statusCode: 200,
+        body: JSON.stringify(cachedData.data),
+      };
+    }
+  } catch (error) {
+    // Abaikan error jika file cache tidak ada, ini wajar terjadi pertama kali
+    if (error.code !== 'ENOENT') {
+      console.error('Gagal membaca file cache:', error);
+    }
   }
 
   console.log('GET-EVENTS: Mengambil data baru dari Airtable...');
@@ -27,9 +35,7 @@ exports.handler = async function (event, context) {
 
   try {
     const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
-      },
+      headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` },
     });
 
     if (!response.ok) {
@@ -38,9 +44,15 @@ exports.handler = async function (event, context) {
 
     const data = await response.json();
     
-    // 3. Simpan data baru ke cache sebelum mengembalikannya
-    cache.data = data;
-    cache.timestamp = now;
+    // Siapkan data untuk disimpan di cache
+    const dataToCache = {
+      timestamp: Date.now(),
+      data: data,
+    };
+
+    // Tulis data baru ke file cache
+    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(dataToCache));
+    console.log('GET-EVENTS: File cache berhasil diperbarui.');
 
     return {
       statusCode: 200,
