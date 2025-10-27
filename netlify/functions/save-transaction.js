@@ -1,5 +1,8 @@
+// File: netlify/functions/save-transaction.js
+
 import { createClient } from '@supabase/supabase-js';
 
+// Gunakan kunci 'service_role' karena ini adalah operasi backend yang aman
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export async function handler(event, context) {
@@ -10,7 +13,7 @@ export async function handler(event, context) {
   const data = JSON.parse(event.body);
 
   try {
-    // 1. Siapkan data untuk dimasukkan ke tabel 'Penjualan'
+    // --- INILAH PERBAIKANNYA ---
     const saleData = {
       event_id: data.eventId,
       order_id: data.order_id,
@@ -18,18 +21,20 @@ export async function handler(event, context) {
       email: data.customer_details.email,
       no_hp: data.customer_details.phone,
       jenis_tiket: data.item_details.name,
-      seating: data.item_details.seatName,
+      seating: data.item_details.seatName, // Pastikan nama kolom di Supabase juga 'seating'
       jumlah_tiket: data.item_details.quantity,
       total_bayar: parseFloat(data.gross_amount),
       status_pembayaran: data.transaction_status,
+      // Menambahkan pengisian untuk kolom tanggal_transaksi
+      tanggal_transaksi: new Date().toISOString(), 
     };
+    // --- AKHIR PERBAIKAN ---
     
     console.log("Mencoba menyimpan data penjualan:", JSON.stringify(saleData, null, 2));
 
     const { error: saleError } = await supabase.from('Penjualan').insert(saleData);
 
     if (saleError) {
-      // Log error yang lebih spesifik jika insert gagal
       console.error("Supabase insert error:", saleError);
       throw new Error(`Gagal menyimpan penjualan: ${saleError.message}`);
     }
