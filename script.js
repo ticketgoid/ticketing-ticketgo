@@ -137,20 +137,16 @@ async function loadHeroSlider() {
     }
 }
 
-
-// --- Fungsi untuk memuat Event Cards (Tidak Berubah) ---
 async function renderEvents() {
     const eventGrid = document.getElementById('eventGrid');
     if (!eventGrid) return;
     eventGrid.innerHTML = '<p>Sedang memuat event...</p>';
-    const url = '/api/get-events'; 
     try {
-        const response = await fetch(url);
+        const response = await fetch('/api/get-events');
         if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
         const data = await response.json();
-        
-        window.allEventsData = data.records; // Simpan data event untuk digunakan di pencarian
-        
+
+        window.allEventsData = data.records;
         eventGrid.innerHTML = ''; 
 
         if (allEventsData.length === 0) {
@@ -158,41 +154,43 @@ async function renderEvents() {
         } else {
             allEventsData.forEach(record => {
                 const fields = record.fields;
-                if (!fields['NamaEvent'] || !fields['GambarEvent'] || !fields['GambarEvent'].length === 0) return;
+                if (!fields.NamaEvent || !fields.GambarEvent) return;
 
-                const penyelenggara = fields['Penyelenggara'] || '';
-                const isVerified = fields['verifikasi'] === true;
-                const eventDate = new Date(fields['Waktu']);
-                const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
-                const isPriority = fields['Prioritas'] === true;
-                
-                const isRegistrationOpen = fields['PendaftaranDibuka'] === true;
-                const buttonHTML = isRegistrationOpen
+                const isRegistrationOpen = fields.PendaftaranDibuka === true;
+                // Cek juga total sisa kuota
+                const isSoldOut = fields.totalSisaKuota <= 0;
+
+                const buttonHTML = isRegistrationOpen && !isSoldOut
                     ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
                     : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
+                
+                const penyelenggara = fields.Penyelenggara || '';
+                const isVerified = fields.verifikasi === true;
+                const eventDate = new Date(fields.Waktu);
+                const formattedDate = eventDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
+                const isPriority = fields.Prioritas === true;
 
                 const eventCard = document.createElement('div');
                 eventCard.className = 'event-card';
-                eventCard.setAttribute('data-event-id', record.id); 
-                
+                eventCard.addEventListener('click', () => {
+                    window.location.href = `checkout.html?eventId=${record.id}`;
+                });
+
                 eventCard.innerHTML = `
                     <div class="card-image">
                         <img src="${fields.GambarEvent.url}" alt="${fields.GambarEvent.alt || fields.NamaEvent}">
-                        <span class="tag festival">${fields['Tag'] || ''}</span>
+                        <span class="tag festival">${fields.Tag || ''}</span>
                     </div>
                     <div class="card-content">
-                        <h3 class="event-title">${fields['NamaEvent']} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
-                        
+                        <h3 class="event-title">${fields.NamaEvent} ${isPriority ? '<i class="fas fa-star priority-star"></i>' : ''}</h3>
                         ${penyelenggara ? `<p class="penyelenggara">${penyelenggara} ${isVerified ? '<i class="fas fa-check-circle verified-icon"></i>' : ''}</p>` : ''}
-
-                        <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields['Lokasi'] || ''}</p>
+                        <p class="detail"><i class="fas fa-map-marker-alt"></i> ${fields.Lokasi || ''}</p>
                         <p class="detail"><i class="fas fa-calendar-alt"></i> ${formattedDate} &nbsp; <i class="fas fa-clock"></i> ${formattedTime}</p>
-                        
                         <div class="price-buy">
                             <p class="price">
                                 <span class="price-label">Mulai dari</span><br>
-                                <span>Rp ${Number(fields['Harga'] || 0).toLocaleString('id-ID')}</span>
+                                <span>Rp ${Number(fields.Harga || 0).toLocaleString('id-ID')}</span>
                             </p>
                             ${buttonHTML} 
                         </div>
@@ -200,14 +198,12 @@ async function renderEvents() {
                 eventGrid.appendChild(eventCard);
             });
         }
-        // setupEventListeners(); // <-- BARIS INI DIHAPUS KARENA MENYEBABKAN ERROR
     } catch (error) {
         console.error("Gagal mengambil event dari backend:", error);
         eventGrid.innerHTML = '<p>Gagal memuat event. Silakan coba lagi nanti.</p>';
     }
 }
 
-// --- Fungsi Pengatur Event Listener (Tidak Berubah) ---
 function setupEventListeners() {
     const eventGrid = document.getElementById('eventGrid');
     if (eventGrid) {
@@ -396,5 +392,6 @@ function initializeApp() {
     initializeEventCarousel();
     setupEventListeners(); // <-- PEMANGGILAN DIPINDAHKAN KE SINI
 }
+
 
 
