@@ -1,8 +1,5 @@
-// File: netlify/functions/save-transaction.js
-
 import { createClient } from '@supabase/supabase-js';
 
-// Gunakan kunci 'service_role' di sini karena ini adalah operasi backend yang aman
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export async function handler(event, context) {
@@ -13,8 +10,8 @@ export async function handler(event, context) {
   const data = JSON.parse(event.body);
 
   try {
-    // 1. Simpan data transaksi utama ke tabel 'Penjualan'
-    const { error: saleError } = await supabase.from('Penjualan').insert({
+    // 1. Siapkan data untuk dimasukkan ke tabel 'Penjualan'
+    const saleData = {
       event_id: data.eventId,
       order_id: data.order_id,
       nama_pembeli: data.customer_details.first_name,
@@ -25,9 +22,18 @@ export async function handler(event, context) {
       jumlah_tiket: data.item_details.quantity,
       total_bayar: parseFloat(data.gross_amount),
       status_pembayaran: data.transaction_status,
-    });
+    };
+    
+    console.log("Mencoba menyimpan data penjualan:", JSON.stringify(saleData, null, 2));
 
-    if (saleError) throw new Error(`Gagal menyimpan penjualan: ${saleError.message}`);
+    const { error: saleError } = await supabase.from('Penjualan').insert(saleData);
+
+    if (saleError) {
+      // Log error yang lebih spesifik jika insert gagal
+      console.error("Supabase insert error:", saleError);
+      throw new Error(`Gagal menyimpan penjualan: ${saleError.message}`);
+    }
+    console.log(`Data penjualan untuk Order ID ${data.order_id} berhasil disimpan.`);
 
     // 2. Update Kuota Terjual
     let targetTable, targetId;
@@ -39,20 +45,28 @@ export async function handler(event, context) {
       targetId = data.item_details.ticketRecordId;
     }
 
-    // Panggil fungsi database untuk menambah 'KuotaTerjual' secara aman
+    if (!targetTable || !targetId) {
+        throw new Error("Data untuk update kuota tidak lengkap.");
+    }
+    
+    console.log(`Mencoba mengupdate kuota: Tabel=${targetTable}, ID=${targetId}, Jumlah=${data.item_details.quantity}`);
+    
     const { error: quotaError } = await supabase.rpc('increment_kuota_terjual', {
       table_name: targetTable,
       row_id: targetId,
       increment_value: data.item_details.quantity,
     });
 
-    if (quotaError) throw new Error(`Gagal mengupdate kuota: ${quotaError.message}`);
+    if (quotaError) {
+      console.error("Supabase RPC error:", quotaError);
+      throw new Error(`Gagal mengupdate kuota: ${quotaError.message}`);
+    }
     
-    console.log(`Transaksi ${data.order_id} berhasil disimpan dan kuota diupdate.`);
+    console.log(`Transaksi ${data.order_id} berhasil sepenuhnya.`);
     return { statusCode: 200, body: JSON.stringify({ message: 'Success' }) };
 
   } catch (error) {
-    console.error('Fungsi save-transaction gagal:', error);
+    console.error('Fungsi save-transaction gagal total:', error);
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 }
