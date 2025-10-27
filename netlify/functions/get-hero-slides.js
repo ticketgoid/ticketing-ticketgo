@@ -1,14 +1,26 @@
-/*
- * API Endpoint baru untuk mengambil data Hero Slider dari Airtable.
- * Pastikan Anda punya tabel 'HeroSlider' di Base 'Event List' Anda
- * dengan kolom 'Gambar' (Attachment), 'LinkTujuan' (URL), dan 'Urutan' (Number).
- */
+// File: netlify/functions/get-hero-slides.js
+
+const cache = {
+  data: null,
+  timestamp: 0,
+};
+
+const CACHE_DURATION = 2 * 60 * 1000; // 2 menit
+
 exports.handler = async function (event, context) {
-  // Asumsi tabel HeroSlider ada di Base yang sama dengan Events
+  const now = Date.now();
+
+  if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
+    console.log('GET-HERO-SLIDES: Menyajikan data dari cache...');
+    return {
+      statusCode: 200,
+      body: JSON.stringify(cache.data),
+    };
+  }
+  
+  console.log('GET-HERO-SLIDES: Mengambil data baru dari Airtable...');
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
   const tableName = 'HeroSlider'; 
-  
-  // Mengurutkan berdasarkan kolom 'Urutan', dari yang terkecil ke terbesar
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/${encodeURIComponent(tableName)}?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
 
   try {
@@ -23,6 +35,10 @@ exports.handler = async function (event, context) {
     }
 
     const data = await response.json();
+    
+    cache.data = data;
+    cache.timestamp = now;
+
     return {
       statusCode: 200,
       body: JSON.stringify(data),
