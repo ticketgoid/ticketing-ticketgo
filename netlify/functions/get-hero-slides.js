@@ -4,7 +4,8 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const CACHE_FILE_PATH = path.join('/tmp', 'hero_slides_cache.json');
-const CACHE_DURATION = 2 * 60 * 1000; // 2 menit
+// Cache sangat lama karena kontennya di-hardcode. Perubahan hanya terjadi saat deployment baru.
+const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 jam
 
 exports.handler = async function (event, context) {
   try {
@@ -15,48 +16,54 @@ exports.handler = async function (event, context) {
       console.log('GET-HERO-SLIDES: Menyajikan data dari file cache...');
       return {
         statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cachedData.data),
       };
     }
   } catch (error) {
-    if (error.code !== 'ENOENT') {
-      console.error('Gagal membaca file cache hero slides:', error);
-    }
+    if (error.code !== 'ENOENT') console.error('Gagal membaca cache hero:', error);
   }
 
-  console.log('GET-HERO-SLIDES: Mengambil data baru dari Airtable...');
-  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
-  const tableName = 'HeroSlider'; 
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/${encodeURIComponent(tableName)}?sort%5B0%5D%5Bfield%5D=Urutan&sort%5B0%5D%5Bdirection%5D=asc`;
+  console.log('GET-HERO-SLIDES: Membaca data dari direktori assets/hero...');
+  
+  // Path ke direktori aset Anda dari root proyek
+  const heroDir = path.resolve(process.cwd(), 'assets/hero');
 
   try {
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` },
-    });
+    const files = await fs.readdir(heroDir);
 
-    if (!response.ok) {
-      return { statusCode: response.status, body: response.statusText };
-    }
+    const slides = files
+      .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file)) // Hanya ambil file gambar
+      .sort() // Urutkan berdasarkan nama (misal: "1_...", "2_...")
+      .map(file => ({
+        id: file, // Menggunakan nama file sebagai ID unik
+        fields: {
+          // Buat struktur data yang sama persis seperti yang diharapkan frontend dari Airtable
+          'Gambar': [{ url: `/assets/hero/${file}` }],
+          // Anda bisa menambahkan link tujuan di sini jika diperlukan di masa depan
+          'LinkTujuan': null 
+        }
+      }));
 
-    const data = await response.json();
-    
-    const dataToCache = {
+    const responseData = { records: slides };
+
+    // Tulis data ke file cache untuk permintaan selanjutnya
+    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify({
       timestamp: Date.now(),
-      data: data,
-    };
-    
-    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(dataToCache));
-    console.log('GET-HERO-SLIDES: File cache berhasil diperbarui.');
+      data: responseData,
+    }));
+    console.log('GET-HERO-SLIDES: File cache berhasil dibuat/diperbarui.');
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(responseData),
     };
   } catch (error) {
-    console.error('Error fetching hero slides from Airtable:', error);
+    console.error(`Error saat membaca direktori ${heroDir}:`, error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch hero slides' }),
+      body: JSON.stringify({ error: 'Gagal membaca konten hero slides' }),
     };
   }
 };
