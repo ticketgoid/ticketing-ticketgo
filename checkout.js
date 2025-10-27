@@ -413,109 +413,130 @@ const generateStructuredData = () => {
             }
         });
     };
-    const attachEventListeners = () => {
-      const buyButton = document.getElementById('buyButton');
-      const form = document.getElementById('customer-data-form');
-      const validateEmail = (email) => {
-          const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-          return re.test(String(email).toLowerCase());
-      };
-      const checkButtonState = () => {
+   
+const attachEventListeners = () => {
+  const buyButton = document.getElementById('buyButton');
+  const form = document.getElementById('customer-data-form');
+  
+  const validateEmail = (email) => {
+      const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return re.test(String(email).toLowerCase());
+  };
+
+  const checkButtonState = () => {
+    const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+    const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
+    const isEventOpen = eventDetails.fields['PendaftaranDibuka'] === true;
+    const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
+    let isCustomValidationOk = true;
+    const emailInput = form.querySelector('input[type="email"]');
+    if (emailInput && emailInput.value && !validateEmail(emailInput.value)) {
+        isCustomValidationOk = false;
+    }
+    const isFormValid = form.checkValidity();
+    buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid || !isCustomValidationOk);
+  };
+
+  document.getElementById('checkout-main').addEventListener('change', e => {
+    if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
+      
+      if (e.target.name === 'Pilihan_Kursi') {
+          const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
+          if(selectedTicket) selectedTicket.checked = false;
+
+          // --- INILAH PERBAIKANNYA ---
+          // Reset semua input jumlah kembali ke 1 saat kursi diganti
+          document.querySelectorAll('.ticket-quantity-input').forEach(input => {
+              input.value = 0;
+          });
+          // Reset juga status tombol +/- nya
+          document.querySelectorAll('.decrease-qty-btn').forEach(btn => btn.disabled = true);
+          document.querySelectorAll('.increase-qty-btn').forEach(btn => btn.disabled = false);
+          // --- AKHIR PERBAIKAN ---
+
+          updateTicketAvailabilityForSeat();
+      }
+
+      document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
+      const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
+      if (selectedTicketRadio) {
+          const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
+          if (selectedTicketRecord && selectedTicketRecord.fields.jumlahbeli) {
+              selectedTicketRadio.closest('.ticket-option').querySelector('.quantity-selector-wrapper')?.classList.add('visible');
+          }
+      }
+      checkButtonState();
+      updatePrice();
+    }
+  });
+
+  form.addEventListener('input', e => {
+      if (e.target.matches('input[type="email"]')) {
+          const emailInput = e.target;
+          const errorElement = document.getElementById(`${emailInput.id}-error`);
+          if (emailInput.value && !validateEmail(emailInput.value)) {
+              emailInput.classList.add('invalid');
+              if (errorElement) errorElement.style.display = 'block';
+          } else {
+              emailInput.classList.remove('invalid');
+              if (errorElement) errorElement.style.display = 'none';
+          }
+      }
+      if (e.target.matches('input[type="tel"]')) {
+          e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      }
+      checkButtonState();
+  });
+
+  document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
+    const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
+    if (!qtyInput) return;
+    const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
+    if (!selectedTicketRadio) return;
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
+    if (!selectedTicketRecord) return;
+    const eventType = eventDetails.fields['Tipe Event'];
+    let maxQty = 0;
+    if (eventType === 'Dengan Pilihan Kursi') {
         const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-        const ticketSelected = document.querySelector('input[name="ticket_choice"]:checked');
-        const isEventOpen = eventDetails.fields['Pendaftaran Dibuka'] === true;
-        const isSeatRequired = eventDetails.fields['Tipe Event'] === 'Dengan Pilihan Kursi';
-        let isCustomValidationOk = true;
-        const emailInput = form.querySelector('input[type="email"]');
-        if (emailInput && emailInput.value && !validateEmail(emailInput.value)) {
-            isCustomValidationOk = false;
-        }
-        const isFormValid = form.checkValidity();
-        buyButton.disabled = (!ticketSelected || !isEventOpen || (isSeatRequired && !seatSelected) || !isFormValid || !isCustomValidationOk);
-      };
-      document.getElementById('checkout-main').addEventListener('change', e => {
-        if (e.target.matches('input[name="Pilihan_Kursi"], input[name="ticket_choice"]')) {
-          if (e.target.name === 'Pilihan_Kursi') {
-              const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
-              if(selectedTicket) selectedTicket.checked = false;
-              updateTicketAvailabilityForSeat();
-          }
-          document.querySelectorAll('.quantity-selector-wrapper').forEach(wrapper => wrapper.classList.remove('visible'));
-          const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
-          if (selectedTicketRadio) {
-              const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
-              if (selectedTicketRecord && selectedTicketRecord.fields.jumlahbeli) {
-                  selectedTicketRadio.closest('.ticket-option').querySelector('.quantity-selector-wrapper')?.classList.add('visible');
-              }
-          }
-          checkButtonState();
-          updatePrice();
-        }
-      });
-      form.addEventListener('input', e => {
-          if (e.target.matches('input[type="email"]')) {
-              const emailInput = e.target;
-              const errorElement = document.getElementById(`${emailInput.id}-error`);
-              if (emailInput.value && !validateEmail(emailInput.value)) {
-                  emailInput.classList.add('invalid');
-                  if (errorElement) errorElement.style.display = 'block';
-              } else {
-                  emailInput.classList.remove('invalid');
-                  if (errorElement) errorElement.style.display = 'none';
-              }
-          }
-          if (e.target.matches('input[type="tel"]')) {
-              e.target.value = e.target.value.replace(/[^0-9]/g, '');
-          }
-          checkButtonState();
-      });
-      document.getElementById('ticketOptionsContainer')?.addEventListener('click', e => {
-        const qtyInput = e.target.closest('.quantity-selector')?.querySelector('.ticket-quantity-input');
-        if (!qtyInput) return;
-        const selectedTicketRadio = document.querySelector('input[name="ticket_choice"]:checked');
-        if (!selectedTicketRadio) return;
-        const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketRadio.value);
-        if (!selectedTicketRecord) return;
-        const eventType = eventDetails.fields['Tipe Event'];
-        let maxQty = 0;
-        if (eventType === 'Dengan Pilihan Kursi') {
-            const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-            if(seatSelected) {
-                const seatName = seatSelected.value.trim().toLowerCase();
-                const kuotaInfo = sisaKuota[seatName];
-                maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
-            }
-        } else {
-            const ticketName = selectedTicketRecord.fields.Name.toLowerCase();
-            const kuotaInfo = sisaKuota[ticketName];
+        if(seatSelected) {
+            const seatName = seatSelected.value.trim().toLowerCase();
+            const kuotaInfo = sisaKuota[seatName];
             maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
         }
-        const increaseBtn = e.target.closest('.quantity-selector').querySelector('.increase-qty-btn');
-        const decreaseBtn = e.target.closest('.quantity-selector').querySelector('.decrease-qty-btn');
-        let currentVal = parseInt(qtyInput.value);
-        if (e.target.closest('.increase-qty-btn')) {
-            if (currentVal < maxQty) {
-                qtyInput.value = currentVal + 1;
-            }
-        } else if (e.target.closest('.decrease-qty-btn')) {
-            if (currentVal > 1) {
-                qtyInput.value = currentVal - 1;
-            }
+    } else {
+        const ticketName = selectedTicketRecord.fields.Name.toLowerCase();
+        const kuotaInfo = sisaKuota[ticketName];
+        maxQty = kuotaInfo ? kuotaInfo.sisa : 0;
+    }
+    const increaseBtn = e.target.closest('.quantity-selector').querySelector('.increase-qty-btn');
+    const decreaseBtn = e.target.closest('.quantity-selector').querySelector('.decrease-qty-btn');
+    let currentVal = parseInt(qtyInput.value);
+    if (e.target.closest('.increase-qty-btn')) {
+        if (currentVal < maxQty) {
+            qtyInput.value = currentVal + 1;
         }
-        currentVal = parseInt(qtyInput.value);
-        decreaseBtn.disabled = currentVal <= 1;
-        increaseBtn.disabled = currentVal >= maxQty;
-        updatePrice();
-        checkButtonState();
-      });
-      buyButton.addEventListener('click', showReviewModal);
-      const reviewModal = document.getElementById('reviewModal');
-      if (reviewModal) {
-        reviewModal.querySelector('.close-button')?.addEventListener('click', () => reviewModal.classList.remove('visible'));
-        window.addEventListener('click', e => { if (e.target === reviewModal) reviewModal.classList.remove('visible'); });
-      }
-      document.getElementById('confirmPaymentBtn')?.addEventListener('click', initiatePayment);
-    };
+    } else if (e.target.closest('.decrease-qty-btn')) {
+        if (currentVal > 1) {
+            qtyInput.value = currentVal - 1;
+        }
+    }
+    currentVal = parseInt(qtyInput.value);
+    decreaseBtn.disabled = currentVal <= 1;
+    increaseBtn.disabled = currentVal >= maxQty;
+    updatePrice();
+    checkButtonState();
+  });
+
+  buyButton.addEventListener('click', showReviewModal);
+  const reviewModal = document.getElementById('reviewModal');
+  if (reviewModal) {
+    reviewModal.querySelector('.close-button')?.addEventListener('click', () => reviewModal.classList.remove('visible'));
+    window.addEventListener('click', e => { if (e.target === reviewModal) reviewModal.classList.remove('visible'); });
+  }
+  document.getElementById('confirmPaymentBtn')?.addEventListener('click', initiatePayment);
+};
+    
     const calculatePrice = () => {
       const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
       const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
@@ -602,6 +623,7 @@ const generateStructuredData = () => {
     };
     buildPage();
 });
+
 
 
 
