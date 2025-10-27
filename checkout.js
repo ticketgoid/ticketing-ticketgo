@@ -296,7 +296,10 @@ const initiatePayment = async () => {
         }
     };
     
-  const renderLayout = () => {
+// File: checkout.js
+// GANTI SELURUH FUNGSI renderLayout DENGAN KODE LENGKAP INI
+
+const renderLayout = () => {
     const eventType = eventDetails.fields['Tipe Event'];
     
     let seatMapHTML = eventDetails.fields.Seat_Map?.url 
@@ -305,7 +308,6 @@ const initiatePayment = async () => {
 
     let seatSelectionHTML = '';
     if (eventType === 'Dengan Pilihan Kursi') {
-        // --- LOGIKA BARU UNTUK MENAMPILKAN OPSI KURSI ---
         const seatOptionsContent = seatOptions.map((seat, index) => {
             const optionName = seat.nama.trim();
             const kuotaInfo = sisaKuota[optionName.toLowerCase()];
@@ -323,7 +325,7 @@ const initiatePayment = async () => {
         }).join('');
         seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
     }
-      
+    
     const ticketOptionsHTML = ticketTypes.map(record => {
       const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
       const name = Name || 'Tiket Tanpa Nama';
@@ -332,11 +334,6 @@ const initiatePayment = async () => {
       if (eventType === 'Tanpa Pilihan Kursi') {
         const kuotaInfo = sisaKuota[name.toLowerCase()];
         isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
-      }
-      let priceHTML = '&nbsp;';
-      if (Show_Price) {
-        const numericPrice = parseInt((Price || 0).toString().replace(/[^0-9]/g, '')) || 0;
-        priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
       }
       const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
       const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' 
@@ -361,7 +358,6 @@ const initiatePayment = async () => {
         let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
         const isEmailField = FieldType.toLowerCase() === 'email';
         const isPhoneField = FieldType.toLowerCase() === 'tel';
-
         let fieldHTML = '';
         let validationMessage = '';
 
@@ -383,8 +379,18 @@ const initiatePayment = async () => {
     }).join('');
 
     checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields.Poster?.url || 'assets/default-poster.png'}" alt="${eventDetails.fields.Poster?.alt || eventDetails.fields.NamaEvent}" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
+    
     const buyButton = document.getElementById('buyButton');
-    if (eventDetails.fields['PendaftaranDibuka'] !== true) { buyButton.textContent = 'Sold Out'; buyButton.disabled = true; }
+    const isRegistrationOpen = eventDetails.fields.PendaftaranDibuka === true;
+    // Hitung total sisa kuota dari data yang diterima
+    const totalSisaKuota = Object.values(sisaKuota).reduce((sum, item) => sum + item.sisa, 0);
+    const isSoldOut = totalSisaKuota <= 0;
+
+    if (!isRegistrationOpen || isSoldOut) { 
+        buyButton.textContent = 'Sold Out'; 
+        buyButton.disabled = true;
+    }
+
     attachEventListeners();
 };
     
@@ -422,12 +428,12 @@ const initiatePayment = async () => {
         });
     };
    
-const attachEventListeners = () => {
-  const buyButton = document.getElementById('buyButton');
-  const form = document.getElementById('customer-data-form');
+    const attachEventListeners = () => {
+    const buyButton = document.getElementById('buyButton');
+    const form = document.getElementById('customer-data-form');
   
-  const validateEmail = (email) => {
-      const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const validateEmail = (email) => {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
       return re.test(String(email).toLowerCase());
   };
 
@@ -452,16 +458,13 @@ const attachEventListeners = () => {
           const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
           if(selectedTicket) selectedTicket.checked = false;
 
-          // --- INILAH PERBAIKANNYA ---
-          // Reset semua input jumlah kembali ke 1 saat kursi diganti
           document.querySelectorAll('.ticket-quantity-input').forEach(input => {
               input.value = 0;
           });
-          // Reset juga status tombol +/- nya
+         
           document.querySelectorAll('.decrease-qty-btn').forEach(btn => btn.disabled = true);
           document.querySelectorAll('.increase-qty-btn').forEach(btn => btn.disabled = false);
-          // --- AKHIR PERBAIKAN ---
-
+       
           updateTicketAvailabilityForSeat();
       }
 
@@ -631,6 +634,7 @@ const attachEventListeners = () => {
     };
     buildPage();
 });
+
 
 
 
