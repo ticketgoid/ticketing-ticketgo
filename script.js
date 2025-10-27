@@ -178,7 +178,7 @@ async function renderEvents() {
                 
                 eventCard.innerHTML = `
                     <div class="card-image">
-                        <img src="${fields['GambarEvent'][0].url}" alt="${fields['NamaEvent']}">
+                        <img src="${fields.GambarEvent.url}" alt="${fields.GambarEvent.alt || fields.NamaEvent}">
                         <span class="tag festival">${fields['Tag'] || ''}</span>
                     </div>
                     <div class="card-content">
@@ -396,3 +396,4 @@ function initializeApp() {
     initializeEventCarousel();
     setupEventListeners(); // <-- PEMANGGILAN DIPINDAHKAN KE SINI
 }
+
