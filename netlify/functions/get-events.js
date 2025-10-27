@@ -1,40 +1,35 @@
 // File: netlify/functions/get-events.js
 
-const cache = {
-  data: null,
-  timestamp: 0,
-  isFetching: false, // Penanda untuk mencegah pengambilan data ganda
-};
+const fs = require('fs').promises;
+const path = require('path');
 
-const CACHE_DURATION = 2 * 60 * 1000; // 2 menit
-
-// Fungsi sederhana untuk memberi jeda
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+// Path ke file cache di direktori sementara yang disediakan Netlify
+const CACHE_FILE_PATH = path.join('/tmp', 'events_cache.json');
+// Durasi cache (2 menit)
+const CACHE_DURATION = 2 * 60 * 1000;
 
 exports.handler = async function (event, context) {
-  const now = Date.now();
+  try {
+    // Coba baca file cache terlebih dahulu
+    const cachedData = JSON.parse(await fs.readFile(CACHE_FILE_PATH, 'utf-8'));
+    const now = Date.now();
 
-  // Jika ada data di cache dan masih valid, langsung kembalikan
-  if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
-    console.log('GET-EVENTS: Menyajikan data dari cache memori...');
-    return {
-      statusCode: 200,
-      body: JSON.stringify(cache.data),
-    };
+    // Jika cache valid, sajikan dari cache
+    if (now - cachedData.timestamp < CACHE_DURATION) {
+      console.log('GET-EVENTS: Berhasil! Menyajikan data dari FILE CACHE.');
+      return {
+        statusCode: 200,
+        body: JSON.stringify(cachedData.data),
+      };
+    }
+  } catch (error) {
+    // Abaikan error jika file cache tidak ada (wajar terjadi pertama kali)
+    if (error.code !== 'ENOENT') {
+      console.error('Gagal membaca file cache:', error);
+    }
   }
 
-  // Jika ada permintaan lain yang sedang mengambil data, tunggu sebentar
-  if (cache.isFetching) {
-    console.log('GET-EVENTS: Menunggu proses pengambilan data yang sedang berjalan...');
-    await sleep(1000); // Tunggu 1 detik
-    // Coba lagi, kemungkinan cache sudah terisi oleh permintaan sebelumnya
-    return exports.handler(event, context);
-  }
-
-  // Kunci proses pengambilan data
-  cache.isFetching = true;
-
-  console.log('GET-EVENTS: Mengambil data baru dari Airtable...');
+  console.log('GET-EVENTS: Cache tidak ada atau kedaluwarsa. Mengambil data baru dari Airtable...');
   const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID_EVENT } = process.env;
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID_EVENT}/Events?sort%5B0%5D%5Bfield%5D=Prioritas&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Urutan&sort%5B1%5D%5Bdirection%5D=asc&sort%5B2%5D%5Bfield%5D=Waktu&sort%5B2%5D%5Bdirection%5D=asc`;
 
@@ -44,29 +39,32 @@ exports.handler = async function (event, context) {
     });
 
     if (!response.ok) {
-      // Jika error, buka kunci agar permintaan berikutnya bisa mencoba lagi
-      cache.isFetching = false;
+      // Jika error dari Airtable, langsung kembalikan error
+      console.error(`Airtable Error: ${response.status}`);
       return { statusCode: response.status, body: response.statusText };
     }
 
     const data = await response.json();
     
-    // Simpan data ke cache
-    cache.data = data;
-    cache.timestamp = now;
+    // Siapkan data untuk disimpan di cache
+    const dataToCache = {
+      timestamp: Date.now(),
+      data: data,
+    };
+
+    // Tulis data baru ke file cache
+    await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(dataToCache));
+    console.log('GET-EVENTS: Berhasil! File cache berhasil diperbarui dengan data dari Airtable.');
 
     return {
       statusCode: 200,
       body: JSON.stringify(data),
     };
   } catch (error) {
-    console.error('Error fetching events from Airtable:', error);
+    console.error('Gagal total saat mengambil data dari Airtable:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Failed to fetch events' }),
     };
-  } finally {
-    // Pastikan kunci selalu terbuka setelah selesai, baik berhasil maupun gagal
-    cache.isFetching = false;
   }
 };
