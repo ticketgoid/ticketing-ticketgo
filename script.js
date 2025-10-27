@@ -167,7 +167,7 @@ async function renderEvents() {
                 const formattedTime = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.',':');
                 const isPriority = fields['Prioritas'] === true;
                 
-                const isRegistrationOpen = fields['Pendaftaran Dibuka'] === true;
+                const isRegistrationOpen = fields['PendaftaranDibuka'] === true;
                 const buttonHTML = isRegistrationOpen
                     ? `<button class="btn-buy" data-event-id="${record.id}">Beli Tiket</button>`
                     : `<button class="btn-buy disabled" disabled>Sold Out</button>`;
@@ -396,4 +396,5 @@ function initializeApp() {
     initializeEventCarousel();
     setupEventListeners(); // <-- PEMANGGILAN DIPINDAHKAN KE SINI
 }
+
 
