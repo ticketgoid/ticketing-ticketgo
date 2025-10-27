@@ -12,6 +12,7 @@ export async function handler(event, context) {
   const data = JSON.parse(event.body);
 
   try {
+    // --- INILAH PERBAIKANNYA ---
     const saleData = {
       event_id: data.eventId,
       order_id: data.order_id,
@@ -19,12 +20,14 @@ export async function handler(event, context) {
       email: data.customer_details.email,
       no_hp: data.customer_details.phone,
       jenis_tiket: data.item_details.name,
-      seating: data.item_details.seatName, // Pastikan nama kolom di Supabase adalah 'seating'
+      seating: data.item_details.seatName, // Pastikan nama kolom di Supabase juga 'seating'
       jumlah_tiket: data.item_details.quantity,
       total_bayar: parseFloat(data.gross_amount),
       status_pembayaran: data.transaction_status,
-      tanggal_transaksi: new Date().toISOString(), // Mengisi kolom tanggal_transaksi
+      // Menambahkan pengisian untuk kolom tanggal_transaksi
+      tanggal_transaksi: new Date().toISOString(), 
     };
+    // --- AKHIR PERBAIKAN ---
     
     console.log("Mencoba menyimpan data penjualan:", JSON.stringify(saleData, null, 2));
     const { error: saleError } = await supabase.from('Penjualan').insert(saleData);
