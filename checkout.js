@@ -287,91 +287,100 @@ const generateStructuredData = () => {
         }
     };
     
-    // ... Sisa kode lainnya tetap sama persis ...
-    const renderLayout = () => {
-        const eventType = eventDetails.fields['Tipe Event'];
-        let seatMapHTML = eventDetails.fields['Seat_Map'] ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields['Seat_Map'][0].url}" alt="Peta Kursi" class="seat-map-image"></div>` : '';
-        let seatSelectionHTML = '';
-        if (eventType === 'Dengan Pilihan Kursi') {
-            const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
-            const seatOptionsContent = seatOptions.map((option, index) => {
-                const kuotaInfo = sisaKuota[option.trim().toLowerCase()];
-                const isDisabled = !kuotaInfo || kuotaInfo.sisa <= 0;
-                return `<div class="ticket-option">
-                            <input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${option.trim()}" data-record-id="${kuotaInfo?.recordId || ''}" ${isDisabled ? 'disabled' : ''}>
-                            <label for="seat_option_${index}" class="${isDisabled ? 'disabled' : ''}">
-                                <div class="ticket-label-content">
-                                    <span class="ticket-name">${option.trim()}</span>
-                                    ${isDisabled ? '<span class="sold-out-tag">Habis</span>' : ''}
-                                </div>
-                            </label>
-                        </div>`;
-            }).join('');
-            seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
-        }
-        const ticketOptionsHTML = ticketTypes.map(record => {
-          const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
-          const name = Name || 'Tiket Tanpa Nama';
-          const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
-          let isSoldOut = false;
-          if (eventType === 'Tanpa Pilihan Kursi') {
-            const kuotaInfo = sisaKuota[name.toLowerCase()];
-            isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
-          }
-          let priceHTML = '&nbsp;';
-          if (Show_Price) {
-            const numericPrice = parseInt((Price || 0).toString().replace(/[^0-9]/g, '')) || 0;
-            priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
-          }
-          const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
-          const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' 
-                ? '<span class="sold-out-tag"></span>' 
-                : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
-          return `<div class="ticket-option">
-                      <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
-                      <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
-                          <div class="ticket-label-content">
-                              <span class="ticket-name">${name}</span>
-                              ${soldOutTagHTML}
-                          </div>
-                          ${quantitySelectorHTML}
-                      </label>
-                  </div>`;
-        }).join('');
-        
-        const formFieldsHTML = formFields.map(record => {
-            const { FieldLabel, FieldType, Is_Required } = record.fields;
-            if (!FieldLabel || !FieldType) return '';
-            const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-            let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
-            const isEmailField = FieldType.toLowerCase() === 'email';
-            const isPhoneField = FieldType.toLowerCase() === 'tel';
+    // File: checkout.js
+// GANTI SELURUH FUNGSI INI
 
-            let fieldHTML = '';
-            let validationMessage = '';
+const renderLayout = () => {
+    const eventType = eventDetails.fields['Tipe Event'];
+    
+    // --- INILAH BARIS YANG DIPERBAIKI ---
+    let seatMapHTML = eventDetails.fields.Seat_Map?.url 
+        ? `<div class="form-section seat-map-container"><h3>Peta Kursi</h3><img src="${eventDetails.fields.Seat_Map.url}" alt="${eventDetails.fields.Seat_Map.alt || 'Peta Kursi'}" class="seat-map-image"></div>` 
+        : '';
+    // --- AKHIR PERBAIKAN ---
 
-            if (isPhoneField) {
-                fieldHTML = `<div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div>`;
-            } else {
-                fieldHTML = `<input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}">`;
-            }
-
-            if(isEmailField){
-                validationMessage = `<p id="${fieldId}-error" class="validation-message">Format email tidak valid (contoh: email@domain.com).</p>`;
-            }
-
-            return `<div class="form-group">
-                        <label for="${fieldId}">${FieldLabel}</label>
-                        ${fieldHTML}
-                        ${validationMessage}
+    let seatSelectionHTML = '';
+    if (eventType === 'Dengan Pilihan Kursi') {
+        const seatOptions = eventDetails.fields['Pilihan_Kursi']?.split('\n').filter(opt => opt.trim() !== '') || [];
+        const seatOptionsContent = seatOptions.map((option, index) => {
+            const kuotaInfo = sisaKuota[option.trim().toLowerCase()];
+            const isDisabled = !kuotaInfo || kuotaInfo.sisa <= 0;
+            return `<div class="ticket-option">
+                        <input type="radio" id="seat_option_${index}" name="Pilihan_Kursi" value="${option.trim()}" data-record-id="${kuotaInfo?.recordId || ''}" ${isDisabled ? 'disabled' : ''}>
+                        <label for="seat_option_${index}" class="${isDisabled ? 'disabled' : ''}">
+                            <div class="ticket-label-content">
+                                <span class="ticket-name">${option.trim()}</span>
+                                ${isDisabled ? '<span class="sold-out-tag">Habis</span>' : ''}
+                            </div>
+                        </label>
                     </div>`;
         }).join('');
+        seatSelectionHTML = `<div class="form-section"><h3>1. Pilih Kursi</h3><div id="seatOptionsContainer">${seatOptionsContent}</div></div>`;
+    }
+    const ticketOptionsHTML = ticketTypes.map(record => {
+      const { Name, Price, Admin_Fee, Show_Price, jumlahbeli, BundleQuantity } = record.fields;
+      const name = Name || 'Tiket Tanpa Nama';
+      const bundleQty = BundleQuantity > 1 ? BundleQuantity : 1;
+      let isSoldOut = false;
+      if (eventType === 'Tanpa Pilihan Kursi') {
+        const kuotaInfo = sisaKuota[name.toLowerCase()];
+        isSoldOut = !kuotaInfo || kuotaInfo.sisa < bundleQty;
+      }
+      let priceHTML = '&nbsp;';
+      if (Show_Price) {
+        const numericPrice = parseInt((Price || 0).toString().replace(/[^0-9]/g, '')) || 0;
+        priceHTML = `Rp ${numericPrice.toLocaleString('id-ID')}`;
+      }
+      const quantitySelectorHTML = jumlahbeli ? `<div class="quantity-selector-wrapper" data-ticket-id="${record.id}"><div class="quantity-selector"><p>Jumlah Beli:</p><button type="button" class="decrease-qty-btn" disabled>-</button><input type="number" class="ticket-quantity-input" value="1" min="1" readonly><button type="button" class="increase-qty-btn">+</button></div></div>` : '';
+      const soldOutTagHTML = eventType === 'Dengan Pilihan Kursi' 
+            ? '<span class="sold-out-tag"></span>' 
+            : (isSoldOut ? '<span class="sold-out-tag">Habis</span>' : '');
+      return `<div class="ticket-option">
+                  <input type="radio" id="${record.id}" name="ticket_choice" value="${record.id}" data-name="${name}" data-admin-fee="${parseInt((Admin_Fee || 0).toString().replace(/[^0-9]/g, '')) || 0}" data-can-choose-quantity="${!!jumlahbeli}" data-bundle-quantity="${bundleQty}" ${isSoldOut ? 'disabled' : ''}>
+                  <label for="${record.id}" class="${isSoldOut ? 'disabled' : ''}">
+                      <div class="ticket-label-content">
+                          <span class="ticket-name">${name}</span>
+                          ${soldOutTagHTML}
+                      </div>
+                      ${quantitySelectorHTML}
+                  </label>
+              </div>`;
+    }).join('');
+    
+    const formFieldsHTML = formFields.map(record => {
+        const { FieldLabel, FieldType, Is_Required } = record.fields;
+        if (!FieldLabel || !FieldType) return '';
+        const fieldId = `form_${FieldLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
+        let placeholder = FieldLabel.toLowerCase().includes('nama') ? 'Sesuai Identitas (KTP, SIM, dsb)' : (FieldType.toLowerCase() === 'email' ? 'contoh@gmail.com' : FieldLabel);
+        const isEmailField = FieldType.toLowerCase() === 'email';
+        const isPhoneField = FieldType.toLowerCase() === 'tel';
 
-        checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields.Poster?.url || 'assets/default-poster.png'}" alt="${eventDetails.fields.Poster?.alt || eventDetails.fields.NamaEvent}" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
-        const buyButton = document.getElementById('buyButton');
-        if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
-        attachEventListeners();
-    };
+        let fieldHTML = '';
+        let validationMessage = '';
+
+        if (isPhoneField) {
+            fieldHTML = `<div class="phone-input-group"><span class="phone-prefix">+62</span><input type="tel" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="8123456789"></div>`;
+        } else {
+            fieldHTML = `<input type="${FieldType.toLowerCase()}" id="${fieldId}" name="${FieldLabel}" ${Is_Required ? 'required' : ''} placeholder="${placeholder}">`;
+        }
+
+        if(isEmailField){
+            validationMessage = `<p id="${fieldId}-error" class="validation-message">Format email tidak valid (contoh: email@domain.com).</p>`;
+        }
+
+        return `<div class="form-group">
+                    <label for="${fieldId}">${FieldLabel}</label>
+                    ${fieldHTML}
+                    ${validationMessage}
+                </div>`;
+    }).join('');
+
+    checkoutMain.innerHTML = `<div class="checkout-body"><div class="event-details-column"><div class="event-poster-container"><img src="${eventDetails.fields.Poster?.url || 'assets/default-poster.png'}" alt="${eventDetails.fields.Poster?.alt || eventDetails.fields.NamaEvent}" class="event-poster"></div><div class="event-info"><h1>${eventDetails.fields['NamaEvent'] || ''}</h1><p class="event-description">${eventDetails.fields.Deskripsi || ''}</p></div></div><div class="purchase-form-column"><div class="purchase-form">${seatMapHTML}<form id="customer-data-form" novalidate>${seatSelectionHTML}<div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '2.' : '1.'} Pilih Jenis Tiket</h3><div id="ticketOptionsContainer">${ticketOptionsHTML}</div></div><div class="form-section"><h3>${eventType === 'Dengan Pilihan Kursi' ? '3.' : '2.'} Isi Data Diri</h3>${formFieldsHTML}</div></form><div class="form-section price-review-section"><h3>Ringkasan Harga</h3><div id="price-review"><p>Pilih tiket untuk melihat harga.</p></div></div><button id="buyButton" class="btn-primary" disabled>Beli Tiket</button></div></div></div>`;
+    const buyButton = document.getElementById('buyButton');
+    if (eventDetails.fields['Pendaftaran Dibuka'] !== true) { buyButton.textContent = 'Sold Out'; }
+    attachEventListeners();
+};
+    
     const getCurrentQuantity = () => {
         const selectedTicket = document.querySelector('input[name="ticket_choice"]:checked');
         if (!selectedTicket) return 1;
@@ -594,6 +603,7 @@ const generateStructuredData = () => {
     };
     buildPage();
 });
+
 
 
 
