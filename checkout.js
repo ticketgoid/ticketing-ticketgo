@@ -118,88 +118,96 @@ const generateStructuredData = () => {
         });
     };
 
-    const initiatePayment = async () => {
-      if (pendingPaymentToken) {
-          resumePayment();
-          return;
+const initiatePayment = async () => {
+  if (pendingPaymentToken) {
+      resumePayment();
+      return;
+  }
+
+  const confirmButton = document.getElementById('confirmPaymentBtn');
+  confirmButton.disabled = true;
+  confirmButton.textContent = 'Memproses...';
+  try {
+    const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
+    const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
+    const eventType = eventDetails.fields['Tipe Event'];
+
+    if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) throw new Error("Kursi belum dipilih.");
+    if (!selectedTicketInput) throw new Error("Jenis tiket belum dipilih.");
+
+    const { quantity } = calculatePrice();
+    const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
+    const name = selectedTicketRecord?.fields?.Name || 'Tiket Tanpa Nama';
+    
+    // --- INILAH PERBAIKANNYA ---
+    let customerName = '', customerEmail = '', customerPhone = '';
+    new FormData(document.getElementById('customer-data-form')).forEach((value, key) => {
+      const lowerKey = key.toLowerCase();
+      if (lowerKey.includes('nama')) {
+          customerName = value;
+      } else if (lowerKey.includes('email')) {
+          customerEmail = value;
+      } else if (lowerKey.includes('nomor') || lowerKey.includes('tel') || lowerKey.includes('hp') || lowerKey.includes('whatsapp')) {
+          // Sekarang bisa mendeteksi "Nomor", "Tel", "HP", atau "WhatsApp"
+          customerPhone = value;
       }
+    });
+    // --- AKHIR PERBAIKAN ---
 
-      const confirmButton = document.getElementById('confirmPaymentBtn');
-      confirmButton.disabled = true;
-      confirmButton.textContent = 'Memproses...';
-      try {
-        const selectedTicketInput = document.querySelector('input[name="ticket_choice"]:checked');
-        const seatSelected = document.querySelector('input[name="Pilihan_Kursi"]:checked');
-        const eventType = eventDetails.fields['Tipe Event'];
-  
-        if (eventType === 'Dengan Pilihan Kursi' && !seatSelected) throw new Error("Kursi belum dipilih.");
-        if (!selectedTicketInput) throw new Error("Jenis tiket belum dipilih.");
-  
-        const { quantity } = calculatePrice();
-        const selectedTicketRecord = ticketTypes.find(t => t.id === selectedTicketInput.value);
-        const name = selectedTicketRecord?.fields?.Name || 'Tiket Tanpa Nama';
-        
-        let customerName = '', customerEmail = '', customerPhone = '';
-        new FormData(document.getElementById('customer-data-form')).forEach((value, key) => {
-          const lowerKey = key.toLowerCase();
-          if (lowerKey.includes('nama')) customerName = value;
-          else if (lowerKey.includes('email')) customerEmail = value;
-          else if (lowerKey.includes('nomor')) customerPhone = value;
-        });
-  
-        if (!customerName || !customerEmail || !customerPhone) throw new Error("Data pemesan tidak lengkap.");
-  
-        const transactionApiPayload = {
-          order_id: `TICKETGO-${Date.now()}`,
-          eventId: eventDetails.id,
-          ticketTypeId: selectedTicketInput.value,
-          seatName: seatSelected ? seatSelected.value : null,
-          quantity: quantity,
-          customer_details: { 
-            first_name: customerName, 
-            email: customerEmail, 
-            phone: `+62${customerPhone.replace(/^0/, '')}` 
-          }
-        };
-        
-        const airtableSavePayload = {
-            customer_details: transactionApiPayload.customer_details,
-            item_details: {
-                id: selectedTicketInput.value,
-                ticketRecordId: selectedTicketInput.value,
-                quantity: quantity,
-                name: name,
-                seatName: seatSelected ? seatSelected.value : null,
-                seatRecordId: seatSelected ? seatSelected.dataset.recordId : null,
-            }
-        };
-  
-        const response = await fetch(SCRIPT_URL, { 
-            method: 'POST', 
-            body: JSON.stringify(transactionApiPayload), 
-            headers: { 'Content-Type': 'application/json' } 
-        });
-        
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error || `Server error: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        if (result.error || !result.token) throw new Error(result.error || "Token pembayaran tidak diterima.");
-        
-        pendingPaymentToken = result.token;
-        pendingPayload = airtableSavePayload;
+    if (!customerName || !customerEmail || !customerPhone) throw new Error("Data pemesan tidak lengkap.");
 
-        resumePayment();
-
-      } catch (error) {
-        console.error('❌ Gagal memulai pembayaran:', error);
-        showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
-        confirmButton.disabled = false;
-        confirmButton.textContent = 'Lanjutkan Pembayaran';
+    const transactionApiPayload = {
+      order_id: `TICKETGO-${Date.now()}`,
+      eventId: eventDetails.id,
+      ticketTypeId: selectedTicketInput.value,
+      seatName: seatSelected ? seatSelected.value : null,
+      quantity: quantity,
+      customer_details: { 
+        first_name: customerName, 
+        email: customerEmail, 
+        phone: `+62${customerPhone.replace(/^0/, '')}` 
       }
     };
+    
+    const airtableSavePayload = {
+        customer_details: transactionApiPayload.customer_details,
+        item_details: {
+            id: selectedTicketInput.value,
+            ticketRecordId: selectedTicketInput.value,
+            quantity: quantity,
+            name: name,
+            seatName: seatSelected ? seatSelected.value : null,
+            seatRecordId: seatSelected ? seatSelected.dataset.recordId : null,
+        }
+    };
+
+    const response = await fetch(SCRIPT_URL, { 
+        method: 'POST', 
+        body: JSON.stringify(transactionApiPayload), 
+        headers: { 'Content-Type': 'application/json' } 
+    });
+    
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    if (result.error || !result.token) throw new Error(result.error || "Token pembayaran tidak diterima.");
+    
+    pendingPaymentToken = result.token;
+    pendingPayload = airtableSavePayload;
+
+    resumePayment();
+
+  } catch (error) {
+    console.error('❌ Gagal memulai pembayaran:', error);
+    showFeedback('error', 'Terjadi Kesalahan', `Detail: ${error.message}`);
+    // Kembalikan tombol ke keadaan normal jika terjadi error
+    confirmButton.disabled = false;
+    confirmButton.textContent = 'Lanjutkan Pembayaran';
+  }
+};
   
     const showFeedback = (type, title, message) => {
       document.getElementById('reviewModal')?.classList.remove('visible');
@@ -623,6 +631,7 @@ const attachEventListeners = () => {
     };
     buildPage();
 });
+
 
 
 
